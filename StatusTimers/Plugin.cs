@@ -48,9 +48,8 @@ public class Plugin : IDalamudPlugin
         {
             InternalName = "StatusTimers",
             Title = "StatusTimers",
-            Size = new Vector2(200, 400),
+            Size = new Vector2(400, 400),
             NativeController = Services.NativeController,
-            WindowOptions = 
         };
         
         Services.AddonStatusTimers.Open();

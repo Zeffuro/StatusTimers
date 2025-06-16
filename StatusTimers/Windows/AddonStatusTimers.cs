@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using KamiToolKit;
 using KamiToolKit.Addon;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
 
@@ -29,7 +30,7 @@ public class AddonStatusTimers : NativeAddon {
         addon->Alpha = 0;
         var xPos = FramePadding;
         var yPos = Size.Y - UnitSize - FramePadding;
-
+        
         // Attach custom node to addon
         //
         // IMPORTANT: Once attached, >> do not detach or dispose these nodes <<
@@ -125,18 +126,22 @@ public class AddonStatusTimers : NativeAddon {
             
             _statusName = new TextNode {
                 IsVisible = true,
-                Position = new Vector2(50, 5),
                 FontSize = 20,
-                Width = 180,
+                TextColor = ColorHelper.GetColor(50),
+                TextOutlineColor = ColorHelper.GetColor(53),
+                TextFlags = TextFlags.Edge,
             };
+            
             Services.NativeController.AttachNode(_statusName, this);
             
             _statusRemaining = new TextNode {
                 IsVisible = true,
-                Position = new Vector2(240, 5),
                 FontSize = 20,
                 Width = 60,
-                AlignmentType = AlignmentType.Right,
+                TextColor = ColorHelper.GetColor(50),
+                TextOutlineColor = ColorHelper.GetColor(53),
+                TextFlags = TextFlags.Edge,
+                AlignmentType = AlignmentType.TopRight,
             };
             Services.NativeController.AttachNode(_statusRemaining, this);
             
@@ -165,8 +170,10 @@ public class AddonStatusTimers : NativeAddon {
             get => base.Width;
             set {
                 base.Width = value;
-                _statusName.Width = value - 48.0f;
-                _statusName.X = 24.0f;
+                
+                _statusName.Width = value - _iconNode.Width - _statusRemaining.Width - 10;
+                _statusName.X = _iconNode.Width + 5;
+                _statusRemaining.X = value - _statusRemaining.Width - 5;
             }
         }
 
@@ -175,8 +182,10 @@ public class AddonStatusTimers : NativeAddon {
             get => base.Height;
             set {
                 base.Height = value;
-                _statusName.Height = value - 48.0f;
-                _statusName.Y = 24.0f;
+                
+                _iconNode.Y = (value - _iconNode.Height) / 2;
+                _statusName.Y = (value - _statusName.Height) / 2;
+                _statusRemaining.Y = (value - _statusRemaining.Height) / 2;
             }
         }
 
