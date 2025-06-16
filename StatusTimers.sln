@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatusTimers", "StatusTimers\StatusTimers.csproj", "{30E6E241-B226-4605-935D-9A5DC7764637}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KamiToolKit", "KamiToolKit\KamiToolKit.csproj", "{C7B29AAE-E158-4930-805D-C735E30D8181}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -12,5 +14,9 @@ Global
 		{30E6E241-B226-4605-935D-9A5DC7764637}.Debug|x64.Build.0 = Debug|x64
 		{30E6E241-B226-4605-935D-9A5DC7764637}.Release|x64.ActiveCfg = Release|x64
 		{30E6E241-B226-4605-935D-9A5DC7764637}.Release|x64.Build.0 = Release|x64
+		{C7B29AAE-E158-4930-805D-C735E30D8181}.Debug|x64.ActiveCfg = Debug|x64
+		{C7B29AAE-E158-4930-805D-C735E30D8181}.Debug|x64.Build.0 = Debug|x64
+		{C7B29AAE-E158-4930-805D-C735E30D8181}.Release|x64.ActiveCfg = Release|x64
+		{C7B29AAE-E158-4930-805D-C735E30D8181}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

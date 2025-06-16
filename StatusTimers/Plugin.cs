@@ -1,7 +1,9 @@
+using System.Numerics;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
 using StatusTimers.Windows;
 using Dalamud.Game.Command;
+using KamiToolKit;
 
 namespace StatusTimers;
 
@@ -26,14 +28,33 @@ public class Plugin : IDalamudPlugin
         this.WindowSystem.AddWindow(this.MainWindow);
         this.WindowSystem.AddWindow(this.ConfigWindow);
 
+        Services.NativeController = new NativeController(pluginInterface);
+        
+        DrawWindow();
+
         Services.PluginInterface.UiBuilder.Draw += this.DrawUi;
         Services.PluginInterface.UiBuilder.OpenMainUi += this.ToggleMainUi;
         Services.PluginInterface.UiBuilder.OpenConfigUi += this.ToggleConfigUi;
-
+        
         Services.CommandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Open the main window"
         });
+    }
+
+    public void DrawWindow()
+    {
+        Services.AddonStatusTimers = new AddonStatusTimers
+        {
+            InternalName = "StatusTimers",
+            Title = "StatusTimers",
+            Size = new Vector2(200, 400),
+            NativeController = Services.NativeController,
+            WindowOptions = 
+        };
+        
+        Services.AddonStatusTimers.Open();
+        
     }
 
     public void Dispose()
@@ -49,6 +70,9 @@ public class Plugin : IDalamudPlugin
         Services.PluginInterface.UiBuilder.Draw -= this.DrawUi;
         Services.PluginInterface.UiBuilder.OpenMainUi -= this.ToggleMainUi;
         Services.PluginInterface.UiBuilder.OpenConfigUi -= this.ToggleConfigUi;
+        
+        Services.AddonStatusTimers.Dispose();
+        Services.NativeController.Dispose();
     }
 
     private void DrawUi() => this.WindowSystem.Draw();
@@ -57,6 +81,7 @@ public class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
+        DrawWindow();
         if (args is "settings" or "config")
         {
             this.ToggleConfigUi();

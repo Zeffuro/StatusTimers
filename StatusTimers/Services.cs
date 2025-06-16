@@ -1,6 +1,8 @@
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using KamiToolKit;
+using StatusTimers.Windows;
 
 namespace StatusTimers;
 
@@ -13,4 +15,7 @@ public class Services
     [PluginService] public static IFramework Framework { get; private set; } = null!;
     [PluginService] public static IPluginLog Logger { get; private set; } = null!;
     [PluginService] public static ITextureProvider TextureProvider { get; private set; } = null!;
+    
+    public static NativeController NativeController { get; set; } = null!;
+    public static AddonStatusTimers AddonStatusTimers { get; set; } = null!; 
 }
