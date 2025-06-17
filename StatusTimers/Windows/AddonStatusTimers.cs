@@ -10,6 +10,7 @@ using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
+using CSStatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager; 
 
 namespace StatusTimers.Windows;
 
@@ -18,47 +19,35 @@ public class AddonStatusTimers : NativeAddon {
     private const float FramePadding = 8.0f;
     private const float UnitPadding = 10.0f;
     private const float VerticalPadding = UnitPadding / 4.0f;
+    private const float MaxAmountOfNodes = 100;
     
     private readonly Dictionary<uint, StatusTimerNode> _statusTimers = new();
     private readonly List<StatusTimerNode> _activeTimers = new();
     private readonly Stack<StatusTimerNode> _recycledTimers = new();
     
+    private CSStatusManager  _csStatusManager = new CSStatusManager();
+    
     // OnSetup is your entry-point to adding native elements to the window
     // Here you should allocate and attach your nodes to the UI
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
-        addon->Alpha = 0;
-        var xPos = FramePadding;
-        var yPos = Size.Y - UnitSize - FramePadding;
+        // TODO Determine max amount of nodes CSStatusManager.NumValidStatuses seems to give 0 for some reason
+        this.WindowNode.IsVisible = true;
         
-        // Attach custom node to addon
-        //
-        // IMPORTANT: Once attached, >> do not detach or dispose these nodes <<
-        // When attaching the game will take ownership of the nodes and all associated data,
-        // and will properly clean up when the addon is closed
-
-        /*
-        TextNode statusNode = new TextNode
+        for (int i = 0; i < MaxAmountOfNodes; i++)
         {
-            Position = new Vector2(xPos, yPos),
-            Size = new Vector2(UnitSize, UnitSize),
-            IsVisible = true,
-            Text = "Test",
-        };
-        
-        
-        NativeController.AttachNode(statusNode, this);
-
-        xPos += statusNode.Width + UnitPadding;
-        yPos += statusNode.Height + UnitPadding;
-        */
+            var node = new StatusTimerNode();
+            NativeController.AttachNode(node, this);
+            node.IsVisible = false;
+            _statusTimers[(uint)i] = node;
+            _recycledTimers.Push(node);
+        }
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
         var statuses = StatusManager.GetPlayerStatuses();
 
-        // Step 1: Mark all current active timers for recycle
         foreach (var node in _activeTimers)
             node.IsVisible = false;
 
@@ -66,20 +55,12 @@ public class AddonStatusTimers : NativeAddon {
             _recycledTimers.Push(node);
         _activeTimers.Clear();
 
-        // Step 2: Reuse or allocate new nodes
         foreach (var status in statuses)
         {
-            StatusTimerNode node;
+            if (_recycledTimers.Count == 0)
+                break; // Prevent overuse of pool
 
-            if (_recycledTimers.Count > 0)
-            {
-                node = _recycledTimers.Pop();
-            }
-            else
-            {
-                node = new StatusTimerNode();
-                NativeController.AttachNode(node, this); // 🔹 Only once per node lifetime
-            }
+            var node = _recycledTimers.Pop();
 
             node.Name = status.Name;
             node.StatusIconId = status.IconId;
@@ -87,6 +68,11 @@ public class AddonStatusTimers : NativeAddon {
             node.IsVisible = true;
 
             _activeTimers.Add(node);
+
+            if (status.Id == 1199)
+            {
+                //CSStatusManager.ExecuteStatusOff(1199);
+            }
         }
 
         LayoutNodes();
