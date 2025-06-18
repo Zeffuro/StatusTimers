@@ -32,7 +32,7 @@ public class AddonStatusTimers : NativeAddon {
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
         // TODO Determine max amount of nodes CSStatusManager.NumValidStatuses seems to give 0 for some reason
-        this.WindowNode.IsVisible = true;
+        this.WindowNode.IsVisible = false;
         
         for (int i = 0; i < MaxAmountOfNodes; i++)
         {
@@ -63,19 +63,21 @@ public class AddonStatusTimers : NativeAddon {
             var node = _recycledTimers.Pop();
 
             node.Name = status.Name;
+            node.StatusId = status.Id;
             node.StatusIconId = status.IconId;
             node.TimeRemaining = status.RemainingSeconds;
             node.IsVisible = true;
 
             _activeTimers.Add(node);
-
-            if (status.Id == 1199)
-            {
-                //CSStatusManager.ExecuteStatusOff(1199);
-            }
         }
 
         LayoutNodes();
+    }
+
+    private static void StatusNodeClick(StatusTimerNode node)
+    {
+        Services.Logger.Info($"{node.Name} clicked");
+        CSStatusManager.ExecuteStatusOff(node.StatusId);
     }
     
     private void LayoutNodes()
@@ -131,6 +133,8 @@ public class AddonStatusTimers : NativeAddon {
             };
             Services.NativeController.AttachNode(_statusRemaining, this);
             
+            _iconNode.AddEvent(AddonEventType.MouseClick, () => StatusNodeClick(this));
+            
             Height = 50;
             Width = 300;
         }
@@ -139,6 +143,8 @@ public class AddonStatusTimers : NativeAddon {
             get => _statusName.Text.ToString();
             set => _statusName.Text = value;
         }
+
+        public uint StatusId { get; set; }
 
         public uint StatusIconId
         {
