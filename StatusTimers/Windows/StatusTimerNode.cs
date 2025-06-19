@@ -9,7 +9,8 @@ using StatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
 
 namespace StatusTimers.Windows;
 
-public class StatusTimerNode : ResNode {
+public sealed class StatusTimerNode : ResNode {
+    private readonly TextNode _actorName;
     private readonly TextNode _statusName;
     private readonly TextNode _statusRemaining;
     private readonly ProgressBarNode _progressNode;
@@ -34,6 +35,16 @@ public class StatusTimerNode : ResNode {
         };
         Services.NativeController.AttachNode(_progressNode, this);
         
+        _actorName = new TextNode {
+            IsVisible = _statusInfo.ActorName != null,
+            FontSize = 12,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(54),
+            TextFlags = TextFlags.Edge,
+        };
+        
+        Services.NativeController.AttachNode(_actorName, this);
+        
         _statusName = new TextNode {
             IsVisible = true,
             FontSize = 20,
@@ -57,7 +68,7 @@ public class StatusTimerNode : ResNode {
         
         _iconNode.AddEvent(AddonEventType.MouseClick, (e) => StatusNodeClick(this, e));
         
-        Height = 50;
+        Height = 60;
         Width = 300;
     }
 
@@ -67,6 +78,7 @@ public class StatusTimerNode : ResNode {
         set
         {
             _statusInfo = value;
+            _actorName.IsVisible = _statusInfo.ActorName != null; 
             UpdateValues();
         }
     }
@@ -75,55 +87,61 @@ public class StatusTimerNode : ResNode {
     {
         _statusName.Text = _statusInfo.Name;
         _iconNode.IconId = _statusInfo.IconId;
-        
+    
         if (_statusInfo.IsPermanent)
         {
             _progressNode.IsVisible = false;
-            _statusRemaining.IsVisible = !_statusInfo.IsPermanent;
-            return;
+            _statusRemaining.IsVisible = false;
+        }
+        else
+        {
+            _progressNode.IsVisible = true;
+            _statusRemaining.IsVisible = true;
+
+            if (_statusInfo.ActorName != null)
+                _actorName.Text = $"{_statusInfo.EnemyLetter}{_statusInfo.ActorName}";
+            else
+                _actorName.IsVisible = false;
+
+            float max = Math.Max(_statusInfo.MaxSeconds, 1f);
+            float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
+            float ratio = remaining / max;
+
+            _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
+            _statusRemaining.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
         }
 
-        // Set max to 1f because we sometimes get insane values just as the buff is added
-        // Clamp/Lerp the rest because after 0.06f the bar is already visually empty
-        float max = Math.Max(_statusInfo.MaxSeconds, 1f);
-        float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
-        float ratio = remaining / max;
-        
-        _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
-        _statusRemaining.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
+        UpdatePositions();
     }
+
+    public void UpdatePositions()
+    {
+        int padding = 5;
     
+        float remainingWidth = _statusRemaining.IsVisible ? _statusRemaining.Width : 0;
+        float progressWidth = _progressNode.IsVisible ? _progressNode.Width : 0;
+
+        _statusName.X = _iconNode.Width + 5;
+        _statusName.Width = Width - _iconNode.Width - remainingWidth - progressWidth - 15;  // 15 for padding
+
+        _actorName.X = _iconNode.Width + 7;
+        _progressNode.X = _iconNode.Width + 2;
+        _statusRemaining.X = Width - _statusRemaining.Width - 5;
+
+        _iconNode.Y = (Height - _iconNode.Height) / 2;
+        _statusName.Y = _statusName.Height / 2;
+        _actorName.Y = _statusName.Y + _progressNode.Height + padding;
+        _progressNode.Y = _actorName.IsVisible
+            ? _actorName.Y + _actorName.FontSize + padding
+            : _statusName.Y + _statusName.FontSize + padding;
+        _statusRemaining.Y = _statusRemaining.Height / 2;
+    }
+
     private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData)
     {
         var atkEventData = (AtkEventData*) eventData.AtkEventDataPointer;
         if (atkEventData->MouseData.ButtonId == 1)
             StatusManager.ExecuteStatusOff(node.StatusInfo.Id);
-    }
-
-    // Override Width property to have it set the width of our individual parts
-    public override float Width {
-        get => base.Width;
-        set {
-            base.Width = value;
-            
-            _statusName.Width = value - _iconNode.Width - _statusRemaining.Width - 10;
-            _statusName.X = _iconNode.Width + 5;
-            _progressNode.X = _iconNode.Width + 2;
-            _statusRemaining.X = value - _statusRemaining.Width - 5;
-        }
-    }
-
-    // Override Height property to have it set the height of our individual parts
-    public override float Height {
-        get => base.Height;
-        set {
-            base.Height = value;
-            
-            _iconNode.Y = (value - _iconNode.Height) / 2;
-            _progressNode.Y = value -  _progressNode.Height;
-            _statusName.Y = _statusName.Height / 2;
-            _statusRemaining.Y = _statusRemaining.Height / 2;
-        }
     }
 
     // Whenever we inherit a node and add additional nodes,

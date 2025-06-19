@@ -7,7 +7,7 @@ public class WindowManager : IDisposable
 {
     private EnemyMultiDoTWindow EnemyMultiDoTWindow { get; } = new()
     {
-        InternalName = "EnemyMultiDoTWindow",
+        InternalName = "StatusTimersEnemyDoTs",
         Title = "Enemy DoTs",
         Size = new Vector2(400, 400),
         NativeController = Services.NativeController,
@@ -15,7 +15,7 @@ public class WindowManager : IDisposable
 
     private PlayerCombinedStatusesWindow PlayerCombinedWindow { get; } = new()
     {
-        InternalName = "PlayerCombinedStatusesWindow",
+        InternalName = "StatusTimersCombinedStatuses",
         Title = "Player Statuses",
         Size = new Vector2(400, 400),
         NativeController = Services.NativeController,

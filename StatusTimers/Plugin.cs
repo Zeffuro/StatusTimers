@@ -1,9 +1,12 @@
+using System;
 using System.Numerics;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
 using StatusTimers.Windows;
 using Dalamud.Game.Command;
+using Dalamud.Plugin.Services;
 using KamiToolKit;
+using StatusTimers.Helpers;
 
 namespace StatusTimers;
 
@@ -40,6 +43,7 @@ public class Plugin : IDalamudPlugin
         Services.PluginInterface.UiBuilder.OpenConfigUi += this.ToggleConfigUi;
         */
         
+        Services.Framework.Update += OnFrameworkUpdate;
         Services.CommandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Open the main window"
@@ -47,9 +51,15 @@ public class Plugin : IDalamudPlugin
         
         WindowManager.OpenAll();
     }
+    
+    private void OnFrameworkUpdate(IFramework framework)
+    {
+        EnemyListHelper.UpdateEnemyListMapping();
+    }
 
     public void Dispose()
     {
+        Services.Framework.Update -= OnFrameworkUpdate;
         Services.CommandManager.RemoveHandler(CommandName);
 
         this.Configuration.Save();

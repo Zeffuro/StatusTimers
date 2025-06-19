@@ -77,7 +77,7 @@ public static unsafe class StatusManager
         return _hostileStatusBuffer;
     }
     
-    private static StatusInfo TransformStatus(Status status, ulong objectIndex)
+    private static StatusInfo TransformStatus(Status status, ulong objectId)
     {
         LuminaStatus gameData = status.GameData.Value;
         
@@ -85,7 +85,7 @@ public static unsafe class StatusManager
         uint iconId = gameData.Icon;
         string name = gameData.Name.ExtractText();
         float remainingSeconds = status.RemainingTime;
-        ulong sourceObjectId = objectIndex;
+        ulong sourceObjectId = objectId;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
         
@@ -93,6 +93,20 @@ public static unsafe class StatusManager
         {
             maxSeconds = remainingSeconds;
             StatusDurations[id] = maxSeconds;
+        }
+        
+        // TODO Make extraction optional based on configuration
+        string? actorName = null;
+        char? enemyLetter = null;
+        
+        var actor = Services.ObjectTable.FirstOrDefault(o => o is { } && o.GameObjectId == objectId);
+        var player = Services.ClientState.LocalPlayer;
+        
+        //Services.Logger.Info($"Actor name changed{actor.Name} {actor.ObjectIndex} ");
+        if (actor is not null && player != null && actor.GameObjectId != player.GameObjectId)
+        {
+            actorName = actor.Name.TextValue;
+            enemyLetter = EnemyListHelper.GetEnemyLetter((uint)actor.GameObjectId);
         }
 
         // TODO Add configuration to resolve food/pots
@@ -109,7 +123,7 @@ public static unsafe class StatusManager
                 break;
         }
 
-        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, stacks, isPerma);
+        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, stacks, isPerma, actorName, enemyLetter);
     }
 
     // Thanks Craftimizer for the info on food: https://github.com/WorkingRobot/Craftimizer/blob/main/Craftimizer/Utils/FoodStatus.cs#L23
@@ -148,7 +162,7 @@ public static unsafe class StatusManager
     
 }
 
-public readonly struct StatusInfo(uint id, uint iconId, string name, float remainingSeconds, float maxSeconds, ulong gameObjectId, uint stacks, bool isPermanent = false)
+public readonly struct StatusInfo(uint id, uint iconId, string name, float remainingSeconds, float maxSeconds, ulong gameObjectId, uint stacks, bool isPermanent = false, string? actorName = null, char? enemyLetter = null)
 {
     public uint Id { get; } = id;
     public uint IconId { get; } = iconId;
@@ -158,6 +172,8 @@ public readonly struct StatusInfo(uint id, uint iconId, string name, float remai
     public bool IsPermanent { get; } = isPermanent;
     public ulong GameObjectId { get; } = gameObjectId;
     public uint Stacks { get; } = stacks;
+    public string? ActorName { get; } = actorName;
+    public char? EnemyLetter { get; } = enemyLetter;
     
     public StatusKey Key => new(GameObjectId, Id);
 }

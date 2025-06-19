@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
 using StatusTimers.StatusSources;
 
@@ -20,20 +23,31 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
     protected readonly Dictionary<TKey, StatusTimerNode> Active = new();
     protected readonly Stack<StatusTimerNode> Pool = new();
 
+    private TextNode _headerNode;
+
     private readonly IStatusSource<TKey> _source;
 
     protected StatusTimerWindow(IStatusSource<TKey> source) => _source = source;
-    
-    public string WindowName { get; } = "Status Timer Window";
-    public bool IsOpen { get; set; } = true;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
         WindowNode.IsVisible = false;
 
+        _headerNode = new TextNode
+        {
+            IsVisible = true,
+            X = FramePadding * 2 + 44,
+            FontSize = 24,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(54),
+            TextFlags = TextFlags.Edge,
+            Text = Title,
+        };
+        NativeController.AttachNode(_headerNode, this);
+        
         for (int i = 0; i < PoolSize; i++)
         {
-            var node = new StatusTimerNode();
+            StatusTimerNode node = new StatusTimerNode();
             NativeController.AttachNode(node, this);
             node.IsVisible = false;
             Pool.Push(node);
@@ -42,11 +56,10 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon)
     {
-        var current = _source.Fetch();                     // ① get statuses
-        var map = current.GroupBy(_source.KeyOf)           // ② collapse duplicates
+        var current = _source.Fetch();
+        var map = current.GroupBy(_source.KeyOf)
                          .ToDictionary(group => group.Key, group => group.First());
-
-        // ③ recycle removed
+        
         foreach (var gone in Active.Keys.Except(map.Keys).ToArray())
         {
             var node = Active[gone];
@@ -54,8 +67,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
             Pool.Push(node);
             Active.Remove(gone);
         }
-
-        // ④ add / update
+        
         foreach (var kv in map)
         {
             if (Active.TryGetValue(kv.Key, out var node))
@@ -82,7 +94,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
     private void LayoutNodes()
     {
         float x = FramePadding;
-        float y = FramePadding;
+        float y = (_headerNode.FontSize * 1.5f) + FramePadding;
         
         var sortedNodes = Active.Values
             .OrderByDescending(node => node.StatusInfo.IsPermanent)
