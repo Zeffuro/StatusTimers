@@ -2,17 +2,21 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Hooking;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using Status = Dalamud.Game.ClientState.Statuses.Status;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
+using CSStatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager; 
 
 namespace StatusTimers.Helpers;
 
-public static class StatusManager
+public static unsafe class StatusManager
 {
     private static ExcelSheet<Item> _itemSheet = Services.DataManager.GetExcelSheet<Item>();
     private static FrozenDictionary<uint, uint> _itemFoodToItemLut;
+    private static readonly Dictionary<uint, float> StatusDurations = new();
 
     static StatusManager()
     {
@@ -40,6 +44,13 @@ public static class StatusManager
         float remainingSeconds = status.RemainingTime;
         uint sourceObjectId = status.SourceId;
         uint stacks = gameData.MaxStacks;
+        bool isPerma = gameData.IsPermanent;
+        
+        if (!StatusDurations.TryGetValue(id, out float maxSeconds) || remainingSeconds > maxSeconds)
+        {
+            maxSeconds = remainingSeconds;
+            StatusDurations[id] = maxSeconds;
+        }
 
         // TODO Add configuration to resolve food/pots
         switch (status.StatusId)
@@ -55,7 +66,7 @@ public static class StatusManager
                 break;
         }
 
-        return new StatusInfo(id, iconId, name, remainingSeconds, sourceObjectId, stacks);
+        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, stacks, isPerma);
     }
 
     // Thanks Craftimizer for the info on food: https://github.com/WorkingRobot/Craftimizer/blob/main/Craftimizer/Utils/FoodStatus.cs#L23
@@ -92,12 +103,14 @@ public static class StatusManager
     }
 }
 
-public readonly struct StatusInfo(uint id, uint iconId, string name, float remainingSeconds, uint sourceObjectId, uint stacks)
+public readonly struct StatusInfo(uint id, uint iconId, string name, float remainingSeconds, float maxSeconds, uint sourceObjectId, uint stacks, bool isPermanent = false)
 {
     public uint Id { get; } = id;
     public uint IconId { get; } = iconId;
     public string Name { get; } = name;
     public float RemainingSeconds { get; } = remainingSeconds;
+    public float MaxSeconds { get; } = maxSeconds;
+    public bool IsPermanent { get; } = isPermanent;
     public uint SourceObjectId { get; } = sourceObjectId;
     public uint Stacks { get; } = stacks;
 }

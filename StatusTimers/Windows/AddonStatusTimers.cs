@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -62,10 +63,7 @@ public class AddonStatusTimers : NativeAddon {
 
             var node = _recycledTimers.Pop();
 
-            node.Name = status.Name;
-            node.StatusId = status.Id;
-            node.StatusIconId = status.IconId;
-            node.TimeRemaining = status.RemainingSeconds;
+            node.StatusInfo = status;
             node.IsVisible = true;
 
             _activeTimers.Add(node);
@@ -74,10 +72,11 @@ public class AddonStatusTimers : NativeAddon {
         LayoutNodes();
     }
 
-    private static void StatusNodeClick(StatusTimerNode node)
+    private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData)
     {
-        Services.Logger.Info($"{node.Name} clicked");
-        CSStatusManager.ExecuteStatusOff(node.StatusId);
+        var atkEventData = (AtkEventData*) eventData.AtkEventDataPointer;
+        if (atkEventData->MouseData.ButtonId == 1)
+            CSStatusManager.ExecuteStatusOff(node.StatusInfo.Id);
     }
     
     private void LayoutNodes()
@@ -101,16 +100,27 @@ public class AddonStatusTimers : NativeAddon {
     public class StatusTimerNode : ResNode {
         private readonly TextNode _statusName;
         private readonly TextNode _statusRemaining;
+        private readonly ProgressBarNode _progressNode;
         private readonly IconImageNode _iconNode;
+        private StatusInfo _statusInfo;
 
-        public StatusTimerNode() {
-            
+        public StatusTimerNode()
+        {
             _iconNode = new IconImageNode
             {
                 Size = new Vector2(48, 64),
                 IsVisible = true,
+                EnableEventFlags = true,
             };
             Services.NativeController.AttachNode(_iconNode, this); 
+            
+            _progressNode = new ProgressBarNode
+            {
+                Progress = 1f,
+                IsVisible = true,
+                Width = 200,
+            };
+            Services.NativeController.AttachNode(_progressNode, this);
             
             _statusName = new TextNode {
                 IsVisible = true,
@@ -133,28 +143,37 @@ public class AddonStatusTimers : NativeAddon {
             };
             Services.NativeController.AttachNode(_statusRemaining, this);
             
-            _iconNode.AddEvent(AddonEventType.MouseClick, () => StatusNodeClick(this));
+            _iconNode.AddEvent(AddonEventType.MouseClick, (e) => StatusNodeClick(this, e));
             
             Height = 50;
             Width = 300;
         }
 
-        public string Name {
-            get => _statusName.Text.ToString();
-            set => _statusName.Text = value;
-        }
-
-        public uint StatusId { get; set; }
-
-        public uint StatusIconId
+        public StatusInfo StatusInfo
         {
-            get => _iconNode.IconId;
-            set => _iconNode.IconId = value;
+            get => _statusInfo;
+            set
+            {
+                _statusInfo = value;
+                UpdateValues();
+            }
         }
-        
-        public float TimeRemaining { 
-            get => float.Parse(_statusRemaining.Text.ToString());
-            set => _statusRemaining.Text = $"{value:0.0}s"; 
+
+        public void UpdateValues()
+        {
+            _progressNode.IsVisible = !_statusInfo.IsPermanent;
+            
+            // Set max to 1f because we sometimes get insane values just as the buff is added
+            // Clamp/Lerp the rest because after 0.06f the bar is already visually empty
+            float max = Math.Max(_statusInfo.MaxSeconds, 1f);
+            float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
+            float ratio = remaining / max;
+            
+            _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
+            _statusName.Text = _statusInfo.Name;
+            _statusRemaining.IsVisible = !_statusInfo.IsPermanent;
+            _statusRemaining.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
+            _iconNode.IconId = _statusInfo.IconId;
         }
 
         // Override Width property to have it set the width of our individual parts
@@ -165,6 +184,7 @@ public class AddonStatusTimers : NativeAddon {
                 
                 _statusName.Width = value - _iconNode.Width - _statusRemaining.Width - 10;
                 _statusName.X = _iconNode.Width + 5;
+                _progressNode.X = _iconNode.Width + 2;
                 _statusRemaining.X = value - _statusRemaining.Width - 5;
             }
         }
@@ -176,8 +196,9 @@ public class AddonStatusTimers : NativeAddon {
                 base.Height = value;
                 
                 _iconNode.Y = (value - _iconNode.Height) / 2;
-                _statusName.Y = (value - _statusName.Height) / 2;
-                _statusRemaining.Y = (value - _statusRemaining.Height) / 2;
+                _progressNode.Y = value -  _progressNode.Height;
+                _statusName.Y = _statusName.Height / 2;
+                _statusRemaining.Y = _statusRemaining.Height / 2;
             }
         }
 
