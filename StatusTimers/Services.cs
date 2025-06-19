@@ -14,9 +14,9 @@ public class Services
     [PluginService] public static IDataManager DataManager { get; private set; } = null!;
     [PluginService] public static IFramework Framework { get; private set; } = null!;
     [PluginService] public static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
+    [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] public static IPluginLog Logger { get; private set; } = null!;
     [PluginService] public static ITextureProvider TextureProvider { get; private set; } = null!;
     
     public static NativeController NativeController { get; set; } = null!;
-    public static AddonStatusTimers AddonStatusTimers { get; set; } = null!; 
 }

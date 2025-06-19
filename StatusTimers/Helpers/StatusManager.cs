@@ -2,10 +2,13 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using StatusTimers.Extensions;
 using Status = Dalamud.Game.ClientState.Statuses.Status;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 using CSStatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager; 
@@ -17,6 +20,12 @@ public static unsafe class StatusManager
     private static ExcelSheet<Item> _itemSheet = Services.DataManager.GetExcelSheet<Item>();
     private static FrozenDictionary<uint, uint> _itemFoodToItemLut;
     private static readonly Dictionary<uint, float> StatusDurations = new();
+    private static readonly FrozenSet<uint> HarmfulStatusIds = Services.DataManager
+        .GetExcelSheet<LuminaStatus>()!
+        .Where(s => s is { IsPermanent: false })
+        .Select(s => s.RowId)
+        .ToFrozenSet();
+    private static readonly List<StatusInfo> _hostileStatusBuffer = new(64);
 
     static StatusManager()
     {
@@ -31,10 +40,44 @@ public static unsafe class StatusManager
 
         return player.StatusList
             .Where(status => status.StatusId != 0)
-            .Select(TransformStatus)
+            .Select(status => TransformStatus(status, player.GameObjectId))
             .ToList();
     }
-    private static StatusInfo TransformStatus(Status status)
+    
+    public static IReadOnlyList<StatusInfo> GetHostileStatuses()
+    {
+        _hostileStatusBuffer.Clear();
+        
+        var player = Services.ClientState.LocalPlayer;
+        if (player == null)
+            return _hostileStatusBuffer;
+        
+        foreach (var obj in Services.ObjectTable)
+        {
+            if (obj is not IBattleChara target ||
+                target.ObjectIndex == player.GameObjectId ||
+                !target.IsTargetable ||
+                !target.IsHostile())
+                continue;
+
+            var statusList = target.StatusList;
+            for (int i = 0; i < statusList.Length; i++)
+            {
+                var status = statusList[i];
+                if (status.StatusId == 0 || status.SourceId != player.GameObjectId)
+                    continue;
+
+                if (!HarmfulStatusIds.Contains(status.StatusId))
+                    continue;
+
+                _hostileStatusBuffer.Add(TransformStatus(status, target.GameObjectId));
+            }
+        }
+
+        return _hostileStatusBuffer;
+    }
+    
+    private static StatusInfo TransformStatus(Status status, ulong objectIndex)
     {
         LuminaStatus gameData = status.GameData.Value;
         
@@ -42,7 +85,7 @@ public static unsafe class StatusManager
         uint iconId = gameData.Icon;
         string name = gameData.Name.ExtractText();
         float remainingSeconds = status.RemainingTime;
-        uint sourceObjectId = status.SourceId;
+        ulong sourceObjectId = objectIndex;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
         
@@ -101,9 +144,11 @@ public static unsafe class StatusManager
 
         return (item.Name.ExtractText(), item.Icon);
     }
+    
+    
 }
 
-public readonly struct StatusInfo(uint id, uint iconId, string name, float remainingSeconds, float maxSeconds, uint sourceObjectId, uint stacks, bool isPermanent = false)
+public readonly struct StatusInfo(uint id, uint iconId, string name, float remainingSeconds, float maxSeconds, ulong gameObjectId, uint stacks, bool isPermanent = false)
 {
     public uint Id { get; } = id;
     public uint IconId { get; } = iconId;
@@ -111,6 +156,10 @@ public readonly struct StatusInfo(uint id, uint iconId, string name, float remai
     public float RemainingSeconds { get; } = remainingSeconds;
     public float MaxSeconds { get; } = maxSeconds;
     public bool IsPermanent { get; } = isPermanent;
-    public uint SourceObjectId { get; } = sourceObjectId;
+    public ulong GameObjectId { get; } = gameObjectId;
     public uint Stacks { get; } = stacks;
+    
+    public StatusKey Key => new(GameObjectId, Id);
 }
+
+public readonly record struct StatusKey(ulong GameObjectId, uint StatusId);
