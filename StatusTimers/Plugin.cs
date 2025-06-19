@@ -64,6 +64,7 @@ public class Plugin : IDalamudPlugin
         Services.PluginInterface.UiBuilder.OpenConfigUi -= this.ToggleConfigUi;
         */
         
+        WindowManager.Dispose();
         Services.NativeController.Dispose();
     }
 /*
