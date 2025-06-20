@@ -1,6 +1,5 @@
-using System.Numerics;
-using StatusTimers.StatusSources;
 using StatusTimers.Helpers;
+using StatusTimers.StatusSources;
 
 namespace StatusTimers.Windows;
 

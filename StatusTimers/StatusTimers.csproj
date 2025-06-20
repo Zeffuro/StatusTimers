@@ -5,10 +5,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\KamiToolKit\KamiToolKit.csproj" />
+        <ProjectReference Include="..\KamiToolKit\KamiToolKit.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="SUGGESTIONS" />
+        <Content Include="SUGGESTIONS"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <EditorConfigFiles Remove="..\.editorconfig"/>
     </ItemGroup>
 </Project>

@@ -1,18 +1,15 @@
 using Dalamud.Configuration;
-using System;
 using Newtonsoft.Json;
+using System;
 
 namespace StatusTimers;
 
 [Serializable]
-public class Configuration : IPluginConfiguration
-{
+public class Configuration : IPluginConfiguration {
+    [JsonProperty] public bool ConfigOption = true;
     public int Version { get; set; } = 0;
 
-    [JsonProperty] public bool ConfigOption = true;
-
-    public void Save()
-    {
+    public void Save() {
         Services.PluginInterface.SavePluginConfig(this);
     }
 }

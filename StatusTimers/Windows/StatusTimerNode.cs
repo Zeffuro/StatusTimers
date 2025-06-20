@@ -1,41 +1,38 @@
-using System;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Game.Addon.Events;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
+using System;
+using System.Linq;
+using System.Numerics;
 using StatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
 
 namespace StatusTimers.Windows;
 
 public sealed class StatusTimerNode : ResNode {
     private readonly TextNode _actorName;
+    private readonly IconImageNode _iconNode;
+    private readonly ProgressBarNode _progressNode;
     private readonly TextNode _statusName;
     private readonly TextNode _statusRemaining;
-    private readonly ProgressBarNode _progressNode;
-    private readonly IconImageNode _iconNode;
     private StatusInfo _statusInfo;
 
-    public StatusTimerNode()
-    {
-        _iconNode = new IconImageNode
-        {
+    public StatusTimerNode() {
+        _iconNode = new IconImageNode {
             Size = new Vector2(48, 64),
             IsVisible = true,
-            EnableEventFlags = true,
+            EnableEventFlags = true
         };
-        Services.NativeController.AttachNode(_iconNode, this); 
-        
-        _progressNode = new ProgressBarNode
-        {
+        Services.NativeController.AttachNode(_iconNode, this);
+
+        _progressNode = new ProgressBarNode {
             Progress = 1f,
             IsVisible = true,
-            Width = 200,
+            Width = 200
         };
         Services.NativeController.AttachNode(_progressNode, this);
-        
+
         _actorName = new TextNode {
             IsVisible = _statusInfo.ActorName != null,
             Width = 180,
@@ -43,11 +40,11 @@ public sealed class StatusTimerNode : ResNode {
             FontSize = 12,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(54),
-            TextFlags = TextFlags.Edge,
+            TextFlags = TextFlags.Edge
         };
-        
+
         Services.NativeController.AttachNode(_actorName, this);
-        
+
         _statusName = new TextNode {
             IsVisible = true,
             Width = 180,
@@ -58,9 +55,9 @@ public sealed class StatusTimerNode : ResNode {
             TextFlags = TextFlags.Edge,
             NodeFlags = NodeFlags.Clip
         };
-        
+
         Services.NativeController.AttachNode(_statusName, this);
-        
+
         _statusRemaining = new TextNode {
             IsVisible = true,
             Width = 120,
@@ -68,41 +65,36 @@ public sealed class StatusTimerNode : ResNode {
             FontSize = 20,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
-            TextFlags = TextFlags.Edge,
+            TextFlags = TextFlags.Edge
         };
         Services.NativeController.AttachNode(_statusRemaining, this);
-        
-        _iconNode.AddEvent(AddonEventType.MouseClick, (e) => StatusNodeClick(this, e));
-        
+
+        _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
+
         Height = 60;
         Width = 300;
     }
-    
+
     public NodeKind Kind { get; set; }
 
-    public StatusInfo StatusInfo
-    {
+    public StatusInfo StatusInfo {
         get => _statusInfo;
-        set
-        {
+        set {
             _statusInfo = value;
-            _actorName.IsVisible = _statusInfo.ActorName != null; 
+            _actorName.IsVisible = _statusInfo.ActorName != null;
             UpdateValues();
         }
     }
 
-    public void UpdateValues()
-    {
+    public void UpdateValues() {
         _statusName.Text = _statusInfo.Name;
         _iconNode.IconId = _statusInfo.IconId;
-    
-        if (_statusInfo.IsPermanent)
-        {
+
+        if (_statusInfo.IsPermanent) {
             _progressNode.IsVisible = false;
             _statusRemaining.IsVisible = false;
         }
-        else
-        {
+        else {
             _progressNode.IsVisible = true;
             _statusRemaining.IsVisible = true;
 
@@ -122,10 +114,9 @@ public sealed class StatusTimerNode : ResNode {
         UpdatePositions();
     }
 
-    public void UpdatePositions()
-    {
+    public void UpdatePositions() {
         int padding = 5;
-        
+
         _statusName.X = _iconNode.Width + 5;
 
         _actorName.X = _iconNode.Width + 7;
@@ -141,15 +132,15 @@ public sealed class StatusTimerNode : ResNode {
         _statusRemaining.Y = _statusRemaining.Height / 2;
     }
 
-    private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData)
-    {
-        var atkEventData = (AtkEventData*) eventData.AtkEventDataPointer;
+    private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData) {
+        AtkEventData* atkEventData = (AtkEventData*)eventData.AtkEventDataPointer;
         if (atkEventData->MouseData.ButtonId == 1 && node.Kind == NodeKind.Combined)
             StatusManager.ExecuteStatusOff(node.StatusInfo.Id);
-        
+
         if (atkEventData->MouseData.ButtonId == 0 && node.Kind == NodeKind.MultiDoT)
-            Services.TargetManager.Target = Services.ObjectTable.FirstOrDefault(o => o is { } && o.GameObjectId == node.StatusInfo.GameObjectId);
-        
+            Services.TargetManager.Target =
+                Services.ObjectTable.FirstOrDefault(o =>
+                    o is not null && o.GameObjectId == node.StatusInfo.GameObjectId);
     }
 
     // Whenever we inherit a node and add additional nodes,
@@ -159,14 +150,13 @@ public sealed class StatusTimerNode : ResNode {
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();
-        
+
             base.Dispose(disposing);
         }
     }
 }
 
-public enum NodeKind
-{
+public enum NodeKind {
     Combined,
-    MultiDoT,
+    MultiDoT
 }

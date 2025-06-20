@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using StatusTimers.Helpers;
+using System.Collections.Generic;
 
 namespace StatusTimers.StatusSources;
 
-public interface IStatusSource<TKey>
-{
+public interface IStatusSource<TKey> {
     /// Returns the *current* statuses for this window.
     IReadOnlyList<StatusInfo> Fetch();
 

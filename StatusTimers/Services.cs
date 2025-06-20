@@ -3,12 +3,10 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using KamiToolKit;
-using StatusTimers.Windows;
 
 namespace StatusTimers;
 
-public class Services
-{
+public class Services {
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
     [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
     [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
@@ -20,6 +18,6 @@ public class Services
     [PluginService] public static IPluginLog Logger { get; private set; } = null!;
     [PluginService] public static ITargetManager TargetManager { get; private set; } = null!;
     [PluginService] public static ITextureProvider TextureProvider { get; private set; } = null!;
-    
+
     public static NativeController NativeController { get; set; } = null!;
 }

@@ -1,33 +1,31 @@
+using Dalamud.Memory;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
-using Dalamud.Memory;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace StatusTimers.Helpers;
 
-public static unsafe class EnemyListHelper
-{
+public static unsafe class EnemyListHelper {
     private static readonly Dictionary<uint, int> ObjectIdToLocalIndex = new();
 
     // Call this once per frame or on enemy list change
-    public static void UpdateEnemyListMapping()
-    {
-        var ui = Framework.Instance()->GetUIModule();
+    public static void UpdateEnemyListMapping() {
+        UIModule* ui = Framework.Instance()->GetUIModule();
         if (ui == null) return;
 
-        var rapture = ui->GetRaptureAtkModule();
+        RaptureAtkModule* rapture = ui->GetRaptureAtkModule();
         if (rapture == null) return;
 
         // Enemy info is at NumberArray index 21 (not 19)
-        var numberArray = rapture->AtkModule.GetNumberArrayData(21);
+        NumberArrayData* numberArray = rapture->AtkModule.GetNumberArrayData(21);
         if (numberArray == null) return;
 
         int enemyCount = numberArray->AtkArrayData.Size < 2 ? 0 : numberArray->IntArray[1];
         ObjectIdToLocalIndex.Clear();
 
-        for (int i = 0; i < enemyCount; i++)
-        {
+        for (int i = 0; i < enemyCount; i++) {
             int objectIdIndex = 8 + i * 6;
             if (numberArray->AtkArrayData.Size <= objectIdIndex)
                 break;
@@ -37,26 +35,26 @@ public static unsafe class EnemyListHelper
         }
     }
 
-    public static char? GetEnemyLetter(uint objectId)
-    {
+    public static char? GetEnemyLetter(uint objectId) {
         if (!ObjectIdToLocalIndex.TryGetValue(objectId, out int localIndex))
             return null;
 
-        var ui = Framework.Instance()->GetUIModule();
+        UIModule* ui = Framework.Instance()->GetUIModule();
         if (ui == null) return null;
 
-        var rapture = ui->GetRaptureAtkModule();
+        RaptureAtkModule* rapture = ui->GetRaptureAtkModule();
         if (rapture == null) return null;
 
         // Use StringArray index 19 for names
-        var stringArrayData = rapture->AtkModule.GetStringArrayData(19);
+        StringArrayData* stringArrayData = rapture->AtkModule.GetStringArrayData(19);
         if (stringArrayData == null) return null;
 
         int stringIndex = localIndex * 2;
         if (stringArrayData->AtkArrayData.Size <= stringIndex)
             return null;
 
-        string name = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(stringArrayData->StringArray[stringIndex])).ToString();
+        string name = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(stringArrayData->StringArray[stringIndex]))
+            .ToString();
         if (string.IsNullOrEmpty(name))
             return null;
 

@@ -1,10 +1,14 @@
-using System.Collections.Generic;
 using StatusTimers.Helpers;
+using System.Collections.Generic;
 
 namespace StatusTimers.StatusSources;
 
-public class PlayerCombinedStatusesSource : IStatusSource<StatusKey>
-{
-    public IReadOnlyList<StatusInfo> Fetch() => StatusManager.GetPlayerStatuses();
-    public StatusKey KeyOf(StatusInfo info) => info.Key;
+public class PlayerCombinedStatusesSource : IStatusSource<StatusKey> {
+    public IReadOnlyList<StatusInfo> Fetch() {
+        return StatusManager.GetPlayerStatuses();
+    }
+
+    public StatusKey KeyOf(StatusInfo info) {
+        return info.Key;
+    }
 }
