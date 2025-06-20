@@ -50,6 +50,7 @@ public class Plugin : IDalamudPlugin
         });
         
         WindowManager.OpenAll();
+        WindowManager.ToggleConfig();
     }
     
     private void OnFrameworkUpdate(IFramework framework)
@@ -88,6 +89,7 @@ public class Plugin : IDalamudPlugin
         if (args is "settings" or "config")
         {
             //this.ToggleConfigUi();
+            WindowManager.ToggleConfig();
         }
         else
         {

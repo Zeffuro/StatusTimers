@@ -20,11 +20,30 @@ public class WindowManager : IDisposable
         Size = new Vector2(400, 400),
         NativeController = Services.NativeController,
     };
+    
+    private ConfigurationWindow ConfigurationWindow { get; } = new()
+    {
+        InternalName = "StatusTimersConfiguration",
+        Title = "StatusTimers Configuration",
+        Size = new Vector2(640, 512),
+        NativeController = Services.NativeController,
+    };
 
     public void OpenAll()
     {
         EnemyMultiDoTWindow.Open();
         PlayerCombinedWindow.Open();
+    }
+    
+    public void CloseAll()
+    {
+        EnemyMultiDoTWindow.Close();
+        PlayerCombinedWindow.Close();
+    }
+
+    public void ToggleConfig()
+    {
+        ConfigurationWindow.Toggle();
     }
 
     public void Dispose()
