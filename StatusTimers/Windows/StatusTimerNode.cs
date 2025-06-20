@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Game.Addon.Events;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -37,6 +38,8 @@ public sealed class StatusTimerNode : ResNode {
         
         _actorName = new TextNode {
             IsVisible = _statusInfo.ActorName != null,
+            Width = 180,
+            Height = 14,
             FontSize = 12,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(54),
@@ -47,22 +50,25 @@ public sealed class StatusTimerNode : ResNode {
         
         _statusName = new TextNode {
             IsVisible = true,
+            Width = 180,
+            Height = 22,
             FontSize = 20,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge,
+            NodeFlags = NodeFlags.Clip
         };
         
         Services.NativeController.AttachNode(_statusName, this);
         
         _statusRemaining = new TextNode {
             IsVisible = true,
+            Width = 120,
+            Height = 22,
             FontSize = 20,
-            Width = 60,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge,
-            AlignmentType = AlignmentType.TopRight,
         };
         Services.NativeController.AttachNode(_statusRemaining, this);
         
@@ -71,6 +77,8 @@ public sealed class StatusTimerNode : ResNode {
         Height = 60;
         Width = 300;
     }
+    
+    public NodeKind Kind { get; set; }
 
     public StatusInfo StatusInfo
     {
@@ -117,12 +125,8 @@ public sealed class StatusTimerNode : ResNode {
     public void UpdatePositions()
     {
         int padding = 5;
-    
-        float remainingWidth = _statusRemaining.IsVisible ? _statusRemaining.Width : 0;
-        float progressWidth = _progressNode.IsVisible ? _progressNode.Width : 0;
-
+        
         _statusName.X = _iconNode.Width + 5;
-        _statusName.Width = Width - _iconNode.Width - remainingWidth - progressWidth - 15;  // 15 for padding
 
         _actorName.X = _iconNode.Width + 7;
         _progressNode.X = _iconNode.Width + 2;
@@ -140,8 +144,12 @@ public sealed class StatusTimerNode : ResNode {
     private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData)
     {
         var atkEventData = (AtkEventData*) eventData.AtkEventDataPointer;
-        if (atkEventData->MouseData.ButtonId == 1)
+        if (atkEventData->MouseData.ButtonId == 1 && node.Kind == NodeKind.Combined)
             StatusManager.ExecuteStatusOff(node.StatusInfo.Id);
+        
+        if (atkEventData->MouseData.ButtonId == 0 && node.Kind == NodeKind.MultiDoT)
+            Services.TargetManager.Target = Services.ObjectTable.FirstOrDefault(o => o is { } && o.GameObjectId == node.StatusInfo.GameObjectId);
+        
     }
 
     // Whenever we inherit a node and add additional nodes,
@@ -155,4 +163,10 @@ public sealed class StatusTimerNode : ResNode {
             base.Dispose(disposing);
         }
     }
+}
+
+public enum NodeKind
+{
+    Combined,
+    MultiDoT,
 }

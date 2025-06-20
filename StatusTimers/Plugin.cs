@@ -91,6 +91,7 @@ public class Plugin : IDalamudPlugin
         }
         else
         {
+            WindowManager.OpenAll();
             //this.ToggleMainUi();
         }
     }

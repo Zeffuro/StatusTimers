@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.Interop;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -24,19 +25,26 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
     protected readonly Stack<StatusTimerNode> Pool = new();
 
     private TextNode _headerNode;
+    private NodeKind _nodeKind;
 
     private readonly IStatusSource<TKey> _source;
 
-    protected StatusTimerWindow(IStatusSource<TKey> source) => _source = source;
+    protected StatusTimerWindow(IStatusSource<TKey> source, NodeKind nodeKind)
+    {
+        _source = source;
+        _nodeKind = nodeKind;
+    }
 
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
         WindowNode.IsVisible = false;
-
+        
         _headerNode = new TextNode
         {
             IsVisible = true,
             X = FramePadding * 2 + 44,
+            Width = 300,
+            Height = 26,
             FontSize = 24,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(54),
@@ -77,6 +85,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
             }
             else if (Pool.TryPop(out node))
             {
+                node.Kind = _nodeKind;
                 node.StatusInfo = kv.Value;
                 node.IsVisible = true;
                 Active[kv.Key] = node;
@@ -94,7 +103,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon
     private void LayoutNodes()
     {
         float x = FramePadding;
-        float y = (_headerNode.FontSize * 1.5f) + FramePadding;
+        float y = _headerNode.Height + FramePadding;
         
         var sortedNodes = Active.Values
             .OrderByDescending(node => node.StatusInfo.IsPermanent)
