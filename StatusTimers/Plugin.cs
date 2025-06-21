@@ -72,7 +72,6 @@ public class Plugin : IDalamudPlugin {
     }
 
     private static void OnLogin() {
-        Services.Logger.Info("Logged ind");
         Services.NameplateAddonController.Enable();
     }
 

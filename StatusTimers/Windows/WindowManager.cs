@@ -40,8 +40,6 @@ public unsafe class WindowManager : IDisposable {
     }
 
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
-        Services.Logger.Info("Test");
-        Services.Logger.Info("Attaching Nodes");
         Services.NativeController.AttachNode(PlayerCombinedWindow, addonNamePlate->RootNode, NodePosition.AsFirstChild);
         Services.NativeController.AttachNode(EnemyMultiDoTWindow, addonNamePlate->RootNode, NodePosition.AsFirstChild);
     }

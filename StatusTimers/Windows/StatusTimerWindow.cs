@@ -83,7 +83,6 @@ public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
 
     protected void OnAttach() {
         this.IsVisible = true;
-        Services.Logger.Info($"{Title} {NodeId}");
 
         _headerNode = new TextNode {
             IsVisible = true,
@@ -174,8 +173,6 @@ public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
             .OrderByDescending(s => s.IsPermanent)
             .ThenByDescending(s => s.RemainingSeconds)
             .ToList();
-
-        //Services.Logger.Info(string.Join(",", sortedStatuses.Select(s => $"{s.Id}:{s.RemainingSeconds}")));
 
         int i = 0;
         var newActive = new Dictionary<TKey, StatusTimerNode>();
