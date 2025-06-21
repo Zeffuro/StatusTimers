@@ -5,6 +5,7 @@ using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Slider;
 using KamiToolKit.System;
 using Lumina.Excel.Sheets;
+using StatusTimers.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +19,19 @@ public class ConfigurationWindow : NativeAddon {
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
     private readonly Dictionary<NodeKind, TextButtonNode> _configTabButtons = new();
-    private string _currentFilterInput = "10";
 
     private readonly OverlayManager _overlayManager;
-    private PlayerCombinedStatusesOverlay _playerCombinedStatusesOverlay;
-    private EnemyMultiDoTOverlay _enemyMultiDoTOverlay;
+    private string _currentFilterInput = "10";
+    private readonly EnemyMultiDoTOverlay _enemyMultiDoTOverlay;
+    private readonly PlayerCombinedStatusesOverlay _playerCombinedStatusesOverlay;
+
+    private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new()
+    {
+        { GrowDirection.DownRight, "Grow Down and Right" },
+        { GrowDirection.DownLeft, "Grow Down and Left" },
+        { GrowDirection.UpRight, "Grow Up and Right" },
+        { GrowDirection.UpLeft, "Grow Up and Left" }
+    };
 
     public ConfigurationWindow(OverlayManager overlayManager) {
         _overlayManager = overlayManager;
@@ -56,6 +65,7 @@ public class ConfigurationWindow : NativeAddon {
             };
             NativeController.AttachNode(_configTabButtons[kind], tabBar);
 
+
             _configScrollingAreas[kind] = new ScrollingAreaNode {
                 X = ContentStartPosition.X,
                 Y = ContentStartPosition.Y + tabBar.Height,
@@ -74,17 +84,8 @@ public class ConfigurationWindow : NativeAddon {
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
-            _configLists[kind].Add(new ResNode
-            {
-                Height = CheckBoxHeight,
-            });
-
-            _configLists[kind].Add(new TextButtonNode() {
-                IsVisible = true,
-                Width = 120,
-                Height = 16,
-                Label = "Test",
-                OnClick = () => Services.Logger.Info("Button clicked")
+            _configLists[kind].Add(new ResNode {
+                Height = CheckBoxHeight
             });
 
             _configLists[kind].Add(new TextNode {
@@ -103,9 +104,8 @@ public class ConfigurationWindow : NativeAddon {
                 Height = CheckBoxHeight,
                 IsVisible = true,
                 LabelText = "Enabled",
-                OnClick = (isChecked) => {
+                OnClick = isChecked => {
                     //_playerCombinedStatusesOverlay.IsVisible = isChecked;
-                    Services.Logger.Info("dsdssds");
                 }
             });
 
@@ -113,12 +113,34 @@ public class ConfigurationWindow : NativeAddon {
                 X = OptionOffset,
                 Height = CheckBoxHeight,
                 IsVisible = true,
-                LabelText = "Locked"
+                LabelText = "Locked",
+                IsChecked = GetOverlayByKind(kind).IsLocked,
+                OnClick = isChecked => {
+                    GetOverlayByKind(kind).IsLocked = isChecked;
+                },
             });
 
-            _configLists[kind].Add(new ResNode
-            {
-                Height = CheckBoxHeight,
+            _configLists[kind].Add(new ResNode {
+                Height = CheckBoxHeight
+            });
+
+            _configLists[kind].Add(new TextDropDownNode {
+                X = OptionOffset,
+                IsVisible = true,
+                Width = 300,
+                Height = 28,
+                OptionListHeight = 120,
+                Options = GrowDirectionMap.Values.ToList(),
+
+                OnOptionSelected = selectedDisplayName => {
+                    GrowDirection selectedGrowDirection = GrowDirectionMap.FirstOrDefault(
+                        pair => pair.Value == selectedDisplayName).Key;
+
+                    if (selectedGrowDirection != default || selectedDisplayName == GrowDirectionMap[default])
+                    {
+                        GetOverlayByKind(kind).GrowDirection = selectedGrowDirection;
+                    }
+                },
             });
 
             _configLists[kind].Add(new SliderNode {
@@ -129,7 +151,7 @@ public class ConfigurationWindow : NativeAddon {
                 Min = 0,
                 Max = 4,
                 Value = 1,
-                Step = 1,
+                Step = 1
             });
             _configLists[kind].Add(new CheckboxNode {
                 X = OptionOffset,
@@ -162,9 +184,8 @@ public class ConfigurationWindow : NativeAddon {
                 });
             }
 
-            _configLists[kind].Add(new ResNode
-            {
-                Height = CheckBoxHeight,
+            _configLists[kind].Add(new ResNode {
+                Height = CheckBoxHeight
             });
 
             _configLists[kind].Add(new TextNode {
@@ -208,6 +229,7 @@ public class ConfigurationWindow : NativeAddon {
             };
             _configLists[kind].Add(filterListInput);
 
+
             LuminaDropDownNode<Status> filterDropdown = new() {
                 X = OptionOffset,
                 Height = buttonHeight,
@@ -215,12 +237,13 @@ public class ConfigurationWindow : NativeAddon {
                 IsVisible = true,
                 OptionListHeight = 125.0f,
 
-                /*FilterFunction = status => status.Icon != 0 && !status.Name.ExtractText().IsNullOrEmpty() &&
-                                           (status.Name.ContainsText(Encoding.UTF8.GetBytes(_currentFilterInput)) || status.RowId.ToString().Contains(_currentFilterInput)),*/
+                //FilterFunction = status => status.Icon != 0 && !status.Name.ExtractText().IsNullOrEmpty() &&
+                //                           (status.Name.ContainsText(Encoding.UTF8.GetBytes(_currentFilterInput)) || status.RowId.ToString().Contains(_currentFilterInput)),
                 FilterFunction = status => status.RowId.ToString().Contains(_currentFilterInput),
                 LabelFunction = status => $"{status.RowId} {status.Name.ExtractText()}"
             };
-            _configLists[kind].Add(filterDropdown);
+            //_configLists[kind].Add(filterDropdown);
+
             //NativeController.AttachNode(filterDropdown, _configLists[kind]);
 
             x += buttonWidth + buttonSpacing;
@@ -236,6 +259,18 @@ public class ConfigurationWindow : NativeAddon {
 
         foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
             node.IsVisible = k == kind;
+        }
+    }
+
+    private StatusTimerOverlay<StatusKey> GetOverlayByKind(NodeKind kind) {
+        switch (kind) {
+            case NodeKind.Combined:
+                return _playerCombinedStatusesOverlay;
+            case NodeKind.MultiDoT:
+                return _enemyMultiDoTOverlay;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(kind), kind,
+                    "The provided NodeKind is not supported by GetOverlayByKind.");
         }
     }
 

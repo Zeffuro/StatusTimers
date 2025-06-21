@@ -24,13 +24,11 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     private EnemyMultiDoTOverlay EnemyMultiDoTOverlay { get; } = new() {
-        Position = new Vector2(200, 400),
         Title = "Enemy DoTs",
         Size = new Vector2(400, 400),
     };
 
     private PlayerCombinedStatusesOverlay PlayerCombinedOverlay { get; } = new() {
-        Position = new Vector2(200, 800),
         Title = "Player Statuses",
         Size = new Vector2(400, 400),
     };

@@ -2,6 +2,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
+using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using Newtonsoft.Json;
@@ -34,8 +35,20 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     private List<HorizontalListNode<StatusTimerNode>> _rows = new();
     private List<VerticalListNode<StatusTimerNode>> _columns = new();
 
+    private NineGridNode _backgroundNode;
+
     [JsonProperty]
-    private GrowDirection _growDirection;
+    public GrowDirection GrowDirection;
+
+    [JsonProperty]
+    public bool IsLocked {
+        get;
+        set {
+            field = value;
+            ToggleDrag(field);
+            SaveConfig();
+        }
+    }
 
     private TextNode _headerNode;
 
@@ -89,20 +102,42 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     public void Setup() {
         if (_isSetupCompleted) {
-            return; // Already set up
+            return;
         }
         _isSetupCompleted = true;
+        OnAttach();
 
-        // Call your node tree building method (which you've called OnAttach()) here.
-        // This ensures the internal nodes are built after config is loaded and once.
-        OnAttach(); // This will build the internal UI nodes (from your existing OnAttach method)
-
-        // Enable click and drag functionality
-        //EnableClickDrag(true); // Assuming SimpleComponentNode provides this
-        //OnClickDragComplete = SaveConfig; // Assuming SimpleComponentNode provides this delegate (from previous version)
+        if(!IsLocked) {
+            ToggleDrag(IsLocked);
+        }
+        OnClickDragComplete = SaveConfig; // Assuming SimpleComponentNode provides this delegate (from previous version)
     }
 
     protected void OnAttach() {
+        _backgroundNode = new NineGridNode() {
+            Size = this.Size,
+            BottomOffset = 8,
+            TopOffset = 21,
+            LeftOffset = 21,
+            RightOffset = 21,
+        };
+        _backgroundNode.AddPart(new Part {
+            TexturePath = "ui/uld/HUDLayout.tex",
+            Size = new Vector2(44, 32),
+            TextureCoordinates = new Vector2(0, 0),
+        });
+        _backgroundNode.AddPart(new Part {
+            TexturePath = "ui/uld/HUDLayout.tex",
+            Size = new Vector2(88, 16),
+            TextureCoordinates = new Vector2(0, 16),
+        });
+        _backgroundNode.AddPart(new Part {
+            TexturePath = "ui/uld/HUDLayout.tex",
+            Size = new Vector2(156, 80),
+            TextureCoordinates = new Vector2(0, 24),
+        });
+        Services.NativeController.AttachNode(_backgroundNode, this);
+
         this.IsVisible = true;
         /*
         _headerNode = new TextNode {
@@ -214,7 +249,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             _allNodes[i].IsVisible = false;
         }
 
-        bool alignRight = _growDirection == GrowDirection.DownLeft || _growDirection == GrowDirection.UpLeft;
+        bool alignRight = GrowDirection == GrowDirection.DownLeft || GrowDirection == GrowDirection.UpLeft;
 
         foreach (var node in _allNodes) {
             if (!node.IsVisible) {
@@ -231,7 +266,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     private void ApplyGrowDirection() {
-        switch (_growDirection) {
+        switch (GrowDirection) {
             case GrowDirection.DownRight:
             case GrowDirection.DownLeft:
                 SetVerticalAlignment(VerticalListAnchor.Top);
@@ -254,6 +289,21 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         }
     }
 
+    private void ToggleDrag(bool isLocked) {
+        if (!isLocked) {
+            EnableClickDrag(true);
+            if(_backgroundNode != null) {
+                _backgroundNode.IsVisible = true;
+            }
+        }
+        else {
+            DisableClickDrag(true);
+            if(_backgroundNode != null) {
+                _backgroundNode.IsVisible = false;
+            }
+        }
+    }
+
     public void LoadConfig() {
         var configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(), $"{_nodeKind.ToString()}.json");
         Load(configPath);
@@ -265,11 +315,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         Save(configPath);
         Services.Logger.Info($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
     }
+}
 
-    public enum GrowDirection {
-        DownRight,
-        DownLeft,
-        UpRight,
-        UpLeft
-    }
+public enum GrowDirection {
+    DownRight,
+    DownLeft,
+    UpRight,
+    UpLeft
 }
