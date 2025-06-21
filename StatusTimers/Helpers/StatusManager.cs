@@ -31,8 +31,9 @@ public static class StatusManager {
 
     public static IReadOnlyList<StatusInfo> GetPlayerStatuses() {
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
-        if (player?.StatusList == null)
+        if (player?.StatusList == null) {
             return [];
+        }
 
         return player.StatusList
             .Where(status => status.StatusId != 0)
@@ -44,24 +45,28 @@ public static class StatusManager {
         _hostileStatusBuffer.Clear();
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
-        if (player == null)
+        if (player == null) {
             return _hostileStatusBuffer;
+        }
 
         foreach (IGameObject obj in Services.ObjectTable) {
             if (obj is not IBattleChara target ||
                 target.ObjectIndex == player.GameObjectId ||
                 !target.IsTargetable ||
-                !target.IsHostile())
+                !target.IsHostile()) {
                 continue;
+            }
 
             StatusList statusList = target.StatusList;
             for (int i = 0; i < statusList.Length; i++) {
                 Status? status = statusList[i];
-                if (status.StatusId == 0 || status.SourceId != player.GameObjectId)
+                if (status.StatusId == 0 || status.SourceId != player.GameObjectId) {
                     continue;
+                }
 
-                if (!HarmfulStatusIds.Contains(status.StatusId))
+                if (!HarmfulStatusIds.Contains(status.StatusId)) {
                     continue;
+                }
 
                 _hostileStatusBuffer.Add(TransformStatus(status, target.GameObjectId));
             }
@@ -104,7 +109,10 @@ public static class StatusManager {
             case 48: // Well Fed
             case 49: // Medicated
                 (string Name, uint IconId)? resolved = ResolveFoodParam(status.Param);
-                if (resolved is (string nameResolved, uint iconIdResolved)) name = nameResolved;
+                if (resolved is (string nameResolved, uint iconIdResolved)) {
+                    name = nameResolved;
+                }
+
                 //iconId = iconIdResolved;
                 break;
         }
@@ -121,14 +129,18 @@ public static class StatusManager {
                  let isMedicine = item.ItemUICategory.RowId == 44
                  where isFood || isMedicine
                  select item) {
-            if (item.ItemAction.ValueNullable is not { } itemAction)
+            if (item.ItemAction.ValueNullable is not { } itemAction) {
                 continue;
+            }
 
-            if (itemAction.Type is not (844 or 845 or 846))
+            if (itemAction.Type is not (844 or 845 or 846)) {
                 continue;
+            }
 
-            if (Services.DataManager.GetExcelSheet<ItemFood>().GetRowOrDefault(itemAction.Data[1]) is not { } itemFood)
+            if (Services.DataManager.GetExcelSheet<ItemFood>().GetRowOrDefault(itemAction.Data[1]) is not
+                { } itemFood) {
                 continue;
+            }
 
             lut.TryAdd(itemFood.RowId, item.RowId);
         }
@@ -137,11 +149,13 @@ public static class StatusManager {
     }
 
     private static (string Name, uint IconId)? ResolveFoodParam(ushort param) {
-        if (!_itemFoodToItemLut.TryGetValue((uint)(param - 10000), out uint itemId))
+        if (!_itemFoodToItemLut.TryGetValue((uint)(param - 10000), out uint itemId)) {
             return null;
+        }
 
-        if (!_itemSheet.TryGetRow(itemId, out Item item))
+        if (!_itemSheet.TryGetRow(itemId, out Item item)) {
             return null;
+        }
 
         return (item.Name.ExtractText(), item.Icon);
     }

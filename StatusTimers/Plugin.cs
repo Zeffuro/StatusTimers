@@ -79,9 +79,12 @@ public class Plugin : IDalamudPlugin {
     private void OnCommand(string command, string args) {
         if (args is "settings" or "config")
             //this.ToggleConfigUi();
+        {
             WindowManager.ToggleConfig();
-        else
+        }
+        else {
             WindowManager.OpenAll();
+        }
         //this.ToggleMainUi();
     }
 }

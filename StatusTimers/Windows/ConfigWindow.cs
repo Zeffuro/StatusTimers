@@ -9,6 +9,8 @@ public class ConfigWindow(Configuration config) : Window("StatusTimers Config"),
     }
 
     public override void Draw() {
-        if (ImGui.Checkbox("Config Option", ref config.ConfigOption)) config.Save();
+        if (ImGui.Checkbox("Config Option", ref config.ConfigOption)) {
+            config.Save();
+        }
     }
 }

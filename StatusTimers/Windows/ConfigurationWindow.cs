@@ -2,6 +2,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using KamiToolKit.Nodes.Slider;
 using KamiToolKit.System;
 using Lumina.Excel.Sheets;
 using System;
@@ -13,6 +14,7 @@ namespace StatusTimers.Windows;
 
 public class ConfigurationWindow : NativeAddon {
     private const float OptionOffset = 18;
+    private const float CheckBoxHeight = 16;
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
     private readonly Dictionary<NodeKind, TextButtonNode> _configTabButtons = new();
@@ -58,14 +60,19 @@ public class ConfigurationWindow : NativeAddon {
                 Height = 500,
                 Width = buttonWidth,
                 IsVisible = true,
-                ItemVerticalSpacing = 1
+                ItemVerticalSpacing = 3
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
-            _configLists[kind].AddNode(new TextNode {
+            _configLists[kind].Add(new ResNode
+            {
+                Height = CheckBoxHeight,
+            });
+
+            _configLists[kind].Add(new TextNode {
                 IsVisible = true,
                 Width = 120,
-                Height = 22,
+                Height = 16,
                 FontSize = 14,
                 TextColor = ColorHelper.GetColor(2),
                 TextOutlineColor = ColorHelper.GetColor(0),
@@ -73,25 +80,67 @@ public class ConfigurationWindow : NativeAddon {
                 Text = "Visual"
             });
 
-            _configLists[kind].AddNode(new CheckboxNode {
+            _configLists[kind].Add(new CheckboxNode {
                 X = OptionOffset,
-                Height = buttonHeight,
+                Height = CheckBoxHeight,
                 IsVisible = true,
                 LabelText = "Locked"
             });
 
-            if (kind == NodeKind.MultiDoT)
-                _configLists[kind].AddNode(new CheckboxNode {
-                    X = OptionOffset,
-                    Height = buttonHeight,
-                    IsVisible = true,
-                    LabelText = "Allow targeting the enemy by clicking the status icon."
-                });
+            _configLists[kind].Add(new ResNode
+            {
+                Height = CheckBoxHeight,
+            });
 
-            _configLists[kind].AddNode(new TextNode {
+            _configLists[kind].Add(new SliderNode {
+                X = OptionOffset,
+                Height = 30,
+                IsVisible = true,
+                Min = 0,
+                Max = 4,
+                Value = 1,
+                Step = 1,
+            });
+            _configLists[kind].Add(new CheckboxNode {
+                X = OptionOffset,
+                Height = CheckBoxHeight,
+                Width = 200,
+                IsVisible = true,
+                LabelText = "Show Progressbar"
+            });
+            if (kind == NodeKind.Combined) {
+                _configLists[kind].Add(new CheckboxNode {
+                    X = OptionOffset,
+                    Height = CheckBoxHeight,
+                    IsVisible = true,
+                    LabelText = "Hide permanent statuses"
+                });
+            }
+
+            if (kind == NodeKind.MultiDoT) {
+                _configLists[kind].Add(new CheckboxNode {
+                    X = OptionOffset,
+                    Height = CheckBoxHeight,
+                    IsVisible = true,
+                    LabelText = "Show Enemy Name"
+                });
+                _configLists[kind].Add(new CheckboxNode {
+                    X = OptionOffset,
+                    Height = CheckBoxHeight,
+                    IsVisible = true,
+                    LabelText = "Show Enemy Letter"
+                });
+            }
+
+            _configLists[kind].Add(new ResNode
+            {
+                Height = CheckBoxHeight,
+            });
+
+            _configLists[kind].Add(new TextNode {
                 IsVisible = true,
                 Width = 120,
-                Height = 22,
+                Height = 16,
                 FontSize = 14,
                 TextColor = ColorHelper.GetColor(2),
                 TextOutlineColor = ColorHelper.GetColor(0),
@@ -99,21 +148,23 @@ public class ConfigurationWindow : NativeAddon {
                 Text = "Functional"
             });
 
-            if (kind == NodeKind.Combined)
-                _configLists[kind].AddNode(new CheckboxNode {
+            if (kind == NodeKind.Combined) {
+                _configLists[kind].Add(new CheckboxNode {
                     X = OptionOffset,
-                    Height = buttonHeight,
+                    Height = CheckBoxHeight,
                     IsVisible = true,
                     LabelText = "Allow dismissing status by right-clicking the status icon."
                 });
+            }
 
-            if (kind == NodeKind.MultiDoT)
-                _configLists[kind].AddNode(new CheckboxNode {
+            if (kind == NodeKind.MultiDoT) {
+                _configLists[kind].Add(new CheckboxNode {
                     X = OptionOffset,
-                    Height = buttonHeight,
+                    Height = CheckBoxHeight,
                     IsVisible = true,
                     LabelText = "Allow targeting the enemy by clicking the status icon."
                 });
+            }
 
             TextInputNode filterListInput = new() {
                 X = OptionOffset,
@@ -125,7 +176,7 @@ public class ConfigurationWindow : NativeAddon {
                     //filterDropdown.FilterFunction
                 }
             };
-            _configLists[kind].AddNode(filterListInput);
+            _configLists[kind].Add(filterListInput);
 
             LuminaDropDownNode<Status> filterDropdown = new() {
                 X = OptionOffset,
@@ -139,7 +190,7 @@ public class ConfigurationWindow : NativeAddon {
                 FilterFunction = status => status.RowId.ToString().Contains(_currentFilterInput),
                 LabelFunction = status => $"{status.RowId} {status.Name.ExtractText()}"
             };
-            _configLists[kind].AddNode(filterDropdown);
+            _configLists[kind].Add(filterDropdown);
             //NativeController.AttachNode(filterDropdown, _configLists[kind]);
 
             x += buttonWidth + buttonSpacing;
@@ -149,11 +200,13 @@ public class ConfigurationWindow : NativeAddon {
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, TextButtonNode button) in _configTabButtons)
+        foreach ((NodeKind k, TextButtonNode button) in _configTabButtons) {
             button.IsChecked = k == kind;
+        }
 
-        foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas)
+        foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
             node.IsVisible = k == kind;
+        }
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon) {

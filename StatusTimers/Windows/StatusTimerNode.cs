@@ -13,7 +13,7 @@ namespace StatusTimers.Windows;
 public sealed class StatusTimerNode : ResNode {
     private readonly TextNode _actorName;
     private readonly IconImageNode _iconNode;
-    private readonly ProgressBarNode _progressNode;
+    private readonly CastBarProgressBarNode _progressNode;
     private readonly TextNode _statusName;
     private readonly TextNode _statusRemaining;
     private StatusInfo _statusInfo;
@@ -26,7 +26,8 @@ public sealed class StatusTimerNode : ResNode {
         };
         Services.NativeController.AttachNode(_iconNode, this);
 
-        _progressNode = new ProgressBarNode {
+        _progressNode = new CastBarProgressBarNode() {
+            Height = 20,
             Progress = 1f,
             IsVisible = true,
             Width = 200
@@ -98,10 +99,12 @@ public sealed class StatusTimerNode : ResNode {
             _progressNode.IsVisible = true;
             _statusRemaining.IsVisible = true;
 
-            if (_statusInfo.ActorName != null)
+            if (_statusInfo.ActorName != null) {
                 _actorName.Text = $"{_statusInfo.EnemyLetter}{_statusInfo.ActorName}";
-            else
+            }
+            else {
                 _actorName.IsVisible = false;
+            }
 
             float max = Math.Max(_statusInfo.MaxSeconds, 1f);
             float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
@@ -134,13 +137,15 @@ public sealed class StatusTimerNode : ResNode {
 
     private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData) {
         AtkEventData* atkEventData = (AtkEventData*)eventData.AtkEventDataPointer;
-        if (atkEventData->MouseData.ButtonId == 1 && node.Kind == NodeKind.Combined)
+        if (atkEventData->MouseData.ButtonId == 1 && node.Kind == NodeKind.Combined) {
             StatusManager.ExecuteStatusOff(node.StatusInfo.Id);
+        }
 
-        if (atkEventData->MouseData.ButtonId == 0 && node.Kind == NodeKind.MultiDoT)
+        if (atkEventData->MouseData.ButtonId == 0 && node.Kind == NodeKind.MultiDoT) {
             Services.TargetManager.Target =
                 Services.ObjectTable.FirstOrDefault(o =>
                     o is not null && o.GameObjectId == node.StatusInfo.GameObjectId);
+        }
     }
 
     // Whenever we inherit a node and add additional nodes,

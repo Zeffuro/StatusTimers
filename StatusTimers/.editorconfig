@@ -11,6 +11,7 @@ tab_width = 4
 max_line_length = 120
 
 [*.cs]
+csharp_prefer_braces = true:error
 dotnet_sort_system_directives_first = false
 csharp_new_line_before_open_brace = none
 csharp_space_after_keywords_in_control_flow_statements = true
