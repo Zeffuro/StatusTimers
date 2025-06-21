@@ -9,7 +9,7 @@ namespace StatusTimers;
 
 public class Plugin : IDalamudPlugin {
     public const string CommandName = "/statustimers";
-    public readonly WindowManager WindowManager;
+    public readonly OverlayManager OverlayManager;
     public Configuration Configuration;
 
     public Plugin(IDalamudPluginInterface pluginInterface) {
@@ -20,11 +20,11 @@ public class Plugin : IDalamudPlugin {
         Services.NativeController = new NativeController(pluginInterface);
         Services.NameplateAddonController = new NameplateAddonController(pluginInterface);
 
-        WindowManager = new WindowManager();
+        OverlayManager = new OverlayManager();
 
 
-        Services.PluginInterface.UiBuilder.OpenMainUi += WindowManager.ToggleConfig;
-        Services.PluginInterface.UiBuilder.OpenConfigUi += WindowManager.ToggleConfig;
+        Services.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
+        Services.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
 
         Services.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
             HelpMessage = "Open the main window"
@@ -38,8 +38,8 @@ public class Plugin : IDalamudPlugin {
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
 
-        WindowManager.OpenAll();
-        WindowManager.ToggleConfig();
+        OverlayManager.OpenAll();
+        OverlayManager.ToggleConfig();
     }
 
     public void Dispose() {
@@ -48,26 +48,26 @@ public class Plugin : IDalamudPlugin {
 
         Configuration.Save();
 
-        Services.PluginInterface.UiBuilder.OpenMainUi -= WindowManager.ToggleConfig;
-        Services.PluginInterface.UiBuilder.OpenConfigUi -= WindowManager.ToggleConfig;
+        Services.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
+        Services.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
 
-        WindowManager.Dispose();
+        OverlayManager.Dispose();
         Services.NativeController.Dispose();
         Services.NameplateAddonController.Dispose();
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
         EnemyListHelper.UpdateEnemyListMapping();
-        WindowManager.OnUpdate();
+        OverlayManager.OnUpdate();
     }
 
     private void OnCommand(string command, string args) {
         if (args is "settings" or "config")
         {
-            WindowManager.ToggleConfig();
+            OverlayManager.ToggleConfig();
         }
         else {
-            WindowManager.OpenAll();
+            OverlayManager.OpenAll();
         }
     }
 

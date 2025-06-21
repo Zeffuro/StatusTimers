@@ -4,16 +4,19 @@ using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
+using Newtonsoft.Json;
 using StatusTimers.Helpers;
 using StatusTimers.StatusSources;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 
 namespace StatusTimers.Windows;
 
-public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
+[JsonObject(MemberSerialization.OptIn)]
+public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     private const int PoolSize = 30;
 
     private const float FramePadding = 8.0f;
@@ -31,6 +34,7 @@ public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
     private List<HorizontalListNode<StatusTimerNode>> _rows = new();
     private List<VerticalListNode<StatusTimerNode>> _columns = new();
 
+    [JsonProperty]
     private GrowDirection _growDirection;
 
     private TextNode _headerNode;
@@ -74,16 +78,33 @@ public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
         _rootContainer = outer;
     }
 
-    protected StatusTimerWindow(IStatusSource<TKey> source, NodeKind nodeKind) {
+    private bool _isSetupCompleted = false;
+
+    protected StatusTimerOverlay(IStatusSource<TKey> source, NodeKind nodeKind) {
         _source = source;
         _nodeKind = nodeKind;
 
-        OnAttach();
+        LoadConfig();
+    }
+
+    public void Setup() {
+        if (_isSetupCompleted) {
+            return; // Already set up
+        }
+        _isSetupCompleted = true;
+
+        // Call your node tree building method (which you've called OnAttach()) here.
+        // This ensures the internal nodes are built after config is loaded and once.
+        OnAttach(); // This will build the internal UI nodes (from your existing OnAttach method)
+
+        // Enable click and drag functionality
+        //EnableClickDrag(true); // Assuming SimpleComponentNode provides this
+        //OnClickDragComplete = SaveConfig; // Assuming SimpleComponentNode provides this delegate (from previous version)
     }
 
     protected void OnAttach() {
         this.IsVisible = true;
-
+        /*
         _headerNode = new TextNode {
             IsVisible = true,
             X = FramePadding * 2 + 44,
@@ -96,6 +117,7 @@ public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
             Text = Title
         };
         Services.NativeController.AttachNode(_headerNode, this);
+        */
 
         int outerCount = (int)Math.Ceiling(PoolSize / (double)ItemsPerLine);
 
@@ -230,6 +252,18 @@ public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
                 verticalList.Alignment = anchor;
             }
         }
+    }
+
+    public void LoadConfig() {
+        var configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(), $"{_nodeKind.ToString()}.json");
+        Load(configPath);
+        Services.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
+    }
+
+    public void SaveConfig() {
+        var configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(), $"{_nodeKind.ToString()}.json");
+        Save(configPath);
+        Services.Logger.Info($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
     }
 
     public enum GrowDirection {

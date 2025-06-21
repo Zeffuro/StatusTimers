@@ -20,6 +20,16 @@ public class ConfigurationWindow : NativeAddon {
     private readonly Dictionary<NodeKind, TextButtonNode> _configTabButtons = new();
     private string _currentFilterInput = "10";
 
+    private readonly OverlayManager _overlayManager;
+    private PlayerCombinedStatusesOverlay _playerCombinedStatusesOverlay;
+    private EnemyMultiDoTOverlay _enemyMultiDoTOverlay;
+
+    public ConfigurationWindow(OverlayManager overlayManager) {
+        _overlayManager = overlayManager;
+        _enemyMultiDoTOverlay = overlayManager.EnemyMultiDoTOverlayInstance;
+        _playerCombinedStatusesOverlay = overlayManager.PlayerCombinedOverlayInstance;
+    }
+
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
         SimpleComponentNode tabBar = new() {
             Position = ContentStartPosition,
@@ -69,6 +79,14 @@ public class ConfigurationWindow : NativeAddon {
                 Height = CheckBoxHeight,
             });
 
+            _configLists[kind].Add(new TextButtonNode() {
+                IsVisible = true,
+                Width = 120,
+                Height = 16,
+                Label = "Test",
+                OnClick = () => Services.Logger.Info("Button clicked")
+            });
+
             _configLists[kind].Add(new TextNode {
                 IsVisible = true,
                 Width = 120,
@@ -78,6 +96,17 @@ public class ConfigurationWindow : NativeAddon {
                 TextOutlineColor = ColorHelper.GetColor(0),
                 TextFlags = TextFlags.Edge,
                 Text = "Visual"
+            });
+
+            _configLists[kind].Add(new CheckboxNode {
+                X = OptionOffset,
+                Height = CheckBoxHeight,
+                IsVisible = true,
+                LabelText = "Enabled",
+                OnClick = (isChecked) => {
+                    //_playerCombinedStatusesOverlay.IsVisible = isChecked;
+                    Services.Logger.Info("dsdssds");
+                }
             });
 
             _configLists[kind].Add(new CheckboxNode {
