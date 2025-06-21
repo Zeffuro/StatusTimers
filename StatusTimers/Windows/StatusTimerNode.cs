@@ -4,6 +4,7 @@ using KamiToolKit.Classes;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
+using StatusTimers.StatusSources;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -11,7 +12,7 @@ using StatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
 
 namespace StatusTimers.Windows;
 
-public sealed class StatusTimerNode : ResNode {
+public sealed class StatusTimerNode<TKey> : ResNode {
     private readonly TextNode _actorName;
     private readonly IconImageNode _iconNode;
     private readonly CastBarProgressBarNode _progressNode;
@@ -61,7 +62,6 @@ public sealed class StatusTimerNode : ResNode {
 
         Services.NativeController.AttachNode(_statusName, this);
 
-
         _statusRemainingBackground = new SimpleNineGridNode {
             IsVisible = true,
             Width = 120,
@@ -88,16 +88,18 @@ public sealed class StatusTimerNode : ResNode {
         };
         Services.NativeController.AttachNode(_statusRemaining, this);
 
-        _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
+        if (Parent != null && (Parent.ShowActorLetter || Parent.AllowTargetActor)) {
+            _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
+        }
     }
 
     public NodeKind Kind { get; set; }
+    public StatusTimerOverlay<TKey> Parent { get; set; }
 
     public StatusInfo StatusInfo {
         get => _statusInfo;
         set {
             _statusInfo = value;
-            _actorName.IsVisible = _statusInfo.ActorName != null;
             UpdateValues();
         }
     }
@@ -120,20 +122,24 @@ public sealed class StatusTimerNode : ResNode {
         _statusName.Text = _statusInfo.Name;
         _iconNode.IconId = _statusInfo.IconId;
 
+        _iconNode.IsVisible = Parent.ShowIcon;
+        _actorName.IsVisible = Parent.ShowActorName && _statusInfo.ActorName != null;
+        _statusRemaining.IsVisible = Parent.ShowStatusRemaining;
+        _statusRemainingBackground.IsVisible = Parent.ShowStatusRemainingBackground;
+        _statusName.IsVisible = Parent.ShowStatusName;
+        _progressNode.IsVisible = Parent.ShowProgress;
+
         if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds < 0) {
             _progressNode.IsVisible = false;
             _statusRemaining.IsVisible = false;
             _statusRemainingBackground.IsVisible = false;
         }
         else {
-            _progressNode.IsVisible = true;
-            _statusRemaining.IsVisible = true;
+            _progressNode.IsVisible = Parent.ShowProgress;
+            _statusRemaining.IsVisible = Parent.ShowStatusRemaining;
 
-            if (_statusInfo.ActorName != null) {
-                _actorName.Text = $"{_statusInfo.EnemyLetter}{_statusInfo.ActorName}";
-            }
-            else {
-                _actorName.IsVisible = false;
+            if (_statusInfo.ActorName != null && Parent.ShowActorName) {
+                _actorName.Text = $"{(Parent.ShowActorLetter ? _statusInfo.EnemyLetter : "")}{_statusInfo.ActorName}";
             }
 
             float max = Math.Max(_statusInfo.MaxSeconds, 1f);
@@ -141,19 +147,19 @@ public sealed class StatusTimerNode : ResNode {
             float ratio = remaining / max;
 
             _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
-            _statusRemainingBackground.X = _statusRemaining.X;
+            _statusRemainingBackground.X = _statusRemaining.X - 2;
             _statusRemainingBackground.Width = _statusRemaining.GetTextDrawSize(_statusRemaining.Text.TextValue).X + 14;
             _statusRemaining.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
         }
     }
 
-    private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData) {
+    private unsafe void StatusNodeClick(StatusTimerNode<TKey> node, AddonEventData eventData) {
         AtkEventData* atkEventData = (AtkEventData*)eventData.AtkEventDataPointer;
-        if (atkEventData->MouseData.ButtonId == 1 && node.Kind == NodeKind.Combined) {
+        if (atkEventData->MouseData.ButtonId == 1 && node.Kind == NodeKind.Combined && Parent.AllowDismissStatus) {
             StatusManager.ExecuteStatusOff(node.StatusInfo.Id);
         }
 
-        if (atkEventData->MouseData.ButtonId == 0 && node.Kind == NodeKind.MultiDoT) {
+        if (atkEventData->MouseData.ButtonId == 0 && node.Kind == NodeKind.MultiDoT && Parent.AllowTargetActor) {
             Services.TargetManager.Target =
                 Services.ObjectTable.FirstOrDefault(o =>
                     o is not null && o.GameObjectId == node.StatusInfo.GameObjectId);
@@ -167,6 +173,9 @@ public sealed class StatusTimerNode : ResNode {
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();
+            _statusRemainingBackground.Dispose();
+            _actorName.Dispose();
+            _progressNode.Dispose();
 
             base.Dispose(disposing);
         }

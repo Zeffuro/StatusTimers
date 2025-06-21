@@ -27,18 +27,42 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     private readonly IStatusSource<TKey> _source;
 
-    protected readonly Dictionary<TKey, StatusTimerNode> Active = new();
-    protected readonly Stack<StatusTimerNode> Pool = new();
+    protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
+    protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
 
     private NodeBase _rootContainer;
-    private readonly List<StatusTimerNode> _allNodes = new();
-    private List<HorizontalListNode<StatusTimerNode>> _rows = new();
-    private List<VerticalListNode<StatusTimerNode>> _columns = new();
+    private readonly List<StatusTimerNode<TKey>> _allNodes = new();
+    private List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
+    private List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
 
     private NineGridNode _backgroundNode;
 
     [JsonProperty]
-    public GrowDirection GrowDirection;
+    public bool AllowDismissStatus {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool AllowTargetActor {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public GrowDirection GrowDirection {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = GrowDirection.DownRight;
 
     [JsonProperty]
     public bool IsLocked {
@@ -48,7 +72,87 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             ToggleDrag(field);
             SaveConfig();
         }
-    }
+    } = true;
+
+    [JsonProperty]
+    public int ItemsPerLine { get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = 2;
+
+    [JsonProperty]
+    public bool ShowActorLetter {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowActorName {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowIcon {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowPermaIcons {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowStatusName {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowStatusRemaining {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowStatusRemainingBackground {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowProgress {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
 
     private TextNode _headerNode;
 
@@ -58,7 +162,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         Func<TInner> createInner,
         Action<TOuter, TInner> addInnerToOuter,
         Action<TInner> configureInner,
-        Action<TInner, StatusTimerNode> addNodeToInner,
+        Action<TInner, StatusTimerNode<TKey>> addNodeToInner,
         int outerCount,
         int itemsPerInner
     )
@@ -75,10 +179,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             addInnerToOuter(outer, inner);
 
             for (int j = 0; j < itemsPerInner && nodeIndex < PoolSize; j++, nodeIndex++) {
-                var node = new StatusTimerNode {
+                var node = new StatusTimerNode<TKey> {
                     Height = 60,
                     Width = 300,
                     IsVisible = false,
+                    Parent = this,
                 };
                 addNodeToInner(inner, node);
                 _allNodes.Add(node);
@@ -160,7 +265,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             _rows.Clear();
 
             SetupContainers(
-                createOuter: () => new VerticalListNode<HorizontalListNode<StatusTimerNode>> {
+                createOuter: () => new VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> {
                     Width = 600,
                     Height = 500,
                     IsVisible = true,
@@ -168,7 +273,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 },
                 attachOuter: outer => Services.NativeController.AttachNode(outer, this),
                 createInner: () => {
-                    var horizontalListlist = new HorizontalListNode<StatusTimerNode> {
+                    var horizontalListlist = new HorizontalListNode<StatusTimerNode<TKey>> {
                         Width = 600,
                         Height = 50,
                         IsVisible = true,
@@ -188,7 +293,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             _columns.Clear();
 
             SetupContainers(
-                createOuter: () => new HorizontalListNode<VerticalListNode<StatusTimerNode>> {
+                createOuter: () => new HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> {
                     Width = 600,
                     Height = 500,
                     IsVisible = true,
@@ -196,7 +301,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 },
                 attachOuter: outer => Services.NativeController.AttachNode(outer, this),
                 createInner: () => {
-                    var verticalList = new VerticalListNode<StatusTimerNode> {
+                    var verticalList = new VerticalListNode<StatusTimerNode<TKey>> {
                         Height = 500,
                         Width = 300,
                         IsVisible = true,
@@ -221,8 +326,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     public bool FillRowsFirst { get; set; } = false;
 
-    public int ItemsPerLine { get; set; } = 2;
-
     public void OnUpdate() {
         IReadOnlyList<StatusInfo> current = _source.Fetch();
 
@@ -232,7 +335,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             .ToList();
 
         int i = 0;
-        var newActive = new Dictionary<TKey, StatusTimerNode>();
+        var newActive = new Dictionary<TKey, StatusTimerNode<TKey>>();
 
         for (; i < sortedStatuses.Count && i < _allNodes.Count; i++) {
             var status = sortedStatuses[i];
@@ -279,10 +382,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     private void SetVerticalAlignment(VerticalListAnchor anchor) {
-        if (_rootContainer is VerticalListNode<HorizontalListNode<StatusTimerNode>> verticalRoot) {
+        if (_rootContainer is VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot) {
             verticalRoot.Alignment = anchor;
         }
-        else if (_rootContainer is HorizontalListNode<VerticalListNode<StatusTimerNode>>) {
+        else if (_rootContainer is HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>>) {
             foreach (var verticalList in _columns) {
                 verticalList.Alignment = anchor;
             }
@@ -313,7 +416,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     public void SaveConfig() {
         var configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(), $"{_nodeKind.ToString()}.json");
         Save(configPath);
-        Services.Logger.Info($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
+        Services.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
     }
 }
 

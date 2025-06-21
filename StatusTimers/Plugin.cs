@@ -1,6 +1,7 @@
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
@@ -12,7 +13,7 @@ public class Plugin : IDalamudPlugin {
     public readonly OverlayManager OverlayManager;
     public Configuration Configuration;
 
-    public Plugin(IDalamudPluginInterface pluginInterface) {
+    public unsafe Plugin(IDalamudPluginInterface pluginInterface) {
         pluginInterface.Create<Services>();
 
         Configuration = Services.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -38,6 +39,8 @@ public class Plugin : IDalamudPlugin {
         Services.ClientState.Login += OnLogin;
         Services.ClientState.Logout += OnLogout;
 
+        Services.NameplateAddonController.OnUpdate += OnNameplateUpdate;
+
         OverlayManager.OpenAll();
         OverlayManager.ToggleConfig();
     }
@@ -58,6 +61,9 @@ public class Plugin : IDalamudPlugin {
 
     private void OnFrameworkUpdate(IFramework framework) {
         EnemyListHelper.UpdateEnemyListMapping();
+    }
+
+    private unsafe void OnNameplateUpdate(AddonNamePlate* nameplate) {
         OverlayManager.OnUpdate();
     }
 
