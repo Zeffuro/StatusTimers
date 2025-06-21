@@ -95,6 +95,7 @@ public class ConfigurationWindow : NativeAddon {
             _configLists[kind].Add(new SliderNode {
                 X = OptionOffset,
                 Height = 30,
+                Width = 300,
                 IsVisible = true,
                 Min = 0,
                 Max = 4,

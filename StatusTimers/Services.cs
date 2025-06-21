@@ -20,4 +20,6 @@ public class Services {
     [PluginService] public static ITextureProvider TextureProvider { get; private set; } = null!;
 
     public static NativeController NativeController { get; set; } = null!;
+    public static NameplateAddonController NameplateAddonController { get; set; } = null!;
+
 }

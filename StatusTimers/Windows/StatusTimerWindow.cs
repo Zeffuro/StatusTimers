@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -12,7 +13,7 @@ using System.Numerics;
 
 namespace StatusTimers.Windows;
 
-public abstract class StatusTimerWindow<TKey> : NativeAddon {
+public abstract class StatusTimerWindow<TKey> : SimpleComponentNode {
     private const int PoolSize = 30;
 
     private const float FramePadding = 8.0f;
@@ -57,7 +58,11 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon {
             addInnerToOuter(outer, inner);
 
             for (int j = 0; j < itemsPerInner && nodeIndex < PoolSize; j++, nodeIndex++) {
-                var node = new StatusTimerNode { IsVisible = false };
+                var node = new StatusTimerNode {
+                    Height = 60,
+                    Width = 300,
+                    IsVisible = false,
+                };
                 addNodeToInner(inner, node);
                 _allNodes.Add(node);
             }
@@ -72,10 +77,13 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon {
     protected StatusTimerWindow(IStatusSource<TKey> source, NodeKind nodeKind) {
         _source = source;
         _nodeKind = nodeKind;
+
+        OnAttach();
     }
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon) {
-        WindowNode.IsVisible = false;
+    protected void OnAttach() {
+        this.IsVisible = true;
+        Services.Logger.Info($"{Title} {NodeId}");
 
         _headerNode = new TextNode {
             IsVisible = true,
@@ -88,7 +96,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon {
             TextFlags = TextFlags.Edge,
             Text = Title
         };
-        NativeController.AttachNode(_headerNode, this);
+        Services.NativeController.AttachNode(_headerNode, this);
 
         int outerCount = (int)Math.Ceiling(PoolSize / (double)ItemsPerLine);
 
@@ -102,7 +110,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon {
                     IsVisible = true,
                     ItemVerticalSpacing = 2
                 },
-                attachOuter: outer => NativeController.AttachNode(outer, this),
+                attachOuter: outer => Services.NativeController.AttachNode(outer, this),
                 createInner: () => {
                     var horizontalListlist = new HorizontalListNode<StatusTimerNode> {
                         Width = 600,
@@ -130,7 +138,7 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon {
                     IsVisible = true,
                     ItemHorizontalSpacing = 5
                 },
-                attachOuter: outer => NativeController.AttachNode(outer, this),
+                attachOuter: outer => Services.NativeController.AttachNode(outer, this),
                 createInner: () => {
                     var verticalList = new VerticalListNode<StatusTimerNode> {
                         Height = 500,
@@ -153,18 +161,21 @@ public abstract class StatusTimerWindow<TKey> : NativeAddon {
         ApplyGrowDirection();
     }
 
+    public string Title { get; set; }
 
     public bool FillRowsFirst { get; set; } = false;
 
     public int ItemsPerLine { get; set; } = 2;
 
-    protected override unsafe void OnUpdate(AtkUnitBase* addon) {
+    public void OnUpdate() {
         IReadOnlyList<StatusInfo> current = _source.Fetch();
 
         var sortedStatuses = current
             .OrderByDescending(s => s.IsPermanent)
             .ThenByDescending(s => s.RemainingSeconds)
             .ToList();
+
+        //Services.Logger.Info(string.Join(",", sortedStatuses.Select(s => $"{s.Id}:{s.RemainingSeconds}")));
 
         int i = 0;
         var newActive = new Dictionary<TKey, StatusTimerNode>();

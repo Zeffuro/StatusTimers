@@ -1,21 +1,25 @@
+using FFXIVClientStructs.FFXIV.Client.UI;
+using KamiToolKit.Classes;
 using System;
 using System.Numerics;
 
 namespace StatusTimers.Windows;
 
-public class WindowManager : IDisposable {
+public unsafe class WindowManager : IDisposable {
+    public WindowManager() {
+        Services.NameplateAddonController.OnAttach += AttachNodes;
+        Services.NameplateAddonController.OnDetach += DetachNodes;
+    }
     private EnemyMultiDoTWindow EnemyMultiDoTWindow { get; } = new() {
-        InternalName = "StatusTimersEnemyDoTs",
+        Position = new Vector2(200, 400),
         Title = "Enemy DoTs",
         Size = new Vector2(400, 400),
-        NativeController = Services.NativeController
     };
 
     private PlayerCombinedStatusesWindow PlayerCombinedWindow { get; } = new() {
-        InternalName = "StatusTimersCombinedStatuses",
+        Position = new Vector2(200, 800),
         Title = "Player Statuses",
         Size = new Vector2(400, 400),
-        NativeController = Services.NativeController
     };
 
     private ConfigurationWindow ConfigurationWindow { get; } = new() {
@@ -26,18 +30,44 @@ public class WindowManager : IDisposable {
     };
 
     public void Dispose() {
-        EnemyMultiDoTWindow.Dispose();
-        PlayerCombinedWindow.Dispose();
+        Services.NameplateAddonController.PreEnable -= PreAttach;
+        Services.NameplateAddonController.OnAttach -= AttachNodes;
+        Services.NameplateAddonController.OnDetach -= DetachNodes;
+    }
+
+    private void PreAttach(AddonNamePlate* addonNamePlate) {
+
+    }
+
+    private void AttachNodes(AddonNamePlate* addonNamePlate) {
+        Services.Logger.Info("Test");
+        Services.Logger.Info("Attaching Nodes");
+        Services.NativeController.AttachNode(PlayerCombinedWindow, addonNamePlate->RootNode, NodePosition.AsFirstChild);
+        Services.NativeController.AttachNode(EnemyMultiDoTWindow, addonNamePlate->RootNode, NodePosition.AsFirstChild);
+    }
+
+    private void DetachNodes(AddonNamePlate* addonNamePlate) {
+        Services.NativeController.DetachNode(PlayerCombinedWindow, () => {
+            PlayerCombinedWindow?.Dispose();
+        });
+        Services.NativeController.DetachNode(EnemyMultiDoTWindow, () => {
+            EnemyMultiDoTWindow?.Dispose();
+        });
+    }
+
+    public void OnUpdate() {
+        PlayerCombinedWindow?.OnUpdate();
+        EnemyMultiDoTWindow?.OnUpdate();
     }
 
     public void OpenAll() {
-        EnemyMultiDoTWindow.Open();
-        PlayerCombinedWindow.Open();
+        //EnemyMultiDoTWindow.Open();
+        //PlayerCombinedWindow.Open();
     }
 
     public void CloseAll() {
-        EnemyMultiDoTWindow.Close();
-        PlayerCombinedWindow.Close();
+        //EnemyMultiDoTWindow.Close();
+        //PlayerCombinedWindow.Close();
     }
 
     public void ToggleConfig() {

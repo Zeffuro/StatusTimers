@@ -1,6 +1,7 @@
 using Dalamud.Game.Addon.Events;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
 using System;
@@ -15,6 +16,7 @@ public sealed class StatusTimerNode : ResNode {
     private readonly IconImageNode _iconNode;
     private readonly CastBarProgressBarNode _progressNode;
     private readonly TextNode _statusName;
+    private readonly SimpleNineGridNode _statusRemainingBackground;
     private readonly TextNode _statusRemaining;
     private StatusInfo _statusInfo;
 
@@ -59,6 +61,22 @@ public sealed class StatusTimerNode : ResNode {
 
         Services.NativeController.AttachNode(_statusName, this);
 
+
+        _statusRemainingBackground = new SimpleNineGridNode {
+            IsVisible = true,
+            Width = 120,
+            Height = 24,
+            TexturePath = "ui/uld/ToolTipS.tex",
+            TextureCoordinates = Vector2.Zero,
+            TextureSize = new Vector2(32, 24),
+            BottomOffset = 11,
+            TopOffset = 11,
+            LeftOffset = 12,
+            RightOffset = 12,
+        };
+
+        Services.NativeController.AttachNode(_statusRemainingBackground, this);
+
         _statusRemaining = new TextNode {
             IsVisible = true,
             Width = 120,
@@ -71,9 +89,6 @@ public sealed class StatusTimerNode : ResNode {
         Services.NativeController.AttachNode(_statusRemaining, this);
 
         _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
-
-        Height = 60;
-        Width = 300;
     }
 
     public NodeKind Kind { get; set; }
@@ -87,13 +102,28 @@ public sealed class StatusTimerNode : ResNode {
         }
     }
 
+    public override float Width {
+        get => base.Width;
+        set {
+            base.Width = value;
+
+            _statusName.X = _iconNode.Width + 4;
+            _actorName.X = _iconNode.Width + 4;
+            _actorName.Y = _statusName.Height;
+            _progressNode.X = _iconNode.Width;
+            _progressNode.Y = _statusName.Height + _actorName.Height;
+            _statusRemaining.X = value - _statusRemaining.Width;
+        }
+    }
+
     public void UpdateValues() {
         _statusName.Text = _statusInfo.Name;
         _iconNode.IconId = _statusInfo.IconId;
 
-        if (_statusInfo.IsPermanent) {
+        if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds < 0) {
             _progressNode.IsVisible = false;
             _statusRemaining.IsVisible = false;
+            _statusRemainingBackground.IsVisible = false;
         }
         else {
             _progressNode.IsVisible = true;
@@ -111,28 +141,10 @@ public sealed class StatusTimerNode : ResNode {
             float ratio = remaining / max;
 
             _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
+            _statusRemainingBackground.X = _statusRemaining.X;
+            _statusRemainingBackground.Width = _statusRemaining.GetTextDrawSize(_statusRemaining.Text.TextValue).X + 14;
             _statusRemaining.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
         }
-
-        UpdatePositions();
-    }
-
-    public void UpdatePositions() {
-        int padding = 5;
-
-        _statusName.X = _iconNode.Width + 5;
-
-        _actorName.X = _iconNode.Width + 7;
-        _progressNode.X = _iconNode.Width + 2;
-        _statusRemaining.X = Width - _statusRemaining.Width - 5;
-
-        _iconNode.Y = (Height - _iconNode.Height) / 2;
-        _statusName.Y = _statusName.Height / 2;
-        _actorName.Y = _statusName.Y + _progressNode.Height + padding;
-        _progressNode.Y = _actorName.IsVisible
-            ? _actorName.Y + _actorName.FontSize + padding
-            : _statusName.Y + _statusName.FontSize + padding;
-        _statusRemaining.Y = _statusRemaining.Height / 2;
     }
 
     private static unsafe void StatusNodeClick(StatusTimerNode node, AddonEventData eventData) {

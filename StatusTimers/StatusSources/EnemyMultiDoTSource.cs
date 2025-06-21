@@ -10,6 +10,5 @@ public class EnemyMultiDoTSource : IStatusSource<StatusKey> {
 
     public StatusKey KeyOf(StatusInfo info) {
         return info.Key;
-        // already inside
     }
 }
