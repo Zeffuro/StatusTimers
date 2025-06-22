@@ -54,8 +54,8 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
-        Services.NativeController.AttachNode(PlayerCombinedOverlay, addonNamePlate->RootNode, NodePosition.AsFirstChild);
-        Services.NativeController.AttachNode(EnemyMultiDoTOverlay, addonNamePlate->RootNode, NodePosition.AsFirstChild);
+        Services.NativeController.AttachNode(PlayerCombinedOverlay, addonNamePlate->RootNode, NodePosition.AsLastChild);
+        Services.NativeController.AttachNode(EnemyMultiDoTOverlay, addonNamePlate->RootNode, NodePosition.AsLastChild);
     }
 
     private void DetachNodes(AddonNamePlate* addonNamePlate) {

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace StatusTimers.Windows;
 
@@ -66,7 +67,6 @@ public class ConfigurationWindow : NativeAddon {
             };
             NativeController.AttachNode(_configTabButtons[kind], tabBar);
 
-
             _configScrollingAreas[kind] = new ScrollingAreaNode {
                 X = ContentStartPosition.X,
                 Y = ContentStartPosition.Y + tabBar.Height,
@@ -86,10 +86,7 @@ public class ConfigurationWindow : NativeAddon {
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
-            _configLists[kind].Add(new ResNode {
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-            });
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
             _configLists[kind].Add(new TextNode {
                 IsVisible = true,
@@ -99,11 +96,11 @@ public class ConfigurationWindow : NativeAddon {
                 TextColor = ColorHelper.GetColor(2),
                 TextOutlineColor = ColorHelper.GetColor(0),
                 TextFlags = TextFlags.Edge,
-                Text = "Visual"
+                Text = "Visual Settings"
             });
 
             _configLists[kind].Add(new CheckboxNode {
-                X = 200,
+                X = OptionOffset,
                 Width = CheckBoxWidth,
                 Height = CheckBoxHeight,
                 IsVisible = true,
@@ -126,16 +123,13 @@ public class ConfigurationWindow : NativeAddon {
                 },
             });
 
-            _configLists[kind].Add(new ResNode {
-                Height = CheckBoxHeight,
-                Width = CheckBoxWidth
-            });
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
-            var node = new TextDropDownNode {
-                X = OptionOffset,
+            var growDirectionNode = new TextDropDownNode {
+                X = 324,
                 IsVisible = true,
-                Width = CheckBoxWidth,
-                Height = 28,
+                Width = 230,
+                Height = 24,
                 OptionListHeight = 120,
                 Options = GrowDirectionMap.Values.ToList(),
                 OnOptionSelected = selectedDisplayName => {
@@ -147,20 +141,70 @@ public class ConfigurationWindow : NativeAddon {
                     }
                 },
             };
-            node.OptionListNode.SelectedOption = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
-            node.LabelNode.Text = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
-            _configLists[kind].Add(node);
+            growDirectionNode.OptionListNode.SelectedOption = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
+            growDirectionNode.LabelNode.Text = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
+            //_configLists[kind].Add(growDirectionNode);
 
-            _configLists[kind].Add(new SliderNode {
+            var containerNode = new ResNode {
+                IsVisible = true,
+                Width = 600,
+                Height = 32,
+            };
+
+            _configLists[kind].Add(containerNode);
+            NativeController.AttachNode(new TextNode {
+                X = OptionOffset,
+                Y = 0,
+                IsVisible = true,
+                Width = 300,
+                Height = 20,
+                FontSize = 14,
+                TextColor = ColorHelper.GetColor(8),
+                TextOutlineColor = ColorHelper.GetColor(0),
+                TextFlags = TextFlags.Edge,
+                Text = "Grow direction",
+            }, containerNode);
+            NativeController.AttachNode(new TextNode {
+                X = OptionOffset,
+                Y = 20,
+                IsVisible = true,
+                Width = 300,
+                Height = 20,
+                FontSize = 14,
+                TextColor = ColorHelper.GetColor(8),
+                TextOutlineColor = ColorHelper.GetColor(0),
+                TextFlags = TextFlags.Edge,
+                Text = "Statuses per row",
+            }, containerNode);
+            NativeController.AttachNode(growDirectionNode, containerNode);
+
+            var slider = new SliderNode {
                 X = OptionOffset,
                 Width = CheckBoxWidth,
                 Height = 30,
                 IsVisible = true,
-                Min = 0,
-                Max = 4,
-                Value = 1,
-                Step = 1
+                Min = 1,
+                Max = 30,
+                Value = GetOverlayByKind(kind).ItemsPerLine,
+                Step = 1,
+                OnValueChanged = (value) => GetOverlayByKind(kind).ItemsPerLine = value
+            };
+
+            _configLists[kind].Add(slider);
+
+            _configLists[kind].Add(new CheckboxNode {
+                X = OptionOffset,
+                Width = CheckBoxWidth,
+                Height = CheckBoxHeight,
+                IsVisible = true,
+                LabelText = "Fill columns first",
+                IsChecked = !GetOverlayByKind(kind).FillRowsFirst,
+                OnClick = isChecked => {
+                    GetOverlayByKind(kind).FillRowsFirst = !isChecked;
+                },
             });
+
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
             _configLists[kind].Add(new CheckboxNode {
                 X = OptionOffset,
@@ -210,21 +254,9 @@ public class ConfigurationWindow : NativeAddon {
                 },
             });
 
-            if (kind == NodeKind.Combined) {
-                _configLists[kind].Add(new CheckboxNode {
-                    X = OptionOffset,
-                    Width = CheckBoxWidth,
-                    Height = CheckBoxHeight,
-                    IsVisible = true,
-                    LabelText = "Hide permanent statuses",
-                    IsChecked = !GetOverlayByKind(kind).ShowPermaIcons,
-                    OnClick = isChecked => {
-                        GetOverlayByKind(kind).ShowPermaIcons = !isChecked;
-                    },
-                });
-            }
-
             if (kind == NodeKind.MultiDoT) {
+                _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+
                 _configLists[kind].Add(new CheckboxNode {
                     X = OptionOffset,
                     Width = CheckBoxWidth,
@@ -236,6 +268,7 @@ public class ConfigurationWindow : NativeAddon {
                         GetOverlayByKind(kind).ShowActorName = isChecked;
                     },
                 });
+
                 _configLists[kind].Add(new CheckboxNode {
                     X = OptionOffset,
                     Width = CheckBoxWidth,
@@ -249,10 +282,7 @@ public class ConfigurationWindow : NativeAddon {
                 });
             }
 
-            _configLists[kind].Add(new ResNode {
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-            });
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
             _configLists[kind].Add(new TextNode {
                 IsVisible = true,
@@ -262,8 +292,22 @@ public class ConfigurationWindow : NativeAddon {
                 TextColor = ColorHelper.GetColor(2),
                 TextOutlineColor = ColorHelper.GetColor(0),
                 TextFlags = TextFlags.Edge,
-                Text = "Functional"
+                Text = "Functional Settings"
             });
+
+            if (kind == NodeKind.Combined) {
+                _configLists[kind].Add(new CheckboxNode {
+                    X = OptionOffset,
+                    Width = CheckBoxWidth,
+                    Height = CheckBoxHeight,
+                    IsVisible = true,
+                    LabelText = "Hide permanent statuses",
+                    IsChecked = !GetOverlayByKind(kind).ShowPermaIcons,
+                    OnClick = isChecked => {
+                        GetOverlayByKind(kind).ShowPermaIcons = !isChecked;
+                    },
+                });
+            }
 
             if (kind == NodeKind.Combined) {
                 _configLists[kind].Add(new CheckboxNode {
@@ -294,7 +338,7 @@ public class ConfigurationWindow : NativeAddon {
             }
 
             TextInputNode filterListInput = new() {
-                X = OptionOffset,
+                X = OptionOffset - 4,
                 Width = CheckBoxWidth,
                 Height = buttonHeight,
                 Size = new Vector2(300, 28),
