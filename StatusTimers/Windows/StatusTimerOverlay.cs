@@ -287,7 +287,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 () => {
                     float innerWidth = (Math.Min(ItemsPerLine, PoolSize) * StatusNodeWidth) +
                                        ((Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding);
-                    // Inner list (row) height is just the node height
                     float innerHeight = StatusNodeHeight;
 
                     var list = new HorizontalListNode<StatusTimerNode<TKey>> {
@@ -317,7 +316,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 outer => Services.NativeController.AttachNode(outer, this),
                 () => {
                     float innerWidth = StatusNodeWidth;
-                    // Calculate inner list (column) height
                     float innerHeight = (Math.Min(ItemsPerLine, PoolSize) * StatusNodeHeight) +
                                         ((Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding);
                     var list = new VerticalListNode<StatusTimerNode<TKey>> {
@@ -520,12 +518,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     public void SaveConfig() {
-        /*
         string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Save(configPath);
         Services.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
-        */
     }
 }
 

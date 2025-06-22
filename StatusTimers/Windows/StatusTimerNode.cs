@@ -87,14 +87,19 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             TextFlags = TextFlags.Edge
         };
         Services.NativeController.AttachNode(_statusRemaining, this);
-
-        if (Parent != null && (Parent.ShowActorLetter || Parent.AllowTargetActor)) {
-            _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
-        }
     }
 
     public NodeKind Kind { get; set; }
-    public StatusTimerOverlay<TKey> Parent { get; set; }
+
+    public StatusTimerOverlay<TKey> Parent {
+        get;
+        set {
+            field = value;
+            if (value.ShowActorLetter || value.AllowTargetActor) {
+                _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
+            }
+        }
+    }
 
     public StatusInfo StatusInfo {
         get => _statusInfo;
