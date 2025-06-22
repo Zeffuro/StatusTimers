@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
@@ -500,12 +501,14 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             EnableClickDrag(true);
             if (_backgroundNode != null) {
                 _backgroundNode.IsVisible = true;
+                _backgroundNode.AddFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
             }
         }
         else {
             DisableClickDrag(true);
             if (_backgroundNode != null) {
                 _backgroundNode.IsVisible = false;
+                _backgroundNode.RemoveFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
             }
         }
     }

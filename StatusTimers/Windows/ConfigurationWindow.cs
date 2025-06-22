@@ -3,6 +3,7 @@ using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Slider;
+using KamiToolKit.Nodes.TabBar;
 using KamiToolKit.System;
 using Lumina.Excel.Sheets;
 using StatusTimers.Helpers;
@@ -42,13 +43,12 @@ public class ConfigurationWindow : NativeAddon {
     }
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
-        SimpleComponentNode tabBar = new() {
+        TabBarNode tabBar = new() {
             Position = ContentStartPosition,
-            Width = ContentSize.X,
-            Height = 28,
+            Size = ContentSize with { Y = 24 },
+            Height = 24,
             IsVisible = true
         };
-        NativeController.AttachNode(tabBar, this);
 
         const int buttonHeight = 28;
         const int buttonSpacing = 0;
@@ -56,7 +56,15 @@ public class ConfigurationWindow : NativeAddon {
         int buttonWidth = (int)MathF.Floor((ContentSize.X - buttonSpacing * (nodeKinds.Length - 1)) / nodeKinds.Length);
 
         int x = 0;
+        /*
+        This was a test
+        tabBar.AddTab(nodeKinds[0].ToString(), () => OnTabButtonClick(nodeKinds[0]));
+        tabBar.AddTab(nodeKinds[1].ToString(), () => OnTabButtonClick(nodeKinds[1]));
+        */
+        NativeController.AttachNode(tabBar, this);
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
+            tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
+            /*
             _configTabButtons[kind] = new TextButtonNode {
                 X = x,
                 Width = buttonWidth,
@@ -66,6 +74,7 @@ public class ConfigurationWindow : NativeAddon {
                 OnClick = () => OnTabButtonClick(kind)
             };
             NativeController.AttachNode(_configTabButtons[kind], tabBar);
+            */
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
                 X = ContentStartPosition.X,
@@ -143,7 +152,6 @@ public class ConfigurationWindow : NativeAddon {
             };
             growDirectionNode.OptionListNode.SelectedOption = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
             growDirectionNode.LabelNode.Text = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
-            //_configLists[kind].Add(growDirectionNode);
 
             var containerNode = new ResNode {
                 IsVisible = true,
@@ -371,10 +379,6 @@ public class ConfigurationWindow : NativeAddon {
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, TextButtonNode button) in _configTabButtons) {
-            button.IsChecked = k == kind;
-        }
-
         foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
             node.IsVisible = k == kind;
         }
