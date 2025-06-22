@@ -5,47 +5,27 @@ using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Slider;
 using KamiToolKit.Nodes.TabBar;
 using KamiToolKit.System;
-using Lumina.Excel.Sheets;
 using StatusTimers.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace StatusTimers.Windows;
 
-public class ConfigurationWindow : NativeAddon {
+public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
     private const float CheckBoxWidth = 300;
-    private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
-    private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
-    private readonly Dictionary<NodeKind, TextButtonNode> _configTabButtons = new();
 
-    private readonly OverlayManager _overlayManager;
-    private string _currentFilterInput = "10";
-    private readonly EnemyMultiDoTOverlay _enemyMultiDoTOverlay;
-    private readonly PlayerCombinedStatusesOverlay _playerCombinedStatusesOverlay;
-
-    readonly List<Status> _allStatuses =
-        Services.DataManager.GetExcelSheet<Status>()
-            .Where(s => s.Icon != 0 && !string.IsNullOrEmpty(s.Name.ExtractText()))
-            .ToList();
-
-    private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new()
-    {
+    private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new() {
         { GrowDirection.DownRight, "Grow Down and Right" },
         { GrowDirection.DownLeft, "Grow Down and Left" },
         { GrowDirection.UpRight, "Grow Up and Right" },
         { GrowDirection.UpLeft, "Grow Up and Left" }
     };
 
-    public ConfigurationWindow(OverlayManager overlayManager) {
-        _overlayManager = overlayManager;
-        _enemyMultiDoTOverlay = overlayManager.EnemyMultiDoTOverlayInstance;
-        _playerCombinedStatusesOverlay = overlayManager.PlayerCombinedOverlayInstance;
-    }
+    private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
+    private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
         TabBarNode tabBar = new() {
@@ -54,13 +34,11 @@ public class ConfigurationWindow : NativeAddon {
             Height = 24,
             IsVisible = true
         };
-
-        const int buttonHeight = 28;
         const int buttonSpacing = 0;
         NodeKind[] nodeKinds = Enum.GetValues<NodeKind>();
-        int buttonWidth = (int)MathF.Floor((ContentSize.X - buttonSpacing * (nodeKinds.Length - 1)) / nodeKinds.Length);
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
+            IOverlayConfiguration currentOverlayConfig = GetOverlayByKind(kind);
             tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
@@ -75,10 +53,9 @@ public class ConfigurationWindow : NativeAddon {
 
             _configLists[kind] = new VerticalListNode<NodeBase> {
                 Height = 500,
-                Width = buttonWidth,
+                Width = _configScrollingAreas[kind].ContentNode.Width,
                 IsVisible = true,
-                ItemVerticalSpacing = 3,
-
+                ItemVerticalSpacing = 3
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
@@ -87,196 +64,83 @@ public class ConfigurationWindow : NativeAddon {
             _configLists[kind].Add(new TextNode {
                 IsVisible = true,
                 Width = 120,
-                Height = 16,
-                FontSize = 14,
-                TextColor = ColorHelper.GetColor(2),
-                TextOutlineColor = ColorHelper.GetColor(0),
-                TextFlags = TextFlags.Edge,
+                Height = TextStyles.Header.Height,
+                FontSize = TextStyles.Defaults.FontSize,
+                TextColor = TextStyles.Header.TextColor,
+                TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                TextFlags = TextStyles.Defaults.Flags,
                 Text = "Visual Settings"
             });
 
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Enabled",
-                IsChecked = GetOverlayByKind(kind).IsVisible,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).IsVisible = isChecked;
-                },
-            });
+            _configLists[kind].Add(CreateCheckboxOption("Enabled",
+                () => currentOverlayConfig.IsVisible,
+                isChecked => currentOverlayConfig.IsVisible = isChecked));
 
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Locked",
-                IsChecked = GetOverlayByKind(kind).IsLocked,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).IsLocked = isChecked;
-                },
-            });
+            _configLists[kind].Add(CreateCheckboxOption("Locked",
+                () => currentOverlayConfig.IsLocked,
+                isChecked => currentOverlayConfig.IsLocked = isChecked));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
-            var growDirectionNode = new TextDropDownNode {
-                X = 324,
-                IsVisible = true,
-                Width = 230,
-                Height = 24,
-                OptionListHeight = 120,
-                Options = GrowDirectionMap.Values.ToList(),
-                OnOptionSelected = selectedDisplayName => {
-                    GrowDirection selectedGrowDirection =
-                        GrowDirectionMap.FirstOrDefault(pair => pair.Value == selectedDisplayName).Key;
+            _configLists[kind].Add(CreateLabeledDropdown(
+                "Grow direction",
+                () => currentOverlayConfig.GrowDirection,
+                value => currentOverlayConfig.GrowDirection = value,
+                GrowDirectionMap
+            ));
 
-                    if (selectedGrowDirection != default || selectedDisplayName == GrowDirectionMap[default]) {
-                        GetOverlayByKind(kind).GrowDirection = selectedGrowDirection;
-                    }
-                },
-                SelectedOption = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection],
-            };
-
-            var containerNode = new ResNode {
-                IsVisible = true,
-                Width = 600,
-                Height = 32,
-            };
-
-            _configLists[kind].Add(containerNode);
-
-            NativeController.AttachNode(new TextNode {
+            _configLists[kind].Add(new TextNode {
                 X = OptionOffset,
-                Y = 0,
                 IsVisible = true,
                 Width = 300,
-                Height = 20,
-                FontSize = 14,
-                TextColor = ColorHelper.GetColor(8),
-                TextOutlineColor = ColorHelper.GetColor(0),
-                TextFlags = TextFlags.Edge,
-                Text = "Grow direction",
-            }, containerNode);
-
-            NativeController.AttachNode(new TextNode {
-                X = OptionOffset,
-                Y = 20,
-                IsVisible = true,
-                Width = 300,
-                Height = 20,
-                FontSize = 14,
-                TextColor = ColorHelper.GetColor(8),
-                TextOutlineColor = ColorHelper.GetColor(0),
-                TextFlags = TextFlags.Edge,
-                Text = "Statuses per row",
-            }, containerNode);
-
-            NativeController.AttachNode(growDirectionNode, containerNode);
-
-            var slider = new SliderNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = 30,
-                IsVisible = true,
-                Min = 1,
-                Max = 30,
-                Value = GetOverlayByKind(kind).ItemsPerLine,
-                Step = 1,
-                OnValueChanged = (value) => GetOverlayByKind(kind).ItemsPerLine = value
-            };
-
-            _configLists[kind].Add(slider);
-
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Fill columns first",
-                IsChecked = !GetOverlayByKind(kind).FillRowsFirst,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).FillRowsFirst = !isChecked;
-                },
+                Height = TextStyles.OptionLabel.Height,
+                FontSize = TextStyles.Defaults.FontSize,
+                TextColor = TextStyles.OptionLabel.TextColor,
+                TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                TextFlags = TextStyles.Defaults.Flags,
+                Text = "Items per line"
             });
+
+            _configLists[kind].Add(CreateSliderOption(
+                1,
+                30,
+                1,
+                () => currentOverlayConfig.ItemsPerLine,
+                value => currentOverlayConfig.ItemsPerLine = value
+            ));
+
+            _configLists[kind].Add(CreateCheckboxOption("Fill columns first",
+                () => !currentOverlayConfig.FillRowsFirst,
+                isChecked => currentOverlayConfig.FillRowsFirst = !isChecked));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Show status name",
-                IsChecked = GetOverlayByKind(kind).ShowStatusName,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).ShowStatusName = isChecked;
-                },
-            });
+            _configLists[kind].Add(CreateCheckboxOption("Show status name",
+                () => currentOverlayConfig.ShowStatusName,
+                isChecked => currentOverlayConfig.ShowStatusName = isChecked));
 
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Show time remaining",
-                IsChecked = GetOverlayByKind(kind).ShowStatusRemaining,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).ShowStatusRemaining = isChecked;
-                },
-            });
+            _configLists[kind].Add(CreateCheckboxOption("Show time remaining",
+                () => currentOverlayConfig.ShowStatusRemaining,
+                isChecked => currentOverlayConfig.ShowStatusRemaining = isChecked));
 
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Show time remaining background",
-                IsChecked = GetOverlayByKind(kind).ShowStatusRemainingBackground,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).ShowStatusRemainingBackground = isChecked;
-                },
-            });
+            _configLists[kind].Add(CreateCheckboxOption("Show time remaining background",
+                () => currentOverlayConfig.ShowStatusRemainingBackground,
+                isChecked => currentOverlayConfig.ShowStatusRemainingBackground = isChecked));
 
-            _configLists[kind].Add(new CheckboxNode {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = CheckBoxHeight,
-                IsVisible = true,
-                LabelText = "Show progressbar",
-                IsChecked = GetOverlayByKind(kind).ShowProgress,
-                OnClick = isChecked => {
-                    GetOverlayByKind(kind).ShowProgress = isChecked;
-                },
-            });
+            _configLists[kind].Add(CreateCheckboxOption("Show progressbar",
+                () => currentOverlayConfig.ShowProgress,
+                isChecked => currentOverlayConfig.ShowProgress = isChecked));
 
             if (kind == NodeKind.MultiDoT) {
                 _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
-                _configLists[kind].Add(new CheckboxNode {
-                    X = OptionOffset,
-                    Width = CheckBoxWidth,
-                    Height = CheckBoxHeight,
-                    IsVisible = true,
-                    LabelText = "Show enemy name",
-                    IsChecked = GetOverlayByKind(kind).ShowActorName,
-                    OnClick = isChecked => {
-                        GetOverlayByKind(kind).ShowActorName = isChecked;
-                    },
-                });
+                _configLists[kind].Add(CreateCheckboxOption("Show enemy name",
+                    () => currentOverlayConfig.ShowActorName,
+                    isChecked => currentOverlayConfig.ShowActorName = isChecked));
 
-                _configLists[kind].Add(new CheckboxNode {
-                    X = OptionOffset,
-                    Width = CheckBoxWidth,
-                    Height = CheckBoxHeight,
-                    IsVisible = true,
-                    LabelText = "Show enemy letter",
-                    IsChecked = GetOverlayByKind(kind).ShowActorLetter,
-                    OnClick = isChecked => {
-                        GetOverlayByKind(kind).ShowActorLetter = isChecked;
-                    },
-                });
+                _configLists[kind].Add(CreateCheckboxOption("Show enemy letter",
+                    () => currentOverlayConfig.ShowActorLetter,
+                    isChecked => currentOverlayConfig.ShowActorLetter = isChecked));
             }
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
@@ -284,128 +148,30 @@ public class ConfigurationWindow : NativeAddon {
             _configLists[kind].Add(new TextNode {
                 IsVisible = true,
                 Width = 120,
-                Height = 16,
-                FontSize = 14,
-                TextColor = ColorHelper.GetColor(2),
-                TextOutlineColor = ColorHelper.GetColor(0),
-                TextFlags = TextFlags.Edge,
+                Height = TextStyles.Header.Height,
+                FontSize = TextStyles.Defaults.FontSize,
+                TextColor = TextStyles.Header.TextColor,
+                TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                TextFlags = TextStyles.Defaults.Flags,
                 Text = "Functional Settings"
             });
 
             if (kind == NodeKind.Combined) {
-                _configLists[kind].Add(new CheckboxNode {
-                    X = OptionOffset,
-                    Width = CheckBoxWidth,
-                    Height = CheckBoxHeight,
-                    IsVisible = true,
-                    LabelText = "Hide permanent statuses",
-                    IsChecked = !GetOverlayByKind(kind).ShowPermaIcons,
-                    OnClick = isChecked => {
-                        GetOverlayByKind(kind).ShowPermaIcons = !isChecked;
-                    },
-                });
-            }
+                _configLists[kind].Add(CreateCheckboxOption("Hide permanent statuses",
+                    () => !currentOverlayConfig.ShowPermaIcons,
+                    isChecked => currentOverlayConfig.ShowPermaIcons = !isChecked));
 
-            if (kind == NodeKind.Combined) {
-                _configLists[kind].Add(new CheckboxNode {
-                    X = OptionOffset,
-                    Width = CheckBoxWidth,
-                    Height = CheckBoxHeight,
-                    IsVisible = true,
-                    LabelText = "Allow dismissing status by right-clicking the status icon.",
-                    IsChecked = GetOverlayByKind(kind).AllowDismissStatus,
-                    OnClick = isChecked => {
-                        GetOverlayByKind(kind).AllowDismissStatus = isChecked;
-                    },
-                });
+                _configLists[kind].Add(CreateCheckboxOption(
+                    "Allow dismissing status by right-clicking the status icon.",
+                    () => currentOverlayConfig.AllowDismissStatus,
+                    isChecked => currentOverlayConfig.AllowDismissStatus = isChecked));
             }
 
             if (kind == NodeKind.MultiDoT) {
-                _configLists[kind].Add(new CheckboxNode {
-                    X = OptionOffset,
-                    Width = CheckBoxWidth,
-                    Height = CheckBoxHeight,
-                    IsVisible = true,
-                    LabelText = "Allow targeting the enemy by clicking the status icon.",
-                    IsChecked = GetOverlayByKind(kind).AllowTargetActor,
-                    OnClick = isChecked => {
-                        GetOverlayByKind(kind).AllowTargetActor = isChecked;
-                    },
-                });
+                _configLists[kind].Add(CreateCheckboxOption("Allow targeting the enemy by clicking the status icon.",
+                    () => currentOverlayConfig.AllowTargetActor,
+                    isChecked => currentOverlayConfig.AllowTargetActor = isChecked));
             }
-
-            /*
-            LuminaDropDownNode<Status> filterDropdown = new() {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = buttonHeight,
-                IsVisible = true,
-                OptionListHeight = 125.0f,
-
-                //FilterFunction = status => status.Icon != 0 && !status.Name.ExtractText().IsNullOrEmpty() &&
-                //                           (status.Name.ContainsText(Encoding.UTF8.GetBytes(_currentFilterInput)) || status.RowId.ToString().Contains(_currentFilterInput)),
-                FilterFunction = status => status.RowId.ToString().Contains(_currentFilterInput),
-                LabelFunction = status => $"{status.RowId} {status.Name.ExtractText()}"
-            };
-            */
-
-            /*
-            TextDropDownNode filterDropdown = new() {
-                X = OptionOffset,
-                Width = CheckBoxWidth,
-                Height = buttonHeight,
-                IsVisible = true,
-                OptionListHeight = 40,
-                Options = [""],
-            };
-
-            TextInputNode filterListInput = new() {
-                X = OptionOffset - 4,
-                Width = CheckBoxWidth,
-                Height = buttonHeight,
-                Size = new Vector2(300, 28),
-                IsVisible = true,
-                OnInputComplete = input => {
-                    _currentFilterInput = input.TextValue ?? string.Empty;
-                    ApplyFilter(_currentFilterInput);
-                },
-            };
-            */
-
-            void ApplyFilter(string filter)
-            {
-                var filtered = _allStatuses
-                    .Where(s =>
-                        string.IsNullOrEmpty(filter) ||
-                        s.RowId.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                        s.Name.ExtractText().Contains(filter, StringComparison.OrdinalIgnoreCase))
-                    .Select(s => $"{s.RowId}  {s.Name.ExtractText()}")
-                    .ToList();
-
-                if (filtered.Count == 0) {
-                    filtered.Add("");
-                }
-
-                //var previous = filterDropdown.SelectedOption;
-
-                //filterDropdown.Options = filtered;
-
-                /*
-                filterDropdown.Options.Clear();
-                filterDropdown.Options.AddRange(filtered);
-                filterDropdown.OptionListHeight = Math.Clamp(filtered.Count * 40, 40, 40 * 5);
-                */
-                /*
-                filterDropdown.SelectedOption = filtered.Contains(previous)
-                    ? previous
-                    : filtered[0];
-                    */
-            }
-
-            /*
-            _configLists[kind].Add(filterListInput);
-            _configLists[kind].Add(filterDropdown);
-            */
         }
 
         NativeController.AttachNode(tabBar, this);
@@ -418,18 +184,97 @@ public class ConfigurationWindow : NativeAddon {
         }
     }
 
-    private StatusTimerOverlay<StatusKey> GetOverlayByKind(NodeKind kind) {
-        switch (kind) {
-            case NodeKind.Combined:
-                return _playerCombinedStatusesOverlay;
-            case NodeKind.MultiDoT:
-                return _enemyMultiDoTOverlay;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(kind), kind,
-                    "The provided NodeKind is not supported by GetOverlayByKind.");
-        }
-    }
-
     protected override unsafe void OnUpdate(AtkUnitBase* addon) {
     }
+
+    #region Helper Methods
+
+    private CheckboxNode CreateCheckboxOption(string label, Func<bool> getter, Action<bool> setter) {
+        CheckboxNode checkboxNode = new() {
+            X = OptionOffset,
+            Width = CheckBoxWidth,
+            Height = CheckBoxHeight,
+            IsVisible = true,
+            LabelText = label,
+            IsChecked = getter(),
+            OnClick = setter
+        };
+        return checkboxNode;
+    }
+
+    private HorizontalFlexNode<NodeBase> CreateLabeledDropdown<TEnum>(
+        string labelText,
+        Func<TEnum> getter,
+        Action<TEnum> setter,
+        IReadOnlyDictionary<TEnum, string> enumToDisplayNameMap
+    )
+        where TEnum : Enum {
+        HorizontalFlexNode<NodeBase> flexNode = new() {
+            IsVisible = true,
+            X = OptionOffset,
+            Width = 600,
+            Height = 24,
+            FitWidth = false,
+            FitHeight = true,
+            FitPadding = 4
+        };
+
+        TextNode labelNode = new() {
+            X = 0,
+            Y = 0,
+            IsVisible = true,
+            Width = 260,
+            Height = TextStyles.OptionLabel.Height,
+            FontSize = TextStyles.Defaults.FontSize,
+            TextColor = TextStyles.OptionLabel.TextColor,
+            TextOutlineColor = TextStyles.Defaults.OutlineColor,
+            TextFlags = TextStyles.Defaults.Flags,
+            Text = labelText
+        };
+        flexNode.Add(labelNode);
+
+        TextDropDownNode dropdownNode = new() {
+            X = 0,
+            Y = 0,
+            IsVisible = true,
+            Width = 280,
+            Height = 24,
+            OptionListHeight = 120,
+            Options = enumToDisplayNameMap.Values.ToList(),
+            OnOptionSelected = selectedDisplayName => {
+                TEnum selectedEnum = enumToDisplayNameMap
+                    .FirstOrDefault(pair => pair.Value == selectedDisplayName).Key;
+                setter(selectedEnum);
+            },
+            SelectedOption = enumToDisplayNameMap[getter()]
+        };
+        flexNode.Add(dropdownNode);
+        return flexNode;
+    }
+
+    private SliderNode CreateSliderOption(int min, int max, int step, Func<int> getter, Action<int> setter) {
+        SliderNode sliderNode = new() {
+            X = OptionOffset,
+            Width = CheckBoxWidth,
+            Height = 30,
+            IsVisible = true,
+            Min = min,
+            Max = max,
+            Step = step,
+            Value = getter(),
+            OnValueChanged = setter
+        };
+        return sliderNode;
+    }
+
+    private IOverlayConfiguration GetOverlayByKind(NodeKind kind) {
+        return kind switch {
+            NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
+            NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind,
+                "The provided NodeKind is not supported by GetOverlayByKind.")
+        };
+    }
+
+    #endregion
 }
