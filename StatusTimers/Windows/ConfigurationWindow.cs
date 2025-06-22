@@ -56,12 +56,12 @@ public class ConfigurationWindow : NativeAddon {
         int buttonWidth = (int)MathF.Floor((ContentSize.X - buttonSpacing * (nodeKinds.Length - 1)) / nodeKinds.Length);
 
         int x = 0;
+
         /*
-        This was a test
-        tabBar.AddTab(nodeKinds[0].ToString(), () => OnTabButtonClick(nodeKinds[0]));
-        tabBar.AddTab(nodeKinds[1].ToString(), () => OnTabButtonClick(nodeKinds[1]));
+        tabBar.AddTab("Hello", () => Services.Logger.Info("Hello"));
+        tabBar.AddTab("Okay", () => Services.Logger.Info("Hello"));
         */
-        NativeController.AttachNode(tabBar, this);
+
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
             tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
             /*
@@ -149,9 +149,8 @@ public class ConfigurationWindow : NativeAddon {
                         GetOverlayByKind(kind).GrowDirection = selectedGrowDirection;
                     }
                 },
+                SelectedOption = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection],
             };
-            growDirectionNode.OptionListNode.SelectedOption = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
-            growDirectionNode.LabelNode.Text = GrowDirectionMap[GetOverlayByKind(kind).GrowDirection];
 
             var containerNode = new ResNode {
                 IsVisible = true,
@@ -160,6 +159,7 @@ public class ConfigurationWindow : NativeAddon {
             };
 
             _configLists[kind].Add(containerNode);
+
             NativeController.AttachNode(new TextNode {
                 X = OptionOffset,
                 Y = 0,
@@ -172,6 +172,7 @@ public class ConfigurationWindow : NativeAddon {
                 TextFlags = TextFlags.Edge,
                 Text = "Grow direction",
             }, containerNode);
+
             NativeController.AttachNode(new TextNode {
                 X = OptionOffset,
                 Y = 20,
@@ -184,6 +185,7 @@ public class ConfigurationWindow : NativeAddon {
                 TextFlags = TextFlags.Edge,
                 Text = "Statuses per row",
             }, containerNode);
+
             NativeController.AttachNode(growDirectionNode, containerNode);
 
             var slider = new SliderNode {
@@ -375,10 +377,13 @@ public class ConfigurationWindow : NativeAddon {
 
             x += buttonWidth + buttonSpacing;
         }
+
+        NativeController.AttachNode(tabBar, this);
         _configScrollingAreas.First().Value.IsVisible = true;
     }
 
     private void OnTabButtonClick(NodeKind kind) {
+        Services.Logger.Info($"{kind} clicked");
         foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
             node.IsVisible = k == kind;
         }
@@ -392,7 +397,7 @@ public class ConfigurationWindow : NativeAddon {
                 return _enemyMultiDoTOverlay;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind,
-                    "The provided NodeKind is not supported by GetOverlayByKind.");
+                    "The provided NodeKind is not supported by GetOverlayByKind.d");
         }
     }
 
