@@ -29,7 +29,7 @@ public static class StatusManager {
         PopulateDictionaries();
     }
 
-    public static IReadOnlyList<StatusInfo> GetPlayerStatuses() {
+    public static IReadOnlyList<StatusInfo> GetPlayerStatuses(IOverlayConfiguration config) {
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
         if (player?.StatusList == null) {
             return [];
@@ -37,11 +37,14 @@ public static class StatusManager {
 
         return player.StatusList
             .Where(status => status.StatusId != 0)
-            .Select(status => TransformStatus(status, player.GameObjectId))
+            .Select(status => TransformStatus(status, player.GameObjectId, config))
+            .Where(transformedStatus => transformedStatus != null) // Filter out nulls
+            .Cast<StatusInfo>() // This is the crucial missing piece: cast the whole sequence to non-nullable
             .ToList();
+        ;
     }
 
-    public static IReadOnlyList<StatusInfo> GetHostileStatuses() {
+    public static IReadOnlyList<StatusInfo> GetHostileStatuses(IOverlayConfiguration config) {
         _hostileStatusBuffer.Clear();
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
@@ -58,8 +61,7 @@ public static class StatusManager {
             }
 
             StatusList statusList = target.StatusList;
-            for (int i = 0; i < statusList.Length; i++) {
-                Status? status = statusList[i];
+            foreach (Status status in statusList) {
                 if (status.StatusId == 0 || status.SourceId != player.GameObjectId) {
                     continue;
                 }
@@ -68,14 +70,17 @@ public static class StatusManager {
                     continue;
                 }
 
-                _hostileStatusBuffer.Add(TransformStatus(status, target.GameObjectId));
+                StatusInfo? transformedStatus = TransformStatus(status, target.GameObjectId, config);
+                if (transformedStatus.HasValue) {
+                    _hostileStatusBuffer.Add(transformedStatus.Value);
+                }
             }
         }
 
         return _hostileStatusBuffer;
     }
 
-    private static StatusInfo TransformStatus(Status status, ulong objectId) {
+    private static StatusInfo? TransformStatus(Status status, ulong objectId, IOverlayConfiguration config) {
         LuminaStatus gameData = status.GameData.Value;
 
         uint id = status.StatusId;
@@ -91,6 +96,10 @@ public static class StatusManager {
             StatusDurations[id] = maxSeconds;
         }
 
+        if (!config.ShowPermaIcons && isPerma) {
+            return null;
+        }
+
         // TODO Make extraction optional based on configuration
         string? actorName = null;
         char? enemyLetter = null;
@@ -98,23 +107,24 @@ public static class StatusManager {
         IGameObject? actor = Services.ObjectTable.FirstOrDefault(o => o is not null && o.GameObjectId == objectId);
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
 
-        //Services.Logger.Info($"Actor name changed{actor.Name} {actor.ObjectIndex} ");
+
         if (actor is not null && player != null && actor.GameObjectId != player.GameObjectId) {
             actorName = actor.Name.TextValue;
             enemyLetter = EnemyListHelper.GetEnemyLetter((uint)actor.GameObjectId);
         }
 
-        // TODO Add configuration to resolve food/pots
-        switch (status.StatusId) {
-            case 48: // Well Fed
-            case 49: // Medicated
-                (string Name, uint IconId)? resolved = ResolveFoodParam(status.Param);
-                if (resolved is (string nameResolved, uint iconIdResolved)) {
-                    name = nameResolved;
-                }
+        if (config.StatusAsItemName) {
+            switch (status.StatusId) {
+                case 48: // Well Fed
+                case 49: // Medicated
+                    (string Name, uint IconId)? resolved = ResolveFoodParam(status.Param);
+                    if (resolved is (string nameResolved, uint iconIdResolved)) {
+                        name = nameResolved;
+                        //iconId = iconIdResolved;
+                    }
 
-                //iconId = iconIdResolved;
-                break;
+                    break;
+            }
         }
 
         return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, stacks, isPerma,

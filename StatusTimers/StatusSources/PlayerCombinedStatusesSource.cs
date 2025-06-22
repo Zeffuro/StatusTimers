@@ -1,11 +1,12 @@
 using StatusTimers.Helpers;
+using StatusTimers.Windows;
 using System.Collections.Generic;
 
 namespace StatusTimers.StatusSources;
 
-public class PlayerCombinedStatusesSource : IStatusSource<StatusKey> {
-    public IReadOnlyList<StatusInfo> Fetch() {
-        return StatusManager.GetPlayerStatuses();
+public class PlayerCombinedStatusesSource(PlayerCombinedStatusesOverlay overlay) : IStatusSource<StatusKey> {
+    public IReadOnlyList<StatusInfo> Fetch(IOverlayConfiguration config) {
+        return StatusManager.GetPlayerStatuses(overlay);
     }
 
     public StatusKey KeyOf(StatusInfo info) {

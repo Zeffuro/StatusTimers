@@ -15,15 +15,13 @@ using System.Numerics;
 namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
-public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
+public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayConfiguration {
     private const int PoolSize = 30;
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
 
     private readonly List<StatusTimerNode<TKey>> _allNodes = new();
     private readonly NodeKind _nodeKind;
-
-    private readonly IStatusSource<TKey> _source;
 
     protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
     protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
@@ -38,8 +36,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     private NodeBase _rootContainer;
     private List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
 
-    protected StatusTimerOverlay(IStatusSource<TKey> source, NodeKind nodeKind) {
-        _source = source;
+    protected IStatusSource<TKey> Source;
+
+    protected StatusTimerOverlay(NodeKind nodeKind) {
         _nodeKind = nodeKind;
 
         LoadConfig();
@@ -110,34 +109,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     } = 8;
 
     [JsonProperty]
-    public bool ShowActorLetter {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowActorName {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
-
-    [JsonProperty]
     public bool ShowIcon {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowPermaIcons {
         get;
         set {
             field = value;
@@ -193,6 +165,41 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     public Vector2 CalculatedOverlaySize { get; private set; }
 
+    [JsonProperty]
+    public bool ShowActorLetter {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowActorName {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowPermaIcons {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool StatusAsItemName {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
 
     public void Setup() {
         if (_isSetupCompleted) {
@@ -241,7 +248,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     public void OnUpdate() {
-        IReadOnlyList<StatusInfo> current = _source.Fetch();
+        IReadOnlyList<StatusInfo> current = Source.Fetch(this);
 
         List<StatusInfo> sortedStatuses = current
             .OrderByDescending(s => s.IsPermanent)
@@ -255,7 +262,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             StatusInfo status = sortedStatuses[i];
             StatusTimerNode<TKey> node = _allNodes[i];
 
-            newActive[_source.KeyOf(status)] = node;
+            newActive[Source.KeyOf(status)] = node;
 
             node.StatusInfo = status;
             node.Kind = _nodeKind;
@@ -279,8 +286,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         RecalculateLayout();
     }
 
-    private void BuildContainers()
-    {
+    private void BuildContainers() {
         CalculatedOverlaySize = CalculateOverlaySize();
         int outerCount = (int)Math.Ceiling(PoolSize / (double)ItemsPerLine);
 
@@ -295,11 +301,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 },
                 outer => Services.NativeController.AttachNode(outer, this),
                 () => {
-                    float innerWidth = (Math.Min(ItemsPerLine, PoolSize) * StatusNodeWidth) +
-                                       ((Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding);
+                    float innerWidth = Math.Min(ItemsPerLine, PoolSize) * StatusNodeWidth +
+                                       (Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding;
                     float innerHeight = StatusNodeHeight;
 
-                    var list = new HorizontalListNode<StatusTimerNode<TKey>> {
+                    HorizontalListNode<StatusTimerNode<TKey>> list = new() {
                         Width = innerWidth,
                         Height = innerHeight,
                         IsVisible = true,
@@ -314,7 +320,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 outerCount,
                 ItemsPerLine
             );
-        } else {
+        }
+        else {
             _columns.Clear();
             SetupContainers(
                 () => new HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> {
@@ -326,9 +333,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 outer => Services.NativeController.AttachNode(outer, this),
                 () => {
                     float innerWidth = StatusNodeWidth;
-                    float innerHeight = (Math.Min(ItemsPerLine, PoolSize) * StatusNodeHeight) +
-                                        ((Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding);
-                    var list = new VerticalListNode<StatusTimerNode<TKey>> {
+                    float innerHeight = Math.Min(ItemsPerLine, PoolSize) * StatusNodeHeight +
+                                        (Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding;
+                    VerticalListNode<StatusTimerNode<TKey>> list = new() {
                         Height = innerWidth,
                         Width = innerHeight,
                         IsVisible = true,
@@ -345,6 +352,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
                 ItemsPerLine
             );
         }
+
         Size = CalculatedOverlaySize;
 
         RecalculateLayout();
@@ -357,24 +365,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         int actualItemsPerLine = Math.Min(ItemsPerLine, PoolSize);
 
         if (FillRowsFirst) {
-            float singleRowWidth = (actualItemsPerLine * StatusNodeWidth) +
-                                   ((actualItemsPerLine - 1) * StatusPadding);
+            float singleRowWidth = actualItemsPerLine * StatusNodeWidth +
+                                   (actualItemsPerLine - 1) * StatusPadding;
 
             int numRows = (int)Math.Ceiling(PoolSize / (double)actualItemsPerLine);
 
-            float allRowsHeight = (numRows * StatusNodeHeight) +
-                                  ((numRows - 1) * StatusPadding);
+            float allRowsHeight = numRows * StatusNodeHeight +
+                                  (numRows - 1) * StatusPadding;
 
             totalWidth = singleRowWidth;
             totalHeight = allRowsHeight;
-        } else {
-            float singleColumnHeight = (actualItemsPerLine * StatusNodeHeight) +
-                                       ((actualItemsPerLine - 1) * StatusPadding);
+        }
+        else {
+            float singleColumnHeight = actualItemsPerLine * StatusNodeHeight +
+                                       (actualItemsPerLine - 1) * StatusPadding;
 
             int numColumns = (int)Math.Ceiling(PoolSize / (double)actualItemsPerLine);
 
-            float allColumnsWidth = (numColumns * StatusNodeWidth) +
-                                    ((numColumns - 1) * StatusPadding);
+            float allColumnsWidth = numColumns * StatusNodeWidth +
+                                    (numColumns - 1) * StatusPadding;
 
             totalWidth = allColumnsWidth;
             totalHeight = singleColumnHeight;
@@ -399,26 +408,26 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     private void RebuildContainers(Action onCompleteCallback = null) {
-        if (_rootContainer == null)
-        {
+        if (_rootContainer == null) {
             BuildContainers();
             FinalizeOverlayPositionAndSize(Position, CalculatedOverlaySize);
             onCompleteCallback?.Invoke();
             return;
         }
-        var oldPosition = Position;
+
+        Vector2 oldPosition = Position;
 
         Services.NativeController.DetachNode(_rootContainer, () => {
-            foreach (var row in _rows)
-            {
+            foreach (HorizontalListNode<StatusTimerNode<TKey>> row in _rows) {
                 Services.NativeController.DetachNode(row);
             }
+
             _rows.Clear();
 
-            foreach (var col in _columns)
-            {
+            foreach (VerticalListNode<StatusTimerNode<TKey>> col in _columns) {
                 Services.NativeController.DetachNode(col);
             }
+
             _columns.Clear();
 
             BuildContainers();
@@ -431,10 +440,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         });
     }
 
-    private void RecalculateLayout()
-    {
-        bool up   = GrowDirection == GrowDirection.UpLeft  || GrowDirection == GrowDirection.UpRight;
-        bool left = GrowDirection == GrowDirection.UpLeft  || GrowDirection == GrowDirection.DownLeft;
+    private void RecalculateLayout() {
+        bool up = GrowDirection == GrowDirection.UpLeft || GrowDirection == GrowDirection.UpRight;
+        bool left = GrowDirection == GrowDirection.UpLeft || GrowDirection == GrowDirection.DownLeft;
 
         SetVerticalAlignment(up ? VerticalListAnchor.Bottom : VerticalListAnchor.Top);
         SetHorizontalAlignment(left ? HorizontalListAnchor.Right : HorizontalListAnchor.Left);
