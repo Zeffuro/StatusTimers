@@ -196,7 +196,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             ToggleDrag(IsLocked);
         }
 
-        OnClickDragComplete = SaveConfig; // Assuming SimpleComponentNode provides this delegate (from previous version)
+        OnClickDragComplete = SaveConfig;
     }
 
     protected void OnAttach() {
@@ -346,33 +346,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         float totalWidth;
         float totalHeight;
 
-        int actualItemsPerLine = Math.Min(ItemsPerLine, PoolSize); // Don't exceed PoolSize for items in one line/column
+        int actualItemsPerLine = Math.Min(ItemsPerLine, PoolSize);
 
         if (FillRowsFirst) {
-            // Rows First: Horizontal lists inside a Vertical list
-            // Calculate width of one row
             float singleRowWidth = (actualItemsPerLine * StatusNodeWidth) +
                                    ((actualItemsPerLine - 1) * StatusPadding);
 
-            // Calculate number of rows needed for all 30 items
             int numRows = (int)Math.Ceiling(PoolSize / (double)actualItemsPerLine);
 
-            // Calculate height of all rows
             float allRowsHeight = (numRows * StatusNodeHeight) +
                                   ((numRows - 1) * StatusPadding);
 
             totalWidth = singleRowWidth;
             totalHeight = allRowsHeight;
         } else {
-            // Columns First: Vertical lists inside a Horizontal list
-            // Calculate height of one column
             float singleColumnHeight = (actualItemsPerLine * StatusNodeHeight) +
                                        ((actualItemsPerLine - 1) * StatusPadding);
 
-            // Calculate number of columns needed for all 30 items
             int numColumns = (int)Math.Ceiling(PoolSize / (double)actualItemsPerLine);
 
-            // Calculate width of all columns
             float allColumnsWidth = (numColumns * StatusNodeWidth) +
                                     ((numColumns - 1) * StatusPadding);
 
@@ -380,19 +372,29 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             totalHeight = singleColumnHeight;
         }
 
-        // Add some extra padding for the header/frame if you have one or for general visual spacing
-        // This assumes your _backgroundNode's padding (TopOffset, BottomOffset, etc.) is handled by KamiToolKit
-        // within the NineGridNode, but you might want some external frame padding too.
-        // For simplicity, let's assume the calculated totalWidth/Height is what the root container should be.
-        // The background node will adjust to the Size property of this SimpleComponentNode.
+        return new Vector2(Math.Max(0, totalWidth), Math.Max(0, totalHeight));
+    }
 
-        return new Vector2(Math.Max(0, totalWidth), Math.Max(0, totalHeight)); // Ensure non-negative size
+    private void FinalizeOverlayPositionAndSize(Vector2 newPosition, Vector2 newSize) {
+        Size = newSize;
+        if (_backgroundNode != null) {
+            _backgroundNode.Size = newSize;
+        }
+
+        // Magic
+        MagicCornerYeetFix();
+    }
+
+    private void MagicCornerYeetFix() {
+        Position += new Vector2(1, 1);
+        Position -= new Vector2(1, 1);
     }
 
     private void RebuildContainers(Action onCompleteCallback = null) {
         if (_rootContainer == null)
         {
             BuildContainers();
+            FinalizeOverlayPositionAndSize(Position, CalculatedOverlaySize);
             onCompleteCallback?.Invoke();
             return;
         }
@@ -412,13 +414,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             _columns.Clear();
 
             BuildContainers();
-            RecalculateLayout();
 
-            Services.Logger.Info($"Position before change, after build/recalculate {Position}, Position stored: {oldPosition}");
-            Position = oldPosition;
-            Services.Logger.Info($"Position set {Position}");
-
-            onCompleteCallback?.Invoke();
+            Services.Framework.RunOnTick(() => {
+                RecalculateLayout();
+                FinalizeOverlayPositionAndSize(oldPosition, CalculatedOverlaySize);
+                onCompleteCallback?.Invoke();
+            }, delayTicks: 3);
         });
     }
 
@@ -519,10 +520,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     public void SaveConfig() {
+        /*
         string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Save(configPath);
         Services.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
+        */
     }
 }
 
