@@ -383,7 +383,6 @@ public class ConfigurationWindow : NativeAddon {
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        Services.Logger.Info($"{kind} clicked");
         foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
             node.IsVisible = k == kind;
         }
@@ -397,7 +396,7 @@ public class ConfigurationWindow : NativeAddon {
                 return _enemyMultiDoTOverlay;
             default:
                 throw new ArgumentOutOfRangeException(nameof(kind), kind,
-                    "The provided NodeKind is not supported by GetOverlayByKind.d");
+                    "The provided NodeKind is not supported by GetOverlayByKind.");
         }
     }
 
