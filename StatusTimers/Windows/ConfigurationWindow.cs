@@ -28,6 +28,11 @@ public class ConfigurationWindow : NativeAddon {
     private readonly EnemyMultiDoTOverlay _enemyMultiDoTOverlay;
     private readonly PlayerCombinedStatusesOverlay _playerCombinedStatusesOverlay;
 
+    readonly List<Status> _allStatuses =
+        Services.DataManager.GetExcelSheet<Status>()
+            .Where(s => s.Icon != 0 && !string.IsNullOrEmpty(s.Name.ExtractText()))
+            .ToList();
+
     private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new()
     {
         { GrowDirection.DownRight, "Grow Down and Right" },
@@ -55,26 +60,8 @@ public class ConfigurationWindow : NativeAddon {
         NodeKind[] nodeKinds = Enum.GetValues<NodeKind>();
         int buttonWidth = (int)MathF.Floor((ContentSize.X - buttonSpacing * (nodeKinds.Length - 1)) / nodeKinds.Length);
 
-        int x = 0;
-
-        /*
-        tabBar.AddTab("Hello", () => Services.Logger.Info("Hello"));
-        tabBar.AddTab("Okay", () => Services.Logger.Info("Hello"));
-        */
-
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
             tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
-            /*
-            _configTabButtons[kind] = new TextButtonNode {
-                X = x,
-                Width = buttonWidth,
-                Height = buttonHeight,
-                IsVisible = true,
-                Label = kind.ToString(),
-                OnClick = () => OnTabButtonClick(kind)
-            };
-            NativeController.AttachNode(_configTabButtons[kind], tabBar);
-            */
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
                 X = ContentStartPosition.X,
@@ -347,18 +334,7 @@ public class ConfigurationWindow : NativeAddon {
                 });
             }
 
-            TextInputNode filterListInput = new() {
-                X = OptionOffset - 4,
-                Width = CheckBoxWidth,
-                Height = buttonHeight,
-                Size = new Vector2(300, 28),
-                IsVisible = true,
-                OnInputReceived = input => {
-                    _currentFilterInput = input.TextValue.ToString();
-                }
-            };
-            _configLists[kind].Add(filterListInput);
-
+            /*
             LuminaDropDownNode<Status> filterDropdown = new() {
                 X = OptionOffset,
                 Width = CheckBoxWidth,
@@ -371,11 +347,65 @@ public class ConfigurationWindow : NativeAddon {
                 FilterFunction = status => status.RowId.ToString().Contains(_currentFilterInput),
                 LabelFunction = status => $"{status.RowId} {status.Name.ExtractText()}"
             };
+            */
+
+            /*
+            TextDropDownNode filterDropdown = new() {
+                X = OptionOffset,
+                Width = CheckBoxWidth,
+                Height = buttonHeight,
+                IsVisible = true,
+                OptionListHeight = 40,
+                Options = [""],
+            };
+
+            TextInputNode filterListInput = new() {
+                X = OptionOffset - 4,
+                Width = CheckBoxWidth,
+                Height = buttonHeight,
+                Size = new Vector2(300, 28),
+                IsVisible = true,
+                OnInputComplete = input => {
+                    _currentFilterInput = input.TextValue ?? string.Empty;
+                    ApplyFilter(_currentFilterInput);
+                },
+            };
+            */
+
+            void ApplyFilter(string filter)
+            {
+                var filtered = _allStatuses
+                    .Where(s =>
+                        string.IsNullOrEmpty(filter) ||
+                        s.RowId.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                        s.Name.ExtractText().Contains(filter, StringComparison.OrdinalIgnoreCase))
+                    .Select(s => $"{s.RowId}  {s.Name.ExtractText()}")
+                    .ToList();
+
+                if (filtered.Count == 0) {
+                    filtered.Add("");
+                }
+
+                //var previous = filterDropdown.SelectedOption;
+
+                //filterDropdown.Options = filtered;
+
+                /*
+                filterDropdown.Options.Clear();
+                filterDropdown.Options.AddRange(filtered);
+                filterDropdown.OptionListHeight = Math.Clamp(filtered.Count * 40, 40, 40 * 5);
+                */
+                /*
+                filterDropdown.SelectedOption = filtered.Contains(previous)
+                    ? previous
+                    : filtered[0];
+                    */
+            }
+
+            /*
+            _configLists[kind].Add(filterListInput);
             _configLists[kind].Add(filterDropdown);
-
-            //NativeController.AttachNode(filterDropdown, _configLists[kind]);
-
-            x += buttonWidth + buttonSpacing;
+            */
         }
 
         NativeController.AttachNode(tabBar, this);

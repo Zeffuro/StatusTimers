@@ -73,6 +73,15 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     } = true;
 
     [JsonProperty]
+    public bool FilterStatuses {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
     public GrowDirection GrowDirection {
         get;
         set {
