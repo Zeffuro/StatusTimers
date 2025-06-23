@@ -91,8 +91,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         Services.NativeController.AttachNode(_statusRemaining, this);
 
-        AddLabelTimeLine(this);
-        AddKeyFrameTimeline(_iconNode);
+        //AddLabelTimeLine(this);
+        AddKeyFrameTimeline(this);
     }
 
     public NodeKind Kind { get; set; }
@@ -191,6 +191,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         node.AddTimeline(labels);
     }
+
     private void AddKeyFrameTimeline(NodeBase node) {
         // Future Zeff, this always goes on a child
         var keyFrames = new TimelineBuilder()

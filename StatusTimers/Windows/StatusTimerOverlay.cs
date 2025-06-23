@@ -482,6 +482,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 (outer, inner) => outer.AddNode(inner),
                 inner => {
                     // If we need to edit the StatusTimerNode
+                    AddLabelTimeLine(inner);
                 },
                 (inner, node) => inner.AddNode(node),
                 outerCount,
@@ -515,6 +516,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 (outer, inner) => outer.AddNode(inner),
                 inner => {
                     // If we need to edit the StatusTimerNode
+                    AddLabelTimeLine(inner);
                 },
                 (inner, node) => inner.AddNode(node),
                 outerCount,
@@ -907,6 +909,19 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         Save(configPath);
         Services.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
     }
+
+    private void AddLabelTimeLine(NodeBase node) {
+        // Future Zeff, this always goes on a parent
+        var labels = new TimelineBuilder()
+            .BeginFrameSet(1, 20)
+            .AddLabel(1, 10, AtkTimelineJumpBehavior.Start, 0)
+            .AddLabel(20, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
+            .EndFrameSet()
+            .Build();
+
+        node.AddTimeline(labels);
+    }
+
 }
 
 public record DummyStatusTemplate(
