@@ -37,6 +37,8 @@ public unsafe class OverlayManager : IDisposable {
     public EnemyMultiDoTOverlay EnemyMultiDoTOverlayInstance => EnemyMultiDoTOverlay;
 
     public void Dispose() {
+        PlayerCombinedOverlay.OnDispose();
+        EnemyMultiDoTOverlay.OnDispose();
         Services.NativeController.DetachNode(PlayerCombinedOverlay);
         Services.NativeController.DetachNode(EnemyMultiDoTOverlay);
 

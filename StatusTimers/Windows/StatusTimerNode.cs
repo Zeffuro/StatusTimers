@@ -15,6 +15,7 @@ using StatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
 namespace StatusTimers.Windows;
 
 public sealed class StatusTimerNode<TKey> : ResNode {
+    private readonly ResNode _containerResNode;
     private readonly TextNode _actorName;
     private readonly IconImageNode _iconNode;
     private readonly CastBarProgressBarNode _progressNode;
@@ -24,12 +25,19 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private StatusInfo _statusInfo;
 
     public StatusTimerNode() {
+        _containerResNode = new ResNode {
+            Position = this.Position,
+            Size = this.Size,
+            IsVisible = true,
+        };
+        Services.NativeController.AttachNode(_containerResNode, this);
+
         _iconNode = new IconImageNode {
             Size = new Vector2(48, 64),
             IsVisible = true,
             EnableEventFlags = true
         };
-        Services.NativeController.AttachNode(_iconNode, this);
+        Services.NativeController.AttachNode(_iconNode, _containerResNode);
 
         _progressNode = new CastBarProgressBarNode() {
             Height = 20,
@@ -37,7 +45,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             IsVisible = true,
             Width = 200
         };
-        Services.NativeController.AttachNode(_progressNode, this);
+        Services.NativeController.AttachNode(_progressNode, _containerResNode);
 
         _actorName = new TextNode {
             IsVisible = _statusInfo.ActorName != null,
@@ -49,7 +57,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             TextFlags = TextFlags.Edge
         };
 
-        Services.NativeController.AttachNode(_actorName, this);
+        Services.NativeController.AttachNode(_actorName, _containerResNode);
 
         _statusName = new TextNode {
             IsVisible = true,
@@ -62,7 +70,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             NodeFlags = NodeFlags.Clip
         };
 
-        Services.NativeController.AttachNode(_statusName, this);
+        Services.NativeController.AttachNode(_statusName, _containerResNode);
 
         _statusRemainingBackground = new SimpleNineGridNode {
             IsVisible = true,
@@ -77,7 +85,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             RightOffset = 12,
         };
 
-        Services.NativeController.AttachNode(_statusRemainingBackground, this);
+        Services.NativeController.AttachNode(_statusRemainingBackground, _containerResNode);
 
         _statusRemaining = new TextNode {
             IsVisible = true,
@@ -89,10 +97,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             TextFlags = TextFlags.Edge
         };
 
-        Services.NativeController.AttachNode(_statusRemaining, this);
+        Services.NativeController.AttachNode(_statusRemaining, _containerResNode);
 
-        //AddLabelTimeLine(this);
-        AddKeyFrameTimeline(this);
+        AddLabelTimeLine(this);
+        AddKeyFrameTimeline(_containerResNode);
     }
 
     public NodeKind Kind { get; set; }
@@ -106,6 +114,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             }
         }
     }
+
+    public NodeBase OuterContainer { get; set; }
 
     public StatusInfo StatusInfo {
         get => _statusInfo;

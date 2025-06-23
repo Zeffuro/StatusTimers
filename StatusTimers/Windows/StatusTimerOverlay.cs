@@ -1,3 +1,4 @@
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
@@ -280,8 +281,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
     public string Title { get; set; }
 
-    public override Vector4 Color { get; set; }
-
     public Vector2 CalculatedOverlaySize { get; private set; }
 
     [JsonProperty]
@@ -320,12 +319,14 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = true;
 
+    public override Vector4 Color { get; set; }
+    public override Vector3 AddColor { get; set; }
+    public override Vector3 MultiplyColor { get; set; }
+
     public void Setup() {
         if (_isSetupCompleted) {
             return;
         }
-
-        _isSetupCompleted = true;
         OnAttach();
 
         if (!IsLocked) {
@@ -335,6 +336,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         Scale = new Vector2(ScaleInt * 0.01f);
 
         OnClickDragComplete = SaveConfig;
+        _isSetupCompleted = true;
     }
 
     protected void OnAttach() {
@@ -482,9 +484,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 (outer, inner) => outer.AddNode(inner),
                 inner => {
                     // If we need to edit the StatusTimerNode
-                    AddLabelTimeLine(inner);
+                    //AddLabelTimeLine(inner);
                 },
-                (inner, node) => inner.AddNode(node),
+                (inner, node) => {
+                    inner.AddNode(node);
+                    node.OuterContainer = inner;
+                },
                 outerCount,
                 ItemsPerLine
             );
@@ -516,9 +521,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 (outer, inner) => outer.AddNode(inner),
                 inner => {
                     // If we need to edit the StatusTimerNode
-                    AddLabelTimeLine(inner);
+                    //AddLabelTimeLine(inner);
                 },
-                (inner, node) => inner.AddNode(node),
+                (inner, node) => {
+                    inner.AddNode(node);
+                    node.OuterContainer = inner;
+                },
                 outerCount,
                 ItemsPerLine
             );
@@ -718,7 +726,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             }
         }
         else {
-            DisableClickDrag(true);
+            DisableClickDrag(false);
             if (_backgroundNode != null) {
                 _backgroundNode.IsVisible = false;
                 _backgroundNode.RemoveFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
@@ -904,10 +912,18 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     public void SaveConfig() {
+        if (!_isSetupCompleted) {
+            return;
+        }
         string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Save(configPath);
         Services.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
+    }
+
+    public void OnDispose() {
+        SaveConfig();
+        _isSetupCompleted = false;
     }
 
     private void AddLabelTimeLine(NodeBase node) {
@@ -922,7 +938,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         node.AddTimeline(labels);
     }
 
+
 }
+
 
 public record DummyStatusTemplate(
     uint Id,
