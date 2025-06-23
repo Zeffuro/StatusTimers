@@ -1,6 +1,7 @@
 using Dalamud.Game.Addon.Events;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
@@ -169,6 +170,23 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 Services.ObjectTable.FirstOrDefault(o =>
                     o is not null && o.GameObjectId == node.StatusInfo.GameObjectId);
         }
+    }
+
+    private void AddLaneNodeTimeline(StatusTimerNode<TKey> statusNode) {
+        this.AddTimeline(new TimelineBuilder()
+            .BeginFrameSet(1, 120)
+            .AddFrame(1, scale: new Vector2(1.4f, 1.4f))
+            .AddFrame(60, scale: new Vector2(1.0f, 1.0f))
+            .AddFrame(120, scale: new Vector2(1.4f, 1.4f))
+            .EndFrameSet()
+            .BeginFrameSet(121, 130)
+            .AddFrame(121, scale: new Vector2(1.0f, 1.0f))
+            .EndFrameSet()
+            .BeginFrameSet(131, 160)
+            .AddFrame(131, alpha: 0)
+            .AddFrame(160, alpha: 255)
+            .EndFrameSet()
+            .Build());
     }
 
     // Whenever we inherit a node and add additional nodes,

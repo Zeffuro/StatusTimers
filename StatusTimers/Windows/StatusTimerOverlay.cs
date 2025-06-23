@@ -30,18 +30,18 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     private static readonly Random _rand = new();
 
     private static readonly List<DummyStatusTemplate> _combinedDummyTemplates = new() {
-        new DummyStatusTemplate(1239, 213409, "Embolden", 20f),
-        new DummyStatusTemplate(786, 212578, "Battle Litany", 15f),
-        new DummyStatusTemplate(1822, 213709, "Technical Finish", 20f),
-        new DummyStatusTemplate(2174, 212532, "Brotherhood", 15f),
-        new DummyStatusTemplate(2912, 217101, "Vulnerability Up", 30f)
+        new DummyStatusTemplate(1239, 213409, "Embolden", 20f, StatusCategory.Buff),
+        new DummyStatusTemplate(786, 212578, "Battle Litany", 15f, StatusCategory.Buff),
+        new DummyStatusTemplate(1822, 213709, "Technical Finish", 20f, StatusCategory.Buff),
+        new DummyStatusTemplate(2174, 212532, "Brotherhood", 15f, StatusCategory.Buff),
+        new DummyStatusTemplate(2912, 217101, "Vulnerability Up", 30f, StatusCategory.Buff)
     };
 
     private static readonly List<DummyStatusTemplate> _multiDotDummyTemplates = new() {
-        new DummyStatusTemplate(1205, 212616, "Caustic Bite", 45f),
-        new DummyStatusTemplate(1206, 212617, "Stormbite", 45f),
-        new DummyStatusTemplate(1228, 213304, "Higanbana", 60),
-        new DummyStatusTemplate(3871, 212661, "High Thunder", 30)
+        new DummyStatusTemplate(1205, 212616, "Caustic Bite", 45f, StatusCategory.Debuff),
+        new DummyStatusTemplate(1206, 212617, "Stormbite", 45f, StatusCategory.Debuff),
+        new DummyStatusTemplate(1228, 213304, "Higanbana", 60, StatusCategory.Debuff),
+        new DummyStatusTemplate(3871, 212661, "High Thunder", 30, StatusCategory.Debuff)
     };
 
     private NineGridNode _backgroundNode;
@@ -360,33 +360,57 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         IReadOnlyList<StatusInfo> current;
 
         if (IsPreviewEnabled) {
-            // Initialize dummy statuses if none are active (e.g., first entry into preview mode)
-            if (_dummyActiveStatuses.Count == 0 && _allNodes.Count > 0) { // Check Pool.Count to ensure nodes exist
+            if (_dummyActiveStatuses.Count == 0 && _allNodes.Count > 0) {
                 InitializeDummyStatuses();
-                _lastDummyUpdateTime = DateTime.Now; // Set initial time for timer tracking
+                _lastDummyUpdateTime = DateTime.Now;
             } else if (_dummyActiveStatuses.Count > 0) {
-                UpdateDummyStatusTimers(); // Decrement timers and handle expired statuses
+                UpdateDummyStatusTimers();
             }
-            current = _dummyActiveStatuses; // Use the managed list of dummy statuses
+            current = _dummyActiveStatuses;
         } else {
-            current = Source.Fetch(this); // Use real data source
-
-            // Clear dummy statuses when exiting preview mode to avoid lingering data
+            current = Source.Fetch(this);
             if (_dummyActiveStatuses.Count > 0) {
                 _dummyActiveStatuses.Clear();
             }
         }
 
-        List<StatusInfo> sortedStatuses = current
-            .OrderByDescending(s => s.IsPermanent)
-            .ThenByDescending(s => s.RemainingSeconds)
+        IEnumerable<StatusInfo> filteredStatuses = current;
+        if (_nodeKind == NodeKind.Combined && !ShowPermaIcons)
+        {
+            filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
+        }
+
+        IOrderedEnumerable<StatusInfo>? sortedStatuses = null;
+        IEnumerable<StatusInfo> initialList = filteredStatuses;
+
+        if (PrimarySort != SortCriterion.None)
+        {
+            sortedStatuses = ApplySingleSort(initialList, PrimarySort, PrimarySortOrder);
+        }
+        else
+        {
+            sortedStatuses = initialList.OrderBy(s => 0);
+        }
+
+        if (SecondarySort != SortCriterion.None)
+        {
+            sortedStatuses = ApplyThenBySort(sortedStatuses, SecondarySort, SecondarySortOrder);
+        }
+
+        if (TertiarySort != SortCriterion.None)
+        {
+            sortedStatuses = ApplyThenBySort(sortedStatuses, TertiarySort, TertiarySortOrder);
+        }
+
+        List<StatusInfo> finalSortedList = sortedStatuses
+            .Take(MaxStatuses)
             .ToList();
 
         int i = 0;
         Dictionary<TKey, StatusTimerNode<TKey>> newActive = new();
 
-        for (; i < sortedStatuses.Count && i < _allNodes.Count; i++) {
-            StatusInfo status = sortedStatuses[i];
+        for (; i < finalSortedList.Count && i < _allNodes.Count; i++) {
+            StatusInfo status = finalSortedList[i];
             StatusTimerNode<TKey> node = _allNodes[i];
 
             newActive[Source.KeyOf(status)] = node;
@@ -441,9 +465,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     _rows.Add(list);
                     return list;
                 },
-                (outer, inner) => outer.Add(inner),
+                (outer, inner) => outer.AddNode(inner),
                 inner => { },
-                (inner, node) => inner.Add(node),
+                (inner, node) => inner.AddNode(node),
                 outerCount,
                 ItemsPerLine
             );
@@ -472,9 +496,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     _columns.Add(list);
                     return list;
                 },
-                (outer, inner) => outer.Add(inner),
+                (outer, inner) => outer.AddNode(inner),
                 inner => { },
-                (inner, node) => inner.Add(node),
+                (inner, node) => inner.AddNode(node),
                 outerCount,
                 ItemsPerLine
             );
@@ -633,8 +657,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 _allNodes.Add(node);
             }
         }
-
-        // Attach only the outermost container once
         attachOuter(outer);
 
         _rootContainer = outer;
@@ -716,6 +738,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     remainingSeconds: newRemaining,
                     maxSeconds: status.MaxSeconds,
                     gameObjectId: status.GameObjectId,
+                    selfInflicted: status.SelfInflicted,
                     stacks: status.Stacks,
                     isPermanent: status.IsPermanent,
                     actorName: status.ActorName,
@@ -732,6 +755,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         string dummyName;
         float maxSeconds;
         bool isPermanent;
+        bool selfInflicted;
+        StatusCategory statusCategory;
 
         uint dummyStacks = (uint)_rand.Next(1, 4);
 
@@ -739,21 +764,19 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         string? actorName = null;
         char? enemyLetter = null;
 
-        DummyStatusTemplate selectedTemplate; // Declare the template variable here
+        DummyStatusTemplate selectedTemplate;
 
         if (_nodeKind == NodeKind.MultiDoT) {
-            // MultiDoT: Always use templates from _multiDotDummyTemplates
             if (initialIndex.HasValue) {
-                // For initial fill: Cycle through the available DoT templates
                 int index = initialIndex.Value;
                 selectedTemplate = _multiDotDummyTemplates[index % _multiDotDummyTemplates.Count];
 
-                // Assign sequential GameObjectIds for initial MultiDoT actors
                 ulong baseActorId = 1000UL;
                 gameObjectIdToUse = baseActorId + (ulong)(index / ItemsPerLine);
                 actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
-                enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId)); // Sequential glyphs
+                enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
                 isPermanent = selectedTemplate.IsPermanent;
+                statusCategory = selectedTemplate.StatusType;
             } else {
                 selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
 
@@ -763,6 +786,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
                 enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
                 isPermanent = selectedTemplate.IsPermanent;
+                statusCategory = selectedTemplate.StatusType;
             }
         } else {
             if (initialIndex.HasValue) {
@@ -773,6 +797,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 actorName = null;
                 enemyLetter = null;
                 isPermanent = selectedTemplate.IsPermanent && index % 5 == 0;
+                statusCategory = selectedTemplate.StatusType;
             } else {
                 selectedTemplate = _combinedDummyTemplates[_rand.Next(0, _combinedDummyTemplates.Count)];
 
@@ -780,6 +805,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 actorName = null;
                 enemyLetter = null;
                 isPermanent = selectedTemplate.IsPermanent;
+                statusCategory = selectedTemplate.StatusType;
             }
         }
 
@@ -787,6 +813,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         dummyIconId = selectedTemplate.IconId;
         dummyName = selectedTemplate.Name;
         maxSeconds = selectedTemplate.MaxSeconds;
+        selfInflicted = _rand.Next(100) < 50;
 
         float remainingSeconds = maxSeconds * (float)(_rand.NextDouble() * 0.8 + 0.1);
 
@@ -797,11 +824,47 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             remainingSeconds: remainingSeconds,
             maxSeconds: maxSeconds,
             gameObjectId: gameObjectIdToUse,
+            selfInflicted: selfInflicted,
             stacks: dummyStacks,
             isPermanent: isPermanent,
             actorName: actorName,
-            enemyLetter: enemyLetter
+            enemyLetter: enemyLetter,
+            category: statusCategory
         );
+    }
+
+    private IOrderedEnumerable<StatusInfo> ApplySingleSort(IEnumerable<StatusInfo> list, SortCriterion criterion, SortOrder order) {
+        return criterion switch {
+            SortCriterion.StatusType => order == SortOrder.Ascending
+                ? list.OrderBy(status => status.StatusType)
+                : list.OrderByDescending(status => status.StatusType),
+            SortCriterion.TimeRemaining => order == SortOrder.Ascending
+                ? list.OrderBy(status => status.RemainingSeconds)
+                : list.OrderByDescending(status => status.RemainingSeconds),
+            SortCriterion.OwnStatusFirst => order == SortOrder.Ascending
+                ? list.OrderByDescending(status => status.SelfInflicted)
+                : list.OrderBy(status => status.SelfInflicted),
+            _ => list.OrderBy(status => 0)
+        };
+    }
+
+    private IOrderedEnumerable<StatusInfo> ApplyThenBySort(IOrderedEnumerable<StatusInfo> orderedList, SortCriterion criterion, SortOrder order) {
+        if (orderedList == null) {
+            return null;
+        }
+
+        return criterion switch {
+            SortCriterion.StatusType => order == SortOrder.Ascending
+                ? orderedList.ThenBy(status => status.StatusType)
+                : orderedList.ThenByDescending(status => status.StatusType),
+            SortCriterion.TimeRemaining => order == SortOrder.Ascending
+                ? orderedList.ThenBy(status => status.RemainingSeconds)
+                : orderedList.ThenByDescending(status => status.RemainingSeconds),
+            SortCriterion.OwnStatusFirst => order == SortOrder.Ascending
+                ? orderedList.ThenByDescending(status => status.SelfInflicted)
+                : orderedList.ThenBy(status => status.SelfInflicted),
+            _ => orderedList
+        };
     }
 
     public void LoadConfig() {
@@ -824,7 +887,8 @@ public record DummyStatusTemplate(
     uint IconId,
     string Name,
     float MaxSeconds,
-    bool IsPermanent = false // Default to false, as most are timed
+    StatusCategory StatusType,
+    bool IsPermanent = false
 );
 
 public enum GrowDirection {
@@ -839,7 +903,6 @@ public enum SortCriterion
     None,
     StatusType,
     TimeRemaining,
-    OrderApplied,
     OwnStatusFirst
 }
 

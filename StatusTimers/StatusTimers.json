@@ -1,6 +1,8 @@
 {
-  "Name": "StatusTimers",
-  "Author": "",
-  "Description": "",
-  "Punchline": ""
+    "Name": "StatusTimers",
+    "Author": "Zeffuro",
+    "Punchline": "Before StatusTimers, my buffs/debuffs were a mystery. Now, it's a well-organized history!",
+    "Description": "StatusTimers provides clear, customizable bars for tracking your crucial buffs and debuffs. It helps you keep an eye on active effects, their remaining durations, and stacks, allowing you to optimize your gameplay without constantly staring at your hotbar.",
+    "RepoUrl": "https://github.com/Zeffuro/StatusTimers",
+    "Tags": [ "UI" ]
 }

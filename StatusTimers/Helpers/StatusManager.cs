@@ -91,6 +91,7 @@ public static class StatusManager {
         ulong sourceObjectId = objectId;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
+        StatusCategory statusType = gameData.StatusCategory == 1 ? StatusCategory.Buff : StatusCategory.Debuff;
 
         if (!StatusDurations.TryGetValue(id, out float maxSeconds) || remainingSeconds > maxSeconds) {
             maxSeconds = remainingSeconds;
@@ -109,9 +110,11 @@ public static class StatusManager {
         string? actorName = null;
         char? enemyLetter = null;
 
+
         IGameObject? actor = Services.ObjectTable.FirstOrDefault(o => o is not null && o.GameObjectId == objectId);
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
 
+        bool selfInflicted = player.GameObjectId == sourceObjectId;
 
         if (actor is not null && player != null && actor.GameObjectId != player.GameObjectId) {
             actorName = actor.Name.TextValue;
@@ -132,8 +135,8 @@ public static class StatusManager {
             }
         }
 
-        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, stacks, isPerma,
-            actorName, enemyLetter);
+        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks, isPerma,
+            actorName, enemyLetter, statusType);
     }
 
     // Thanks Craftimizer for the info on food: https://github.com/WorkingRobot/Craftimizer/blob/main/Craftimizer/Utils/FoodStatus.cs#L23
@@ -183,10 +186,12 @@ public readonly struct StatusInfo(
     float remainingSeconds,
     float maxSeconds,
     ulong gameObjectId,
+    bool selfInflicted,
     uint stacks,
     bool isPermanent = false,
     string? actorName = null,
-    char? enemyLetter = null) {
+    char? enemyLetter = null,
+    StatusCategory category = StatusCategory.Buff) {
     public uint Id { get; } = id;
     public uint IconId { get; } = iconId;
     public string Name { get; } = name;
@@ -194,11 +199,18 @@ public readonly struct StatusInfo(
     public float MaxSeconds { get; } = maxSeconds;
     public bool IsPermanent { get; } = isPermanent;
     public ulong GameObjectId { get; } = gameObjectId;
+    public bool SelfInflicted { get; } = selfInflicted;
     public uint Stacks { get; } = stacks;
     public string? ActorName { get; } = actorName;
     public char? EnemyLetter { get; } = enemyLetter;
+    public StatusCategory StatusType { get; } = category;
 
     public StatusKey Key => new(GameObjectId, Id);
 }
 
 public readonly record struct StatusKey(ulong GameObjectId, uint StatusId);
+
+public enum StatusCategory {
+    Buff,
+    Debuff
+}
