@@ -4,6 +4,7 @@ using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
+using KamiToolKit.System;
 using StatusTimers.Helpers;
 using StatusTimers.StatusSources;
 using System;
@@ -87,7 +88,11 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge
         };
+
         Services.NativeController.AttachNode(_statusRemaining, this);
+
+        AddLabelTimeLine(this);
+        AddKeyFrameTimeline(_iconNode);
     }
 
     public NodeKind Kind { get; set; }
@@ -126,8 +131,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public void UpdateValues() {
         _statusName.Text = _statusInfo.Name;
-        _iconNode.IconId = _statusInfo.IconId;
 
+        _iconNode.IconId = _statusInfo.IconId;
         _iconNode.IsVisible = Parent.ShowIcon;
         _actorName.IsVisible = Parent.ShowActorName && _statusInfo.ActorName != null;
         _statusRemaining.IsVisible = Parent.ShowStatusRemaining;
@@ -135,12 +140,15 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusName.IsVisible = Parent.ShowStatusName;
         _progressNode.IsVisible = Parent.ShowProgress;
 
-        if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds < 0) {
+        if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds <= 0) {
             _progressNode.IsVisible = false;
             _statusRemaining.IsVisible = false;
             _statusRemainingBackground.IsVisible = false;
         }
         else {
+            if (Math.Abs(_statusInfo.RemainingSeconds - _statusInfo.MaxSeconds) < 0.01 && Parent.AnimationsEnabled) {
+                Timeline?.StartAnimation(10);
+            }
             _progressNode.IsVisible = Parent.ShowProgress;
             _statusRemaining.IsVisible = Parent.ShowStatusRemaining;
 
@@ -172,21 +180,28 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void AddLaneNodeTimeline(StatusTimerNode<TKey> statusNode) {
-        this.AddTimeline(new TimelineBuilder()
-            .BeginFrameSet(1, 120)
+    private void AddLabelTimeLine(NodeBase node) {
+        // Future Zeff, this always goes on a parent
+        var labels = new TimelineBuilder()
+            .BeginFrameSet(1, 20)
+            .AddLabel(1, 10, AtkTimelineJumpBehavior.Start, 0)
+            .AddLabel(20, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
+            .EndFrameSet()
+            .Build();
+
+        node.AddTimeline(labels);
+    }
+    private void AddKeyFrameTimeline(NodeBase node) {
+        // Future Zeff, this always goes on a child
+        var keyFrames = new TimelineBuilder()
+            .BeginFrameSet(1, 20)
             .AddFrame(1, scale: new Vector2(1.4f, 1.4f))
-            .AddFrame(60, scale: new Vector2(1.0f, 1.0f))
-            .AddFrame(120, scale: new Vector2(1.4f, 1.4f))
+            .AddFrame(10, scale: new Vector2(0.9f, 0.9f))
+            .AddFrame(20, scale: Vector2.One)
             .EndFrameSet()
-            .BeginFrameSet(121, 130)
-            .AddFrame(121, scale: new Vector2(1.0f, 1.0f))
-            .EndFrameSet()
-            .BeginFrameSet(131, 160)
-            .AddFrame(131, alpha: 0)
-            .AddFrame(160, alpha: 255)
-            .EndFrameSet()
-            .Build());
+            .Build();
+
+        node.AddTimeline(keyFrames);
     }
 
     // Whenever we inherit a node and add additional nodes,

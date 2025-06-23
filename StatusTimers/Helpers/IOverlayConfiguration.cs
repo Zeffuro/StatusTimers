@@ -5,6 +5,7 @@ namespace StatusTimers.Helpers;
 public interface IOverlayConfiguration {
     bool AllowDismissStatus { get; set; }
     bool AllowTargetActor { get; set; }
+    bool AnimationsEnabled { get; set; }
     bool FillRowsFirst { get; set; }
     GrowDirection GrowDirection { get; set; }
     bool IsLocked { get; set; }

@@ -91,6 +91,7 @@ public static class StatusManager {
         ulong sourceObjectId = objectId;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
+        byte partyPrio = gameData.PartyListPriority;
         StatusCategory statusType = gameData.StatusCategory == 1 ? StatusCategory.Buff : StatusCategory.Debuff;
 
         if (!StatusDurations.TryGetValue(id, out float maxSeconds) || remainingSeconds > maxSeconds) {
@@ -135,7 +136,7 @@ public static class StatusManager {
             }
         }
 
-        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks, isPerma,
+        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks, partyPrio, isPerma,
             actorName, enemyLetter, statusType);
     }
 
@@ -188,6 +189,7 @@ public readonly struct StatusInfo(
     ulong gameObjectId,
     bool selfInflicted,
     uint stacks,
+    byte partyPriority,
     bool isPermanent = false,
     string? actorName = null,
     char? enemyLetter = null,
@@ -201,6 +203,7 @@ public readonly struct StatusInfo(
     public ulong GameObjectId { get; } = gameObjectId;
     public bool SelfInflicted { get; } = selfInflicted;
     public uint Stacks { get; } = stacks;
+    public byte PartyPriority { get; } = partyPriority;
     public string? ActorName { get; } = actorName;
     public char? EnemyLetter { get; } = enemyLetter;
     public StatusCategory StatusType { get; } = category;

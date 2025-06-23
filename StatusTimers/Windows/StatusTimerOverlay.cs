@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
@@ -81,13 +82,22 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     } = true;
 
     [JsonProperty]
+    public bool AnimationsEnabled {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
     public bool FillRowsFirst {
         get;
         set {
             field = value;
             RebuildContainers(SaveConfig);
         }
-    } = true;
+    } = false;
 
     [JsonProperty]
     public bool FilterStatuses {
@@ -132,7 +142,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             field = value;
             RebuildContainers(SaveConfig);
         }
-    } = 8;
+    } = 16;
 
     [JsonProperty]
     public int MaxStatuses {
@@ -221,7 +231,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             field = value;
             RebuildContainers(SaveConfig);
         }
-    } = SortCriterion.None;
+    } = SortCriterion.StatusType;
 
     [JsonProperty]
     public SortCriterion SecondarySort {
@@ -230,7 +240,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             field = value;
             RebuildContainers(SaveConfig);
         }
-    } = SortCriterion.None;
+    } = SortCriterion.OwnStatusFirst;
 
     [JsonProperty]
     public SortCriterion TertiarySort {
@@ -239,7 +249,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             field = value;
             RebuildContainers(SaveConfig);
         }
-    } = SortCriterion.None;
+    } = SortCriterion.PartyPriority;
 
     [JsonProperty]
     public SortOrder PrimarySortOrder {
@@ -269,6 +279,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     } = SortOrder.Ascending;
 
     public string Title { get; set; }
+
+    public override Vector4 Color { get; set; }
 
     public Vector2 CalculatedOverlaySize { get; private set; }
 
@@ -417,7 +429,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
             node.StatusInfo = status;
             node.Kind = _nodeKind;
-            node.IsVisible = true;
+            if (!node.IsVisible) {
+                node.IsVisible = true;
+            }
         }
 
         for (; i < _allNodes.Count; i++) {
@@ -466,7 +480,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     return list;
                 },
                 (outer, inner) => outer.AddNode(inner),
-                inner => { },
+                inner => {
+                    // If we need to edit the StatusTimerNode
+                },
                 (inner, node) => inner.AddNode(node),
                 outerCount,
                 ItemsPerLine
@@ -497,7 +513,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     return list;
                 },
                 (outer, inner) => outer.AddNode(inner),
-                inner => { },
+                inner => {
+                    // If we need to edit the StatusTimerNode
+                },
                 (inner, node) => inner.AddNode(node),
                 outerCount,
                 ItemsPerLine
@@ -650,6 +668,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 StatusTimerNode<TKey> node = new() {
                     Height = StatusNodeHeight,
                     Width = StatusNodeWidth,
+                    Origin = new Vector2(StatusNodeWidth / 2, StatusNodeHeight / 2),
                     IsVisible = false,
                     Parent = this
                 };
@@ -740,6 +759,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     gameObjectId: status.GameObjectId,
                     selfInflicted: status.SelfInflicted,
                     stacks: status.Stacks,
+                    partyPriority: status.PartyPriority,
                     isPermanent: status.IsPermanent,
                     actorName: status.ActorName,
                     enemyLetter: status.EnemyLetter
@@ -826,6 +846,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             gameObjectId: gameObjectIdToUse,
             selfInflicted: selfInflicted,
             stacks: dummyStacks,
+            partyPriority: 0,
             isPermanent: isPermanent,
             actorName: actorName,
             enemyLetter: enemyLetter,
@@ -842,6 +863,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 ? list.OrderBy(status => status.RemainingSeconds)
                 : list.OrderByDescending(status => status.RemainingSeconds),
             SortCriterion.OwnStatusFirst => order == SortOrder.Ascending
+                ? list.OrderByDescending(status => status.SelfInflicted)
+                : list.OrderBy(status => status.SelfInflicted),
+            SortCriterion.PartyPriority => order == SortOrder.Ascending
                 ? list.OrderByDescending(status => status.SelfInflicted)
                 : list.OrderBy(status => status.SelfInflicted),
             _ => list.OrderBy(status => 0)
@@ -861,6 +885,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 ? orderedList.ThenBy(status => status.RemainingSeconds)
                 : orderedList.ThenByDescending(status => status.RemainingSeconds),
             SortCriterion.OwnStatusFirst => order == SortOrder.Ascending
+                ? orderedList.ThenByDescending(status => status.SelfInflicted)
+                : orderedList.ThenBy(status => status.SelfInflicted),
+            SortCriterion.PartyPriority => order == SortOrder.Ascending
                 ? orderedList.ThenByDescending(status => status.SelfInflicted)
                 : orderedList.ThenBy(status => status.SelfInflicted),
             _ => orderedList
@@ -892,22 +919,23 @@ public record DummyStatusTemplate(
 );
 
 public enum GrowDirection {
-    DownRight,
-    DownLeft,
-    UpRight,
-    UpLeft
+    DownRight = 0,
+    DownLeft = 1,
+    UpRight = 2,
+    UpLeft = 3
 }
 
 public enum SortCriterion
 {
-    None,
-    StatusType,
-    TimeRemaining,
-    OwnStatusFirst
+    None = 0,
+    StatusType = 1,
+    TimeRemaining = 2,
+    OwnStatusFirst = 3,
+    PartyPriority = 4
 }
 
 public enum SortOrder
 {
-    Ascending,
-    Descending
+    Ascending = 0,
+    Descending = 1
 }

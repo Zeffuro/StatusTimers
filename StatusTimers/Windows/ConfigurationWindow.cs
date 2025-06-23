@@ -207,6 +207,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 () => currentOverlayConfig.ShowProgress,
                 isChecked => currentOverlayConfig.ShowProgress = isChecked));
 
+            _configLists[kind].AddNode(CreateCheckboxOption("Animations Enabled",
+                () => currentOverlayConfig.AnimationsEnabled,
+                isChecked => currentOverlayConfig.AnimationsEnabled = isChecked));
+
+
             if (kind == NodeKind.MultiDoT) {
                 _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
@@ -273,7 +278,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     { SortCriterion.None, "None" },
                     { SortCriterion.StatusType, "Status Type" },
                     { SortCriterion.TimeRemaining, "Time Remaining" },
-                    { SortCriterion.OwnStatusFirst, "Own Status First" }
+                    { SortCriterion.OwnStatusFirst, "Own Status First" },
+                    { SortCriterion.PartyPriority, "Party Priority" }
                 }
             ));
 
@@ -290,7 +296,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     { SortCriterion.None, "None" },
                     { SortCriterion.StatusType, "Status Type" },
                     { SortCriterion.TimeRemaining, "Time Remaining" },
-                    { SortCriterion.OwnStatusFirst, "Own Status First" }
+                    { SortCriterion.OwnStatusFirst, "Own Status First" },
+                    { SortCriterion.PartyPriority, "Party Priority" }
                 }
             ));
 
@@ -307,7 +314,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     { SortCriterion.None, "None" },
                     { SortCriterion.StatusType, "Status Type" },
                     { SortCriterion.TimeRemaining, "Time Remaining" },
-                    { SortCriterion.OwnStatusFirst, "Own Status First" }
+                    { SortCriterion.OwnStatusFirst, "Own Status First" },
+                    { SortCriterion.PartyPriority, "Party Priority" }
                 }
             ));
         }
@@ -463,13 +471,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         Action<SortCriterion> criterionSetter,
         Func<SortOrder> orderGetter,
         Action<SortOrder> orderSetter,
-        Dictionary<SortCriterion, string> availableCriteriaMap // Pass this in to manage duplicates
+        Dictionary<SortCriterion, string> availableCriteriaMap
     )
     {
         HorizontalFlexNode<NodeBase> flexNode = new() {
             IsVisible = true,
             X = OptionOffset,
-            Width = 600, // Adjust width as needed
+            Width = 600,
             Height = 24,
             AlignmentFlags = FlexFlags.FitHeight,
             FitPadding = 4
@@ -493,30 +501,34 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             Height = 24,
             MaxListOptions = 5,
             Options = availableCriteriaMap.Values.ToList(),
+            SelectedOption = availableCriteriaMap.TryGetValue(criterionGetter(), out var selectedCriterion)
+                ? selectedCriterion
+                : availableCriteriaMap.Values.First(),
             OnOptionSelected = selectedDisplayName => {
-                SortCriterion selectedCriterion = availableCriteriaMap
-                    .FirstOrDefault(pair => pair.Value == selectedDisplayName).Key;
-                criterionSetter(selectedCriterion);
-                // You'll need to re-render/update other dropdowns to remove this selected criterion
-            },
-            SelectedOption = availableCriteriaMap[criterionGetter()]
+                var selected = availableCriteriaMap.FirstOrDefault(p => p.Value == selectedDisplayName).Key;
+                criterionSetter(selected);
+            }
         };
         flexNode.AddNode(criterionDropdown);
+
+        var orderMap = new Dictionary<SortOrder, string> {
+            { SortOrder.Ascending, "Ascending" },
+            { SortOrder.Descending, "Descending" }
+        };
 
         TextDropDownNode orderDropdown = new() {
             IsVisible = true,
             Width = 180,
             Height = 24,
             MaxListOptions = 2,
-            Options = new Dictionary<SortOrder, string> {
-                { SortOrder.Ascending, "Ascending" },
-                { SortOrder.Descending, "Descending" }
-            }.Values.ToList(),
+            Options = orderMap.Values.ToList(),
+            SelectedOption = orderMap.TryGetValue(orderGetter(), out var selectedOrder)
+                ? selectedOrder.ToString()
+                : orderMap.Values.First(),
             OnOptionSelected = selectedDisplayName => {
-                SortOrder selectedOrder = selectedDisplayName == "Ascending" ? SortOrder.Ascending : SortOrder.Descending;
-                orderSetter(selectedOrder);
-            },
-            SelectedOption = (orderGetter() == SortOrder.Ascending) ? "Ascending" : "Descending"
+                var selected = orderMap.FirstOrDefault(p => p.Value == selectedDisplayName).Key;
+                orderSetter(selected);
+            }
         };
         flexNode.AddNode(orderDropdown);
 
