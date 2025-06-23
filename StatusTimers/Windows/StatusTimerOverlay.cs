@@ -336,8 +336,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     float innerHeight = Math.Min(ItemsPerLine, PoolSize) * StatusNodeHeight +
                                         (Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding;
                     VerticalListNode<StatusTimerNode<TKey>> list = new() {
-                        Height = innerWidth,
-                        Width = innerHeight,
+                        Height = innerHeight,
+                        Width = innerWidth,
                         IsVisible = true,
                         ItemVerticalSpacing = StatusPadding,
                         Alignment = VerticalListAnchor.Top
@@ -441,11 +441,37 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     private void RecalculateLayout() {
-        bool up = GrowDirection == GrowDirection.UpLeft || GrowDirection == GrowDirection.UpRight;
-        bool left = GrowDirection == GrowDirection.UpLeft || GrowDirection == GrowDirection.DownLeft;
+        bool up = GrowDirection is GrowDirection.UpLeft or GrowDirection.UpRight;
+        bool left = GrowDirection is GrowDirection.UpLeft or GrowDirection.DownLeft;
 
         SetVerticalAlignment(up ? VerticalListAnchor.Bottom : VerticalListAnchor.Top);
         SetHorizontalAlignment(left ? HorizontalListAnchor.Right : HorizontalListAnchor.Left);
+
+        if (_rootContainer != null) {
+            float rootContainerOffsetX = 0;
+            float rootContainerOffsetY = 0;
+
+            if (up) {
+                rootContainerOffsetY = -StatusNodeHeight;
+            }
+
+            if (left) {
+                rootContainerOffsetX = -StatusNodeWidth;
+            }
+
+            _rootContainer.X = rootContainerOffsetX;
+            _rootContainer.Y = rootContainerOffsetY;
+
+            switch (_rootContainer)
+            {
+                case VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot:
+                    verticalRoot.RecalculateLayout();
+                    break;
+                case HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> horizontalRoot:
+                    horizontalRoot.RecalculateLayout();
+                    break;
+            }
+        }
     }
 
     private void SetupContainers<TOuter, TInner>(

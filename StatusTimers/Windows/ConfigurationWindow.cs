@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Slider;
 using KamiToolKit.Nodes.TabBar;
@@ -34,7 +33,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             Height = 24,
             IsVisible = true
         };
-        const int buttonSpacing = 0;
+
         NodeKind[] nodeKinds = Enum.GetValues<NodeKind>();
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
