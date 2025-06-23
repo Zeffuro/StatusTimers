@@ -16,7 +16,6 @@ namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
 public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayConfiguration {
-    private const int PoolSize = 30;
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
 
@@ -25,6 +24,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
     protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
     protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
+
+    private List<StatusInfo> _dummyActiveStatuses = new();
+    private DateTime _lastDummyUpdateTime;
+    private static readonly Random _rand = new();
+
+    private static readonly List<DummyStatusTemplate> _combinedDummyTemplates = new() {
+        new DummyStatusTemplate(1239, 213409, "Embolden", 20f),
+        new DummyStatusTemplate(786, 212578, "Battle Litany", 15f),
+        new DummyStatusTemplate(1822, 213709, "Technical Finish", 20f),
+        new DummyStatusTemplate(2174, 212532, "Brotherhood", 15f),
+        new DummyStatusTemplate(2912, 217101, "Vulnerability Up", 30f)
+    };
+
+    private static readonly List<DummyStatusTemplate> _multiDotDummyTemplates = new() {
+        new DummyStatusTemplate(1205, 212616, "Caustic Bite", 45f),
+        new DummyStatusTemplate(1206, 212617, "Stormbite", 45f),
+        new DummyStatusTemplate(1228, 213304, "Higanbana", 60),
+        new DummyStatusTemplate(3871, 212661, "High Thunder", 30)
+    };
 
     private NineGridNode _backgroundNode;
     private List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
@@ -89,6 +107,14 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = GrowDirection.DownRight;
 
+    public bool IsPreviewEnabled {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = false;
+
     [JsonProperty]
     public bool IsLocked {
         get;
@@ -107,6 +133,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             RebuildContainers(SaveConfig);
         }
     } = 8;
+
+    [JsonProperty]
+    public int MaxStatuses {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = 30;
+
+    [JsonProperty]
+    public int ScaleInt {
+        get;
+        set {
+            field = value;
+            Scale = new Vector2(ScaleInt * 0.01f);
+            RebuildContainers(SaveConfig);
+        }
+    } = 100;
 
     [JsonProperty]
     public bool ShowIcon {
@@ -153,13 +198,75 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = true;
 
-    public int StatusPadding {
+    public int StatusHorizontalPadding {
         get;
         set {
             field = value;
             RebuildContainers(SaveConfig);
         }
     } = 4;
+
+    public int StatusVerticalPadding {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = 4;
+
+    [JsonProperty]
+    public SortCriterion PrimarySort {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = SortCriterion.None;
+
+    [JsonProperty]
+    public SortCriterion SecondarySort {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = SortCriterion.None;
+
+    [JsonProperty]
+    public SortCriterion TertiarySort {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = SortCriterion.None;
+
+    [JsonProperty]
+    public SortOrder PrimarySortOrder {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = SortOrder.Ascending;
+
+    [JsonProperty]
+    public SortOrder SecondarySortOrder {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = SortOrder.Ascending;
+
+    [JsonProperty]
+    public SortOrder TertiarySortOrder {
+        get;
+        set {
+            field = value;
+            RebuildContainers(SaveConfig);
+        }
+    } = SortOrder.Ascending;
 
     public string Title { get; set; }
 
@@ -213,6 +320,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             ToggleDrag(IsLocked);
         }
 
+        Scale = new Vector2(ScaleInt * 0.01f);
+
         OnClickDragComplete = SaveConfig;
     }
 
@@ -248,7 +357,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     public void OnUpdate() {
-        IReadOnlyList<StatusInfo> current = Source.Fetch(this);
+        IReadOnlyList<StatusInfo> current;
+
+        if (IsPreviewEnabled) {
+            // Initialize dummy statuses if none are active (e.g., first entry into preview mode)
+            if (_dummyActiveStatuses.Count == 0 && _allNodes.Count > 0) { // Check Pool.Count to ensure nodes exist
+                InitializeDummyStatuses();
+                _lastDummyUpdateTime = DateTime.Now; // Set initial time for timer tracking
+            } else if (_dummyActiveStatuses.Count > 0) {
+                UpdateDummyStatusTimers(); // Decrement timers and handle expired statuses
+            }
+            current = _dummyActiveStatuses; // Use the managed list of dummy statuses
+        } else {
+            current = Source.Fetch(this); // Use real data source
+
+            // Clear dummy statuses when exiting preview mode to avoid lingering data
+            if (_dummyActiveStatuses.Count > 0) {
+                _dummyActiveStatuses.Clear();
+            }
+        }
 
         List<StatusInfo> sortedStatuses = current
             .OrderByDescending(s => s.IsPermanent)
@@ -288,7 +415,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
     private void BuildContainers() {
         CalculatedOverlaySize = CalculateOverlaySize();
-        int outerCount = (int)Math.Ceiling(PoolSize / (double)ItemsPerLine);
+        int outerCount = (int)Math.Ceiling(MaxStatuses / (double)ItemsPerLine);
 
         if (FillRowsFirst) {
             _rows.Clear();
@@ -297,19 +424,19 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
-                    ItemVerticalSpacing = StatusPadding
+                    ItemVerticalSpacing = StatusVerticalPadding
                 },
                 outer => Services.NativeController.AttachNode(outer, this),
                 () => {
-                    float innerWidth = Math.Min(ItemsPerLine, PoolSize) * StatusNodeWidth +
-                                       (Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding;
+                    float innerWidth = Math.Min(ItemsPerLine, MaxStatuses) * StatusNodeWidth +
+                                       (Math.Min(ItemsPerLine, MaxStatuses) - 1) * StatusHorizontalPadding;
                     float innerHeight = StatusNodeHeight;
 
                     HorizontalListNode<StatusTimerNode<TKey>> list = new() {
                         Width = innerWidth,
                         Height = innerHeight,
                         IsVisible = true,
-                        ItemHorizontalSpacing = StatusPadding
+                        ItemHorizontalSpacing = StatusHorizontalPadding
                     };
                     _rows.Add(list);
                     return list;
@@ -328,18 +455,18 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
-                    ItemHorizontalSpacing = StatusPadding
+                    ItemHorizontalSpacing = StatusHorizontalPadding
                 },
                 outer => Services.NativeController.AttachNode(outer, this),
                 () => {
                     float innerWidth = StatusNodeWidth;
-                    float innerHeight = Math.Min(ItemsPerLine, PoolSize) * StatusNodeHeight +
-                                        (Math.Min(ItemsPerLine, PoolSize) - 1) * StatusPadding;
+                    float innerHeight = Math.Min(ItemsPerLine, MaxStatuses) * StatusNodeHeight +
+                                        (Math.Min(ItemsPerLine, MaxStatuses) - 1) * StatusHorizontalPadding;
                     VerticalListNode<StatusTimerNode<TKey>> list = new() {
                         Height = innerHeight,
                         Width = innerWidth,
                         IsVisible = true,
-                        ItemVerticalSpacing = StatusPadding,
+                        ItemVerticalSpacing = StatusVerticalPadding,
                         Alignment = VerticalListAnchor.Top
                     };
                     _columns.Add(list);
@@ -362,28 +489,28 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         float totalWidth;
         float totalHeight;
 
-        int actualItemsPerLine = Math.Min(ItemsPerLine, PoolSize);
+        int actualItemsPerLine = Math.Min(ItemsPerLine, MaxStatuses);
 
         if (FillRowsFirst) {
             float singleRowWidth = actualItemsPerLine * StatusNodeWidth +
-                                   (actualItemsPerLine - 1) * StatusPadding;
+                                   (actualItemsPerLine - 1) * StatusHorizontalPadding;
 
-            int numRows = (int)Math.Ceiling(PoolSize / (double)actualItemsPerLine);
+            int numRows = (int)Math.Ceiling(MaxStatuses / (double)actualItemsPerLine);
 
             float allRowsHeight = numRows * StatusNodeHeight +
-                                  (numRows - 1) * StatusPadding;
+                                  (numRows - 1) * StatusVerticalPadding;
 
             totalWidth = singleRowWidth;
             totalHeight = allRowsHeight;
         }
         else {
             float singleColumnHeight = actualItemsPerLine * StatusNodeHeight +
-                                       (actualItemsPerLine - 1) * StatusPadding;
+                                       (actualItemsPerLine - 1) * StatusVerticalPadding;
 
-            int numColumns = (int)Math.Ceiling(PoolSize / (double)actualItemsPerLine);
+            int numColumns = (int)Math.Ceiling(MaxStatuses / (double)actualItemsPerLine);
 
             float allColumnsWidth = numColumns * StatusNodeWidth +
-                                    (numColumns - 1) * StatusPadding;
+                                    (numColumns - 1) * StatusHorizontalPadding;
 
             totalWidth = allColumnsWidth;
             totalHeight = singleColumnHeight;
@@ -490,12 +617,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
         TOuter outer = createOuter();
 
-        for (int i = 0, nodeIndex = 0; i < outerCount && nodeIndex < PoolSize; i++) {
+        for (int i = 0, nodeIndex = 0; i < outerCount && nodeIndex < MaxStatuses; i++) {
             TInner inner = createInner();
             configureInner(inner);
             addInnerToOuter(outer, inner);
 
-            for (int j = 0; j < itemsPerInner && nodeIndex < PoolSize; j++, nodeIndex++) {
+            for (int j = 0; j < itemsPerInner && nodeIndex < MaxStatuses; j++, nodeIndex++) {
                 StatusTimerNode<TKey> node = new() {
                     Height = StatusNodeHeight,
                     Width = StatusNodeWidth,
@@ -556,6 +683,127 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     }
 
+    private void InitializeDummyStatuses() {
+        _dummyActiveStatuses.Clear();
+
+        for (int i = 0; i < MaxStatuses; i++) {
+            _dummyActiveStatuses.Add(CreateNewDummyStatus(i));
+        }
+    }
+
+    private void UpdateDummyStatusTimers() {
+        TimeSpan elapsed = DateTime.Now - _lastDummyUpdateTime;
+        _lastDummyUpdateTime = DateTime.Now;
+
+        float deltaSeconds = (float)elapsed.TotalSeconds;
+
+        List<StatusInfo> updatedList = new();
+
+        foreach (StatusInfo status in _dummyActiveStatuses) {
+            if (status.IsPermanent) {
+                updatedList.Add(status);
+                continue;
+            }
+
+            float newRemaining = status.RemainingSeconds - deltaSeconds;
+            if (newRemaining <= 0) {
+                updatedList.Add(CreateNewDummyStatus());
+            } else {
+                updatedList.Add(new StatusInfo(
+                    id: status.Id,
+                    iconId: status.IconId,
+                    name: status.Name,
+                    remainingSeconds: newRemaining,
+                    maxSeconds: status.MaxSeconds,
+                    gameObjectId: status.GameObjectId,
+                    stacks: status.Stacks,
+                    isPermanent: status.IsPermanent,
+                    actorName: status.ActorName,
+                    enemyLetter: status.EnemyLetter
+                ));
+            }
+        }
+        _dummyActiveStatuses = updatedList;
+    }
+
+    private StatusInfo CreateNewDummyStatus(int? initialIndex = null) {
+        uint dummyId;
+        uint dummyIconId;
+        string dummyName;
+        float maxSeconds;
+        bool isPermanent;
+
+        uint dummyStacks = (uint)_rand.Next(1, 4);
+
+        ulong gameObjectIdToUse = 0UL;
+        string? actorName = null;
+        char? enemyLetter = null;
+
+        DummyStatusTemplate selectedTemplate; // Declare the template variable here
+
+        if (_nodeKind == NodeKind.MultiDoT) {
+            // MultiDoT: Always use templates from _multiDotDummyTemplates
+            if (initialIndex.HasValue) {
+                // For initial fill: Cycle through the available DoT templates
+                int index = initialIndex.Value;
+                selectedTemplate = _multiDotDummyTemplates[index % _multiDotDummyTemplates.Count];
+
+                // Assign sequential GameObjectIds for initial MultiDoT actors
+                ulong baseActorId = 1000UL;
+                gameObjectIdToUse = baseActorId + (ulong)(index / ItemsPerLine);
+                actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
+                enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId)); // Sequential glyphs
+                isPermanent = selectedTemplate.IsPermanent;
+            } else {
+                selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
+
+                ulong baseActorId = 1000UL;
+                int numDummyActors = MaxStatuses / ItemsPerLine;
+                gameObjectIdToUse = baseActorId + (ulong)_rand.Next(0, Math.Max(1, numDummyActors));
+                actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
+                enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
+                isPermanent = selectedTemplate.IsPermanent;
+            }
+        } else {
+            if (initialIndex.HasValue) {
+                int index = initialIndex.Value;
+                selectedTemplate = _combinedDummyTemplates[index % _combinedDummyTemplates.Count];
+
+                gameObjectIdToUse = 0UL;
+                actorName = null;
+                enemyLetter = null;
+                isPermanent = selectedTemplate.IsPermanent && index % 5 == 0;
+            } else {
+                selectedTemplate = _combinedDummyTemplates[_rand.Next(0, _combinedDummyTemplates.Count)];
+
+                gameObjectIdToUse = 0UL;
+                actorName = null;
+                enemyLetter = null;
+                isPermanent = selectedTemplate.IsPermanent;
+            }
+        }
+
+        dummyId = selectedTemplate.Id;
+        dummyIconId = selectedTemplate.IconId;
+        dummyName = selectedTemplate.Name;
+        maxSeconds = selectedTemplate.MaxSeconds;
+
+        float remainingSeconds = maxSeconds * (float)(_rand.NextDouble() * 0.8 + 0.1);
+
+        return new StatusInfo(
+            id: dummyId,
+            iconId: dummyIconId,
+            name: dummyName,
+            remainingSeconds: remainingSeconds,
+            maxSeconds: maxSeconds,
+            gameObjectId: gameObjectIdToUse,
+            stacks: dummyStacks,
+            isPermanent: isPermanent,
+            actorName: actorName,
+            enemyLetter: enemyLetter
+        );
+    }
+
     public void LoadConfig() {
         string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
@@ -571,9 +819,32 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 }
 
+public record DummyStatusTemplate(
+    uint Id,
+    uint IconId,
+    string Name,
+    float MaxSeconds,
+    bool IsPermanent = false // Default to false, as most are timed
+);
+
 public enum GrowDirection {
     DownRight,
     DownLeft,
     UpRight,
     UpLeft
+}
+
+public enum SortCriterion
+{
+    None,
+    StatusType,
+    TimeRemaining,
+    OrderApplied,
+    OwnStatusFirst
+}
+
+public enum SortOrder
+{
+    Ascending,
+    Descending
 }

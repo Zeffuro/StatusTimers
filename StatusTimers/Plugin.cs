@@ -68,12 +68,15 @@ public class Plugin : IDalamudPlugin {
     }
 
     private void OnCommand(string command, string args) {
-        if (args is "settings" or "config")
-        {
-            OverlayManager.ToggleConfig();
+
+        if (args is "toggleall") {
+            OverlayManager.PlayerCombinedOverlayInstance.IsVisible =
+                !OverlayManager.PlayerCombinedOverlayInstance.IsVisible;
+            OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible =
+                !OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible;
         }
         else {
-            OverlayManager.OpenAll();
+            OverlayManager.ToggleConfig();
         }
     }
 

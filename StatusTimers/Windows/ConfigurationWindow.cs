@@ -17,10 +17,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float CheckBoxWidth = 300;
 
     private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new() {
-        { GrowDirection.DownRight, "Grow Down and Right" },
-        { GrowDirection.DownLeft, "Grow Down and Left" },
-        { GrowDirection.UpRight, "Grow Up and Right" },
-        { GrowDirection.UpLeft, "Grow Up and Left" }
+        { GrowDirection.DownRight, "Down and Right" },
+        { GrowDirection.DownLeft, "Down and Left" },
+        { GrowDirection.UpRight, "Up and Right" },
+        { GrowDirection.UpLeft, "Up and Left" }
     };
 
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
@@ -71,24 +71,58 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Text = "Visual Settings"
             });
 
-            _configLists[kind].Add(CreateCheckboxOption("Enabled",
+            _configLists[kind].Add(CreateTwoOptionsRow(
+                CreateCheckboxOption("Enabled",
                 () => currentOverlayConfig.IsVisible,
-                isChecked => currentOverlayConfig.IsVisible = isChecked));
-
+                isChecked => currentOverlayConfig.IsVisible = isChecked),
+                CreateCheckboxOption("Preview Mode",
+                () => currentOverlayConfig.IsPreviewEnabled,
+                isChecked => currentOverlayConfig.IsPreviewEnabled = isChecked),
+                CheckBoxHeight)
+            );
             _configLists[kind].Add(CreateCheckboxOption("Locked",
                 () => currentOverlayConfig.IsLocked,
                 isChecked => currentOverlayConfig.IsLocked = isChecked));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
-            _configLists[kind].Add(CreateLabeledDropdown(
-                "Grow direction",
-                () => currentOverlayConfig.GrowDirection,
-                value => currentOverlayConfig.GrowDirection = value,
-                GrowDirectionMap
-            ));
+            _configLists[kind].Add(CreateTwoOptionsRow(new TextNode {
+                        IsVisible = true,
+                        X = OptionOffset,
+                        Width = 120,
+                        Height = TextStyles.OptionLabel.Height,
+                        FontSize = TextStyles.Defaults.FontSize,
+                        TextColor = TextStyles.OptionLabel.TextColor,
+                        TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                        TextFlags = TextStyles.Defaults.Flags,
+                        Text = "Scale"
+                    },
+                CreateLabeledNumericOption("Horizontal Padding",
+                    () => currentOverlayConfig.StatusHorizontalPadding,
+                    value => currentOverlayConfig.StatusHorizontalPadding = value),
+                CheckBoxHeight
+                )
+            );
 
-            _configLists[kind].Add(new TextNode {
+            _configLists[kind].Add();
+
+            _configLists[kind].Add(CreateTwoOptionsRow(
+                CreateSliderOption(
+                    5,
+                    200,
+                    5,
+                    () => currentOverlayConfig.ScaleInt,
+                    value => currentOverlayConfig.ScaleInt = value
+                ),
+                CreateLabeledNumericOption("Vertical Padding",
+                () => currentOverlayConfig.StatusVerticalPadding,
+                value => currentOverlayConfig.StatusVerticalPadding = value),
+                CheckBoxHeight)
+            );
+
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+
+            var statusPerLineNode = new TextNode {
                 X = OptionOffset,
                 IsVisible = true,
                 Width = 300,
@@ -97,20 +131,62 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 TextColor = TextStyles.OptionLabel.TextColor,
                 TextOutlineColor = TextStyles.Defaults.OutlineColor,
                 TextFlags = TextStyles.Defaults.Flags,
-                Text = "Items per line"
-            });
+                Text = $"Statuses per {(currentOverlayConfig.FillRowsFirst ? "row" : "column")}"
+            };
 
-            _configLists[kind].Add(CreateSliderOption(
-                1,
-                30,
-                1,
-                () => currentOverlayConfig.ItemsPerLine,
-                value => currentOverlayConfig.ItemsPerLine = value
+            _configLists[kind].Add(CreateTwoOptionsRow(
+                    statusPerLineNode,
+                    new TextNode {
+                        X = OptionOffset,
+                        IsVisible = true,
+                        Width = 300,
+                        Height = TextStyles.OptionLabel.Height,
+                        FontSize = TextStyles.Defaults.FontSize,
+                        TextColor = TextStyles.OptionLabel.TextColor,
+                        TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                        TextFlags = TextStyles.Defaults.Flags,
+                        Text = "Max statuses displayed"
+                    },
+                    TextStyles.OptionLabel.Height
+                )
+            );
+
+            _configLists[kind].Add(CreateTwoOptionsRow(
+                CreateSliderOption(
+                    1,
+                    30,
+                    1,
+                    () => currentOverlayConfig.ItemsPerLine,
+                    value => currentOverlayConfig.ItemsPerLine = value
+                ),
+                CreateSliderOption(
+                    1,
+                    30,
+                    1,
+                    () => currentOverlayConfig.MaxStatuses,
+                    value => currentOverlayConfig.MaxStatuses = value
+                ),
+                30
+                )
+            );
+
+            _configLists[kind].Add(CreateTwoOptionsRow(
+                new ResNode(),
+                CreateLabeledDropdown(
+                    "Grow direction",
+                    () => currentOverlayConfig.GrowDirection,
+                    value => currentOverlayConfig.GrowDirection = value,
+                    GrowDirectionMap
+                ),
+                CheckBoxHeight
             ));
 
             _configLists[kind].Add(CreateCheckboxOption("Fill columns first",
                 () => !currentOverlayConfig.FillRowsFirst,
-                isChecked => currentOverlayConfig.FillRowsFirst = !isChecked));
+                isChecked => {
+                    currentOverlayConfig.FillRowsFirst = !isChecked;
+                    statusPerLineNode.Text = $"Statuses per {(currentOverlayConfig.FillRowsFirst ? "row" : "column")}";
+                }));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
@@ -171,6 +247,67 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     () => currentOverlayConfig.AllowTargetActor,
                     isChecked => currentOverlayConfig.AllowTargetActor = isChecked));
             }
+
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+
+            _configLists[kind].Add(new TextNode {
+                IsVisible = true,
+                Width = 120,
+                Height = TextStyles.Header.Height,
+                FontSize = TextStyles.Defaults.FontSize,
+                TextColor = TextStyles.Header.TextColor,
+                TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                TextFlags = TextStyles.Defaults.Flags,
+                Text = "Sorting Priority"
+            });
+
+            _configLists[kind].Add(CreateSortPriorityRow(
+                "Primary:",
+                () => currentOverlayConfig.PrimarySort,
+                value => currentOverlayConfig.PrimarySort = value,
+                () => currentOverlayConfig.PrimarySortOrder,
+                value => currentOverlayConfig.PrimarySortOrder = value,
+                new Dictionary<SortCriterion, string>
+                {
+                    { SortCriterion.None, "None" },
+                    { SortCriterion.StatusType, "Status Type" },
+                    { SortCriterion.TimeRemaining, "Time Remaining" },
+                    { SortCriterion.OrderApplied, "Order Applied" },
+                    { SortCriterion.OwnStatusFirst, "Own Status First" }
+                }
+            ));
+
+            _configLists[kind].Add(CreateSortPriorityRow(
+                "Primary:",
+                () => currentOverlayConfig.SecondarySort,
+                value => currentOverlayConfig.SecondarySort = value,
+                () => currentOverlayConfig.SecondarySortOrder,
+                value => currentOverlayConfig.SecondarySortOrder = value,
+                new Dictionary<SortCriterion, string>
+                {
+                    { SortCriterion.None, "None" },
+                    { SortCriterion.StatusType, "Status Type" },
+                    { SortCriterion.TimeRemaining, "Time Remaining" },
+                    { SortCriterion.OrderApplied, "Order Applied" },
+                    { SortCriterion.OwnStatusFirst, "Own Status First" }
+                }
+            ));
+
+            _configLists[kind].Add(CreateSortPriorityRow(
+                "Primary:",
+                () => currentOverlayConfig.TertiarySort,
+                value => currentOverlayConfig.TertiarySort = value,
+                () => currentOverlayConfig.TertiarySortOrder,
+                value => currentOverlayConfig.TertiarySortOrder = value,
+                new Dictionary<SortCriterion, string>
+                {
+                    { SortCriterion.None, "None" },
+                    { SortCriterion.StatusType, "Status Type" },
+                    { SortCriterion.TimeRemaining, "Time Remaining" },
+                    { SortCriterion.OrderApplied, "Order Applied" },
+                    { SortCriterion.OwnStatusFirst, "Own Status First" }
+                }
+            ));
         }
 
         NativeController.AttachNode(tabBar, this);
@@ -185,6 +322,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon) {
     }
+
+    protected override unsafe void OnHide(AtkUnitBase* addon) =>
+        Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList().ForEach(kind => GetOverlayByKind(kind).IsPreviewEnabled = false);
 
     #region Helper Methods
 
@@ -201,6 +341,21 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return checkboxNode;
     }
 
+    private HorizontalFlexNode<NodeBase> CreateTwoOptionsRow(NodeBase first, NodeBase second, float height) {
+        HorizontalFlexNode<NodeBase> flexNode = new() {
+            IsVisible = true,
+            X = OptionOffset,
+            Width = 600,
+            Height = height,
+            FitWidth = false,
+            FitHeight = true,
+            FitPadding = 4
+        };
+        flexNode.Add(first);
+        flexNode.Add(second);
+        return flexNode;
+    }
+
     private HorizontalFlexNode<NodeBase> CreateLabeledDropdown<TEnum>(
         string labelText,
         Func<TEnum> getter,
@@ -211,7 +366,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         HorizontalFlexNode<NodeBase> flexNode = new() {
             IsVisible = true,
             X = OptionOffset,
-            Width = 600,
+            Width = 280,
             Height = 24,
             FitWidth = false,
             FitHeight = true,
@@ -222,7 +377,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             X = 0,
             Y = 0,
             IsVisible = true,
-            Width = 260,
+            Width = 20,
             Height = TextStyles.OptionLabel.Height,
             FontSize = TextStyles.Defaults.FontSize,
             TextColor = TextStyles.OptionLabel.TextColor,
@@ -236,9 +391,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             X = 0,
             Y = 0,
             IsVisible = true,
-            Width = 280,
+            Width = 140,
             Height = 24,
-            OptionListHeight = 120,
+            MaxListOptions = 5,
             Options = enumToDisplayNameMap.Values.ToList(),
             OnOptionSelected = selectedDisplayName => {
                 TEnum selectedEnum = enumToDisplayNameMap
@@ -251,10 +406,47 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return flexNode;
     }
 
+    private HorizontalFlexNode<NodeBase> CreateLabeledNumericOption(string labelText, Func<int> getter, Action<int> setter) {
+        HorizontalFlexNode<NodeBase> flexNode = new() {
+            IsVisible = true,
+            X = OptionOffset,
+            Width = 300,
+            Height = 24,
+            FitWidth = false,
+            FitHeight = true,
+            FitPadding = 4
+        };
+
+        TextNode labelNode = new() {
+            X = 0,
+            Y = 0,
+            IsVisible = true,
+            Width = 150,
+            Height = TextStyles.OptionLabel.Height,
+            FontSize = TextStyles.Defaults.FontSize,
+            TextColor = TextStyles.OptionLabel.TextColor,
+            TextOutlineColor = TextStyles.Defaults.OutlineColor,
+            TextFlags = TextStyles.Defaults.Flags,
+            Text = labelText
+        };
+        flexNode.Add(labelNode);
+
+        NumericInputNode numericInput = new() {
+            X = OptionOffset,
+            Width = 120,
+            Height = CheckBoxHeight,
+            IsVisible = true,
+            Value = getter(),
+            OnValueUpdate = setter,
+        };
+        flexNode.Add(numericInput);
+        return flexNode;
+    }
+
     private SliderNode CreateSliderOption(int min, int max, int step, Func<int> getter, Action<int> setter) {
         SliderNode sliderNode = new() {
             X = OptionOffset,
-            Width = CheckBoxWidth,
+            Width = 280,
             Height = 30,
             IsVisible = true,
             Min = min,
@@ -264,6 +456,73 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             OnValueChanged = setter
         };
         return sliderNode;
+    }
+
+    private HorizontalFlexNode<NodeBase> CreateSortPriorityRow(
+        string labelText,
+        Func<SortCriterion> criterionGetter,
+        Action<SortCriterion> criterionSetter,
+        Func<SortOrder> orderGetter,
+        Action<SortOrder> orderSetter,
+        Dictionary<SortCriterion, string> availableCriteriaMap // Pass this in to manage duplicates
+    )
+    {
+        HorizontalFlexNode<NodeBase> flexNode = new() {
+            IsVisible = true,
+            X = OptionOffset,
+            Width = 600, // Adjust width as needed
+            Height = 24,
+            FitWidth = false,
+            FitHeight = true,
+            FitPadding = 4
+        };
+
+        TextNode labelNode = new() {
+            IsVisible = true,
+            Width = 80,
+            Height = TextStyles.OptionLabel.Height,
+            FontSize = TextStyles.Defaults.FontSize,
+            TextColor = TextStyles.OptionLabel.TextColor,
+            TextOutlineColor = TextStyles.Defaults.OutlineColor,
+            TextFlags = TextStyles.Defaults.Flags,
+            Text = labelText
+        };
+        flexNode.Add(labelNode);
+
+        TextDropDownNode criterionDropdown = new() {
+            IsVisible = true,
+            Width = 200,
+            Height = 24,
+            MaxListOptions = 5,
+            Options = availableCriteriaMap.Values.ToList(),
+            OnOptionSelected = selectedDisplayName => {
+                SortCriterion selectedCriterion = availableCriteriaMap
+                    .FirstOrDefault(pair => pair.Value == selectedDisplayName).Key;
+                criterionSetter(selectedCriterion);
+                // You'll need to re-render/update other dropdowns to remove this selected criterion
+            },
+            SelectedOption = availableCriteriaMap[criterionGetter()]
+        };
+        flexNode.Add(criterionDropdown);
+
+        TextDropDownNode orderDropdown = new() {
+            IsVisible = true,
+            Width = 200,
+            Height = 24,
+            MaxListOptions = 2,
+            Options = new Dictionary<SortOrder, string> {
+                { SortOrder.Ascending, "Ascending" },
+                { SortOrder.Descending, "Descending" }
+            }.Values.ToList(),
+            OnOptionSelected = selectedDisplayName => {
+                SortOrder selectedOrder = selectedDisplayName == "Ascending" ? SortOrder.Ascending : SortOrder.Descending;
+                orderSetter(selectedOrder);
+            },
+            SelectedOption = (orderGetter() == SortOrder.Ascending) ? "Ascending" : "Descending"
+        };
+        flexNode.Add(orderDropdown);
+
+        return flexNode;
     }
 
     private IOverlayConfiguration GetOverlayByKind(NodeKind kind) {

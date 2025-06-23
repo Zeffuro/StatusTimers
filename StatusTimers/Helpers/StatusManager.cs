@@ -4,6 +4,7 @@ using Dalamud.Game.ClientState.Statuses;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using StatusTimers.Extensions;
+using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
@@ -98,6 +99,10 @@ public static class StatusManager {
 
         if (!config.ShowPermaIcons && isPerma) {
             return null;
+        }
+
+        if (stacks > 0 && status.Param > 0 && !gameData.IsFcBuff) {
+            iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
         }
 
         // TODO Make extraction optional based on configuration
