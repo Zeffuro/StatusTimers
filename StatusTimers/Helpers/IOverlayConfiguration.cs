@@ -24,6 +24,7 @@ public interface IOverlayConfiguration {
     bool StatusAsItemName { get; set; }
     int StatusHorizontalPadding { get; set; }
     int StatusVerticalPadding { get; set; }
+    TextStyle StatusRemainingTextStyle { get; set; }
     SortCriterion PrimarySort { get; set; }
     SortCriterion SecondarySort { get; set; }
     SortCriterion TertiarySort { get; set; }

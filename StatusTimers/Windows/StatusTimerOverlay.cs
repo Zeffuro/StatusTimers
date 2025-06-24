@@ -196,7 +196,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            SaveConfig();
+            UpdateAllNodes();
+            RebuildContainers(SaveConfig);
         }
     } = true;
 
@@ -209,6 +210,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = true;
 
+    [JsonProperty]
     public int StatusHorizontalPadding {
         get;
         set {
@@ -217,6 +219,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = 4;
 
+    [JsonProperty]
     public int StatusVerticalPadding {
         get;
         set {
@@ -224,6 +227,24 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             RebuildContainers(SaveConfig);
         }
     } = 4;
+
+    [JsonProperty]
+    public TextStyle StatusRemainingTextStyle {
+        get;
+        set {
+            field = value;
+            UpdateAllNodes();
+            RebuildContainers(SaveConfig);
+        }
+    } = new TextStyle{
+        Width = 120,
+        Height = 22,
+        FontSize = 20,
+        FontType = FontType.Axis,
+        TextColor = ColorHelper.GetColor(50),
+        TextOutlineColor = ColorHelper.GetColor(53),
+        TextFlags = TextFlags.Edge
+    };
 
     [JsonProperty]
     public SortCriterion PrimarySort {
@@ -675,12 +696,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             addInnerToOuter(outer, inner);
 
             for (int j = 0; j < itemsPerInner && nodeIndex < MaxStatuses; j++, nodeIndex++) {
-                StatusTimerNode<TKey> node = new() {
+                StatusTimerNode<TKey> node = new(this) {
                     Height = StatusNodeHeight,
                     Width = StatusNodeWidth,
                     Origin = new Vector2(StatusNodeWidth / 2, StatusNodeHeight / 2),
-                    IsVisible = false,
-                    Parent = this
+                    IsVisible = false
                 };
                 addNodeToInner(inner, node);
                 _allNodes.Add(node);
@@ -731,6 +751,13 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 _backgroundNode.IsVisible = false;
                 _backgroundNode.RemoveFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
             }
+        }
+    }
+
+    private void UpdateAllNodes() {
+        foreach (var node in _allNodes)
+        {
+            node.UpdateValues();
         }
     }
 
@@ -878,6 +905,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             SortCriterion.PartyPriority => order == SortOrder.Ascending
                 ? list.OrderByDescending(status => status.SelfInflicted)
                 : list.OrderBy(status => status.SelfInflicted),
+            SortCriterion.EnemyLetter => order == SortOrder.Ascending
+                ? list.OrderByDescending(status => status.EnemyLetter)
+                : list.OrderBy(status => status.EnemyLetter),
             _ => list.OrderBy(status => 0)
         };
     }
@@ -900,6 +930,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             SortCriterion.PartyPriority => order == SortOrder.Ascending
                 ? orderedList.ThenByDescending(status => status.SelfInflicted)
                 : orderedList.ThenBy(status => status.SelfInflicted),
+            SortCriterion.EnemyLetter => order == SortOrder.Ascending
+                ? orderedList.ThenByDescending(status => status.EnemyLetter)
+                : orderedList.ThenBy(status => status.EnemyLetter),
             _ => orderedList
         };
     }
@@ -941,6 +974,16 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
 }
 
+public class TextStyle
+{
+    public float Width { get; set; }
+    public float Height { get; set; }
+    public int FontSize { get; set; }
+    public FontType FontType { get; set; }
+    public Vector4 TextColor { get; set; }
+    public Vector4 TextOutlineColor { get; set; }
+    public TextFlags TextFlags { get; set; }
+}
 
 public record DummyStatusTemplate(
     uint Id,
@@ -964,7 +1007,8 @@ public enum SortCriterion
     StatusType = 1,
     TimeRemaining = 2,
     OwnStatusFirst = 3,
-    PartyPriority = 4
+    PartyPriority = 4,
+    EnemyLetter = 5
 }
 
 public enum SortOrder

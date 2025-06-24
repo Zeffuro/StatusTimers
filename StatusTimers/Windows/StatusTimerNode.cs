@@ -15,16 +15,18 @@ using StatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
 namespace StatusTimers.Windows;
 
 public sealed class StatusTimerNode<TKey> : ResNode {
-    private readonly ResNode _containerResNode;
-    private readonly TextNode _actorName;
-    private readonly IconImageNode _iconNode;
-    private readonly CastBarProgressBarNode _progressNode;
-    private readonly TextNode _statusName;
-    private readonly SimpleNineGridNode _statusRemainingBackground;
-    private readonly TextNode _statusRemaining;
+    private ResNode _containerResNode;
+    private TextNode _actorName;
+    private IconImageNode _iconNode;
+    private CastBarProgressBarNode _progressNode;
+    private TextNode _statusName;
+    private NodeBase _statusRemaining;
     private StatusInfo _statusInfo;
 
-    public StatusTimerNode() {
+    private bool _lastShowStatusRemainingBackgroundState;
+
+    public StatusTimerNode(StatusTimerOverlay<TKey> parent) {
+        Parent = parent;
         _containerResNode = new ResNode {
             Position = this.Position,
             Size = this.Size,
@@ -48,7 +50,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         Services.NativeController.AttachNode(_progressNode, _containerResNode);
 
         _actorName = new TextNode {
-            IsVisible = _statusInfo.ActorName != null,
+            IsVisible = false,
             Width = 180,
             Height = 14,
             FontSize = 12,
@@ -72,47 +74,72 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         Services.NativeController.AttachNode(_statusName, _containerResNode);
 
-        _statusRemainingBackground = new SimpleNineGridNode {
-            IsVisible = true,
-            Width = 120,
-            Height = 24,
-            TexturePath = "ui/uld/ToolTipS.tex",
-            TextureCoordinates = Vector2.Zero,
-            TextureSize = new Vector2(32, 24),
-            BottomOffset = 11,
-            TopOffset = 11,
-            LeftOffset = 12,
-            RightOffset = 12,
-        };
-
-        Services.NativeController.AttachNode(_statusRemainingBackground, _containerResNode);
-
         _statusRemaining = new TextNode {
             IsVisible = true,
-            Width = 120,
+            Width = Parent.StatusRemainingTextStyle.Width,
             Height = 22,
             FontSize = 20,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge
         };
-
         Services.NativeController.AttachNode(_statusRemaining, _containerResNode);
+
+        SetRemainingNode();
+
+        if (Parent.ShowActorLetter || Parent.AllowTargetActor) {
+            _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
+        }
+
+        UpdateValues();
 
         AddLabelTimeLine(this);
         AddKeyFrameTimeline(_containerResNode);
     }
 
     public NodeKind Kind { get; set; }
+    public StatusTimerOverlay<TKey> Parent { get; }
 
-    public StatusTimerOverlay<TKey> Parent {
-        get;
-        set {
-            field = value;
-            if (value.ShowActorLetter || value.AllowTargetActor) {
-                _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
-            }
+    private void SetRemainingNode() {
+        bool shouldBeNineGrid = Parent.ShowStatusRemainingBackground;
+        bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
+
+        if (shouldBeNineGrid == isCurrentlyNineGrid && _statusRemaining != null) {
+            return;
         }
+
+        if (_statusRemaining != null) {
+            Services.NativeController.DetachNode(_statusRemaining);
+            _statusRemaining.Dispose();
+            _statusRemaining = null;
+        }
+
+        if (shouldBeNineGrid) {
+            _statusRemaining = new TextNineGridNode {
+                IsVisible = Parent.ShowStatusRemaining,
+                Width = Parent.StatusRemainingTextStyle.Width,
+                Height = Parent.StatusRemainingTextStyle.Height,
+                FontSize = Parent.StatusRemainingTextStyle.FontSize,
+                FontType = Parent.StatusRemainingTextStyle.FontType,
+                TextColor = Parent.StatusRemainingTextStyle.TextColor,
+                TextOutlineColor = Parent.StatusRemainingTextStyle.TextOutlineColor,
+                TextFlags = Parent.StatusRemainingTextStyle.TextFlags,
+            };
+        } else {
+            _statusRemaining = new TextNode {
+                IsVisible = Parent.ShowStatusRemaining,
+                Width = Parent.StatusRemainingTextStyle.Width,
+                Height = Parent.StatusRemainingTextStyle.Height,
+                FontSize = (uint)Parent.StatusRemainingTextStyle.FontSize,
+                FontType = Parent.StatusRemainingTextStyle.FontType,
+                TextColor = Parent.StatusRemainingTextStyle.TextColor,
+                TextOutlineColor = Parent.StatusRemainingTextStyle.TextOutlineColor,
+                TextFlags = Parent.StatusRemainingTextStyle.TextFlags
+            };
+        }
+
+        Services.NativeController.AttachNode(_statusRemaining, _containerResNode);
+        _statusRemaining.X = Width - _statusRemaining.Width;
     }
 
     public NodeBase OuterContainer { get; set; }
@@ -135,25 +162,29 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _actorName.Y = _statusName.Height;
             _progressNode.X = _iconNode.Width;
             _progressNode.Y = _statusName.Height + _actorName.Height;
-            _statusRemaining.X = value - _statusRemaining.Width;
+
+            if (_statusRemaining != null) {
+                _statusRemaining.X = value - _statusRemaining.Width;
+            }
         }
     }
 
     public void UpdateValues() {
+        if (Parent == null) {
+            return;
+        }
         _statusName.Text = _statusInfo.Name;
 
         _iconNode.IconId = _statusInfo.IconId;
         _iconNode.IsVisible = Parent.ShowIcon;
         _actorName.IsVisible = Parent.ShowActorName && _statusInfo.ActorName != null;
         _statusRemaining.IsVisible = Parent.ShowStatusRemaining;
-        _statusRemainingBackground.IsVisible = Parent.ShowStatusRemainingBackground;
         _statusName.IsVisible = Parent.ShowStatusName;
         _progressNode.IsVisible = Parent.ShowProgress;
 
         if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds <= 0) {
             _progressNode.IsVisible = false;
             _statusRemaining.IsVisible = false;
-            _statusRemainingBackground.IsVisible = false;
         }
         else {
             if (Math.Abs(_statusInfo.RemainingSeconds - _statusInfo.MaxSeconds) < 0.01 && Parent.AnimationsEnabled) {
@@ -171,9 +202,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             float ratio = remaining / max;
 
             _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
-            _statusRemainingBackground.X = _statusRemaining.X - 2;
-            _statusRemainingBackground.Width = _statusRemaining.GetTextDrawSize(_statusRemaining.Text.TextValue).X + 14;
-            _statusRemaining.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
+
+            if (_statusRemaining is TextNode textNode) {
+                textNode.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
+            }else if (_statusRemaining is TextNineGridNode textNineGridNode) {
+                textNineGridNode.Label = $"{_statusInfo.RemainingSeconds:0.0}s";
+            }
         }
     }
 
@@ -215,14 +249,11 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.AddTimeline(keyFrames);
     }
 
-    // Whenever we inherit a node and add additional nodes,
-    // we will be responsible for calling dispose on those nodes
     protected override void Dispose(bool disposing) {
         if (disposing) {
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();
-            _statusRemainingBackground.Dispose();
             _actorName.Dispose();
             _progressNode.Dispose();
 

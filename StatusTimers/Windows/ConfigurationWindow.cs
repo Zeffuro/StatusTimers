@@ -24,6 +24,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         { GrowDirection.UpLeft, "Up and Left" }
     };
 
+    private static readonly Dictionary<FontType, string> FontMap = new() {
+        { FontType.Axis, "Axis" },
+        { FontType.Miedinger, "Miedinger" },
+        { FontType.TrumpGothic, "Trump Gothic" },
+        { FontType.Jupiter, "Jupiter" },
+        { FontType.JupiterLarge, "Jupiter Large" }
+    };
+
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
 
@@ -195,9 +203,18 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 () => currentOverlayConfig.ShowStatusName,
                 isChecked => currentOverlayConfig.ShowStatusName = isChecked));
 
-            _configLists[kind].AddNode(CreateCheckboxOption("Show time remaining",
-                () => currentOverlayConfig.ShowStatusRemaining,
-                isChecked => currentOverlayConfig.ShowStatusRemaining = isChecked));
+            _configLists[kind].AddNode(CreateTwoOptionsRow(
+                CreateCheckboxOption("Show time remaining",
+                    () => currentOverlayConfig.ShowStatusRemaining,
+                    isChecked => currentOverlayConfig.ShowStatusRemaining = isChecked),
+                CreateLabeledDropdown(
+                    "Font",
+                    () => currentOverlayConfig.StatusRemainingTextStyle.FontType,
+                    value => currentOverlayConfig.StatusRemainingTextStyle.FontType = value,
+                    FontMap
+                ),
+                CheckBoxHeight
+            ));
 
             _configLists[kind].AddNode(CreateCheckboxOption("Show time remaining background",
                 () => currentOverlayConfig.ShowStatusRemainingBackground,
@@ -267,20 +284,27 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Text = "Sorting Priority"
             });
 
+            var sortCriteriaMap = new Dictionary<SortCriterion, string>
+            {
+                { SortCriterion.None, "None" },
+                { SortCriterion.StatusType, "Status Type" },
+                { SortCriterion.TimeRemaining, "Time Remaining" },
+                { SortCriterion.OwnStatusFirst, "Own Status First" },
+                { SortCriterion.PartyPriority, "Party Priority" }
+            };
+
+            if (kind == NodeKind.MultiDoT)
+            {
+                sortCriteriaMap.Add(SortCriterion.EnemyLetter, "Enemy Letter");
+            }
+
             _configLists[kind].AddNode(CreateSortPriorityRow(
                 "Primary:",
                 () => currentOverlayConfig.PrimarySort,
                 value => currentOverlayConfig.PrimarySort = value,
                 () => currentOverlayConfig.PrimarySortOrder,
                 value => currentOverlayConfig.PrimarySortOrder = value,
-                new Dictionary<SortCriterion, string>
-                {
-                    { SortCriterion.None, "None" },
-                    { SortCriterion.StatusType, "Status Type" },
-                    { SortCriterion.TimeRemaining, "Time Remaining" },
-                    { SortCriterion.OwnStatusFirst, "Own Status First" },
-                    { SortCriterion.PartyPriority, "Party Priority" }
-                }
+                sortCriteriaMap
             ));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight * 5);
@@ -291,14 +315,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 value => currentOverlayConfig.SecondarySort = value,
                 () => currentOverlayConfig.SecondarySortOrder,
                 value => currentOverlayConfig.SecondarySortOrder = value,
-                new Dictionary<SortCriterion, string>
-                {
-                    { SortCriterion.None, "None" },
-                    { SortCriterion.StatusType, "Status Type" },
-                    { SortCriterion.TimeRemaining, "Time Remaining" },
-                    { SortCriterion.OwnStatusFirst, "Own Status First" },
-                    { SortCriterion.PartyPriority, "Party Priority" }
-                }
+                sortCriteriaMap
             ));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight * 5);
@@ -309,14 +326,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 value => currentOverlayConfig.TertiarySort = value,
                 () => currentOverlayConfig.TertiarySortOrder,
                 value => currentOverlayConfig.TertiarySortOrder = value,
-                new Dictionary<SortCriterion, string>
-                {
-                    { SortCriterion.None, "None" },
-                    { SortCriterion.StatusType, "Status Type" },
-                    { SortCriterion.TimeRemaining, "Time Remaining" },
-                    { SortCriterion.OwnStatusFirst, "Own Status First" },
-                    { SortCriterion.PartyPriority, "Party Priority" }
-                }
+                sortCriteriaMap
             ));
         }
 
