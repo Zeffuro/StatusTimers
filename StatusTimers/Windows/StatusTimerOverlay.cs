@@ -1,4 +1,3 @@
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
@@ -20,15 +19,6 @@ namespace StatusTimers.Windows;
 public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayConfiguration {
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
-
-    private readonly List<StatusTimerNode<TKey>> _allNodes = new();
-    private readonly NodeKind _nodeKind;
-
-    protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
-    protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
-
-    private List<StatusInfo> _dummyActiveStatuses = new();
-    private DateTime _lastDummyUpdateTime;
     private static readonly Random _rand = new();
 
     private static readonly List<DummyStatusTemplate> _combinedDummyTemplates = new() {
@@ -46,12 +36,21 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         new DummyStatusTemplate(3871, 212661, "High Thunder", 30, StatusCategory.Debuff)
     };
 
+    private readonly List<StatusTimerNode<TKey>> _allNodes = new();
+    private readonly NodeKind _nodeKind;
+
+    protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
+    protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
+
     private NineGridNode _backgroundNode;
     private List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
+
+    private List<StatusInfo> _dummyActiveStatuses = new();
 
     private TextNode _headerNode;
 
     private bool _isSetupCompleted;
+    private DateTime _lastDummyUpdateTime;
 
     private NodeBase _rootContainer;
     private List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
@@ -63,6 +62,32 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
         LoadConfig();
     }
+
+    [JsonProperty]
+    public bool FilterStatuses {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    [JsonProperty]
+    public bool ShowIcon {
+        get;
+        set {
+            field = value;
+            SaveConfig();
+        }
+    } = true;
+
+    public string Title { get; set; }
+
+    public Vector2 CalculatedOverlaySize { get; private set; }
+
+    public override Vector4 Color { get; set; }
+    public override Vector3 AddColor { get; set; }
+    public override Vector3 MultiplyColor { get; set; }
 
     [JsonProperty]
     public bool AllowDismissStatus {
@@ -99,15 +124,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             RebuildContainers(SaveConfig);
         }
     } = false;
-
-    [JsonProperty]
-    public bool FilterStatuses {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
 
     [JsonProperty]
     public GrowDirection GrowDirection {
@@ -163,15 +179,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             RebuildContainers(SaveConfig);
         }
     } = 100;
-
-    [JsonProperty]
-    public bool ShowIcon {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
 
     [JsonProperty]
     public bool ShowStatusName {
@@ -236,7 +243,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             UpdateAllNodes();
             RebuildContainers(SaveConfig);
         }
-    } = new TextStyle{
+    } = new() {
         Width = 120,
         Height = 22,
         FontSize = 20,
@@ -300,10 +307,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = SortOrder.Ascending;
 
-    public string Title { get; set; }
-
-    public Vector2 CalculatedOverlaySize { get; private set; }
-
     [JsonProperty]
     public bool ShowActorLetter {
         get;
@@ -340,14 +343,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     } = true;
 
-    public override Vector4 Color { get; set; }
-    public override Vector3 AddColor { get; set; }
-    public override Vector3 MultiplyColor { get; set; }
-
     public void Setup() {
         if (_isSetupCompleted) {
             return;
         }
+
         OnAttach();
 
         if (!IsLocked) {
@@ -398,11 +398,14 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             if (_dummyActiveStatuses.Count == 0 && _allNodes.Count > 0) {
                 InitializeDummyStatuses();
                 _lastDummyUpdateTime = DateTime.Now;
-            } else if (_dummyActiveStatuses.Count > 0) {
+            }
+            else if (_dummyActiveStatuses.Count > 0) {
                 UpdateDummyStatusTimers();
             }
+
             current = _dummyActiveStatuses;
-        } else {
+        }
+        else {
             current = Source.Fetch(this);
             if (_dummyActiveStatuses.Count > 0) {
                 _dummyActiveStatuses.Clear();
@@ -410,30 +413,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
 
         IEnumerable<StatusInfo> filteredStatuses = current;
-        if (_nodeKind == NodeKind.Combined && !ShowPermaIcons)
-        {
+        if (_nodeKind == NodeKind.Combined && !ShowPermaIcons) {
             filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
         }
 
         IOrderedEnumerable<StatusInfo>? sortedStatuses = null;
         IEnumerable<StatusInfo> initialList = filteredStatuses;
 
-        if (PrimarySort != SortCriterion.None)
-        {
+        if (PrimarySort != SortCriterion.None) {
             sortedStatuses = ApplySingleSort(initialList, PrimarySort, PrimarySortOrder);
         }
-        else
-        {
+        else {
             sortedStatuses = initialList.OrderBy(s => 0);
         }
 
-        if (SecondarySort != SortCriterion.None)
-        {
+        if (SecondarySort != SortCriterion.None) {
             sortedStatuses = ApplyThenBySort(sortedStatuses, SecondarySort, SecondarySortOrder);
         }
 
-        if (TertiarySort != SortCriterion.None)
-        {
+        if (TertiarySort != SortCriterion.None) {
             sortedStatuses = ApplyThenBySort(sortedStatuses, TertiarySort, TertiarySortOrder);
         }
 
@@ -662,8 +660,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             _rootContainer.X = rootContainerOffsetX;
             _rootContainer.Y = rootContainerOffsetY;
 
-            switch (_rootContainer)
-            {
+            switch (_rootContainer) {
                 case VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot:
                     verticalRoot.RecalculateLayout();
                     break;
@@ -706,6 +703,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 _allNodes.Add(node);
             }
         }
+
         attachOuter(outer);
 
         _rootContainer = outer;
@@ -746,7 +744,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             }
         }
         else {
-            DisableClickDrag(false);
+            DisableClickDrag();
             if (_backgroundNode != null) {
                 _backgroundNode.IsVisible = false;
                 _backgroundNode.RemoveFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
@@ -755,8 +753,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     private void UpdateAllNodes() {
-        foreach (var node in _allNodes)
-        {
+        foreach (StatusTimerNode<TKey> node in _allNodes) {
             node.UpdateValues();
         }
     }
@@ -786,23 +783,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             float newRemaining = status.RemainingSeconds - deltaSeconds;
             if (newRemaining <= 0) {
                 updatedList.Add(CreateNewDummyStatus());
-            } else {
+            }
+            else {
                 updatedList.Add(new StatusInfo(
-                    id: status.Id,
-                    iconId: status.IconId,
-                    name: status.Name,
-                    remainingSeconds: newRemaining,
-                    maxSeconds: status.MaxSeconds,
-                    gameObjectId: status.GameObjectId,
-                    selfInflicted: status.SelfInflicted,
-                    stacks: status.Stacks,
-                    partyPriority: status.PartyPriority,
-                    isPermanent: status.IsPermanent,
-                    actorName: status.ActorName,
-                    enemyLetter: status.EnemyLetter
+                    status.Id,
+                    status.IconId,
+                    status.Name,
+                    newRemaining,
+                    status.MaxSeconds,
+                    status.GameObjectId,
+                    status.SelfInflicted,
+                    status.Stacks,
+                    status.PartyPriority,
+                    status.IsPermanent,
+                    status.ActorName,
+                    status.EnemyLetter
                 ));
             }
         }
+
         _dummyActiveStatuses = updatedList;
     }
 
@@ -834,7 +833,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
                 isPermanent = selectedTemplate.IsPermanent;
                 statusCategory = selectedTemplate.StatusType;
-            } else {
+            }
+            else {
                 selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
 
                 ulong baseActorId = 1000UL;
@@ -845,7 +845,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 isPermanent = selectedTemplate.IsPermanent;
                 statusCategory = selectedTemplate.StatusType;
             }
-        } else {
+        }
+        else {
             if (initialIndex.HasValue) {
                 int index = initialIndex.Value;
                 selectedTemplate = _combinedDummyTemplates[index % _combinedDummyTemplates.Count];
@@ -855,7 +856,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
                 enemyLetter = null;
                 isPermanent = selectedTemplate.IsPermanent && index % 5 == 0;
                 statusCategory = selectedTemplate.StatusType;
-            } else {
+            }
+            else {
                 selectedTemplate = _combinedDummyTemplates[_rand.Next(0, _combinedDummyTemplates.Count)];
 
                 gameObjectIdToUse = 0UL;
@@ -875,23 +877,24 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         float remainingSeconds = maxSeconds * (float)(_rand.NextDouble() * 0.8 + 0.1);
 
         return new StatusInfo(
-            id: dummyId,
-            iconId: dummyIconId,
-            name: dummyName,
-            remainingSeconds: remainingSeconds,
-            maxSeconds: maxSeconds,
-            gameObjectId: gameObjectIdToUse,
-            selfInflicted: selfInflicted,
-            stacks: dummyStacks,
-            partyPriority: 0,
-            isPermanent: isPermanent,
-            actorName: actorName,
-            enemyLetter: enemyLetter,
-            category: statusCategory
+            dummyId,
+            dummyIconId,
+            dummyName,
+            remainingSeconds,
+            maxSeconds,
+            gameObjectIdToUse,
+            selfInflicted,
+            dummyStacks,
+            0,
+            isPermanent,
+            actorName,
+            enemyLetter,
+            statusCategory
         );
     }
 
-    private IOrderedEnumerable<StatusInfo> ApplySingleSort(IEnumerable<StatusInfo> list, SortCriterion criterion, SortOrder order) {
+    private IOrderedEnumerable<StatusInfo> ApplySingleSort(IEnumerable<StatusInfo> list, SortCriterion criterion,
+        SortOrder order) {
         return criterion switch {
             SortCriterion.StatusType => order == SortOrder.Ascending
                 ? list.OrderBy(status => status.StatusType)
@@ -912,7 +915,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         };
     }
 
-    private IOrderedEnumerable<StatusInfo> ApplyThenBySort(IOrderedEnumerable<StatusInfo> orderedList, SortCriterion criterion, SortOrder order) {
+    private IOrderedEnumerable<StatusInfo> ApplyThenBySort(IOrderedEnumerable<StatusInfo> orderedList,
+        SortCriterion criterion, SortOrder order) {
         if (orderedList == null) {
             return null;
         }
@@ -948,6 +952,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         if (!_isSetupCompleted) {
             return;
         }
+
         string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Save(configPath);
@@ -961,7 +966,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
     private void AddLabelTimeLine(NodeBase node) {
         // Future Zeff, this always goes on a parent
-        var labels = new TimelineBuilder()
+        Timeline labels = new TimelineBuilder()
             .BeginFrameSet(1, 20)
             .AddLabel(1, 10, AtkTimelineJumpBehavior.Start, 0)
             .AddLabel(20, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
@@ -970,12 +975,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
         node.AddTimeline(labels);
     }
-
-
 }
 
-public class TextStyle
-{
+public class TextStyle {
     public float Width { get; set; }
     public float Height { get; set; }
     public int FontSize { get; set; }
@@ -1001,8 +1003,7 @@ public enum GrowDirection {
     UpLeft = 3
 }
 
-public enum SortCriterion
-{
+public enum SortCriterion {
     None = 0,
     StatusType = 1,
     TimeRemaining = 2,
@@ -1011,8 +1012,7 @@ public enum SortCriterion
     EnemyLetter = 5
 }
 
-public enum SortOrder
-{
+public enum SortOrder {
     Ascending = 0,
     Descending = 1
 }

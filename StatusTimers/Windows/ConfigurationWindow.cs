@@ -82,11 +82,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             _configLists[kind].AddNode(CreateTwoOptionsRow(
                 CreateCheckboxOption("Enabled",
-                () => currentOverlayConfig.IsVisible,
-                isChecked => currentOverlayConfig.IsVisible = isChecked),
+                    () => currentOverlayConfig.IsVisible,
+                    isChecked => currentOverlayConfig.IsVisible = isChecked),
                 CreateCheckboxOption("Preview Mode",
-                () => currentOverlayConfig.IsPreviewEnabled,
-                isChecked => currentOverlayConfig.IsPreviewEnabled = isChecked),
+                    () => currentOverlayConfig.IsPreviewEnabled,
+                    isChecked => currentOverlayConfig.IsPreviewEnabled = isChecked),
                 CheckBoxHeight)
             );
             _configLists[kind].AddNode(CreateCheckboxOption("Locked",
@@ -106,10 +106,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         TextFlags = TextStyles.Defaults.Flags,
                         Text = "Scale"
                     },
-                CreateLabeledNumericOption("Horizontal Padding",
-                    () => currentOverlayConfig.StatusHorizontalPadding,
-                    value => currentOverlayConfig.StatusHorizontalPadding = value),
-                CheckBoxHeight
+                    CreateLabeledNumericOption("Horizontal Padding",
+                        () => currentOverlayConfig.StatusHorizontalPadding,
+                        value => currentOverlayConfig.StatusHorizontalPadding = value),
+                    CheckBoxHeight
                 )
             );
 
@@ -124,14 +124,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     value => currentOverlayConfig.ScaleInt = value
                 ),
                 CreateLabeledNumericOption("Vertical Padding",
-                () => currentOverlayConfig.StatusVerticalPadding,
-                value => currentOverlayConfig.StatusVerticalPadding = value),
+                    () => currentOverlayConfig.StatusVerticalPadding,
+                    value => currentOverlayConfig.StatusVerticalPadding = value),
                 30)
             );
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
-            var statusPerLineNode = new TextNode {
+            TextNode statusPerLineNode = new() {
                 X = OptionOffset,
                 IsVisible = true,
                 Width = 300,
@@ -161,21 +161,21 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             );
 
             _configLists[kind].AddNode(CreateTwoOptionsRow(
-                CreateSliderOption(
-                    1,
-                    30,
-                    1,
-                    () => currentOverlayConfig.ItemsPerLine,
-                    value => currentOverlayConfig.ItemsPerLine = value
-                ),
-                CreateSliderOption(
-                    1,
-                    30,
-                    1,
-                    () => currentOverlayConfig.MaxStatuses,
-                    value => currentOverlayConfig.MaxStatuses = value
-                ),
-                30
+                    CreateSliderOption(
+                        1,
+                        30,
+                        1,
+                        () => currentOverlayConfig.ItemsPerLine,
+                        value => currentOverlayConfig.ItemsPerLine = value
+                    ),
+                    CreateSliderOption(
+                        1,
+                        30,
+                        1,
+                        () => currentOverlayConfig.MaxStatuses,
+                        value => currentOverlayConfig.MaxStatuses = value
+                    ),
+                    30
                 )
             );
 
@@ -266,7 +266,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             }
 
             if (kind == NodeKind.MultiDoT) {
-                _configLists[kind].AddNode(CreateCheckboxOption("Allow targeting the enemy by clicking the status icon.",
+                _configLists[kind].AddNode(CreateCheckboxOption(
+                    "Allow targeting the enemy by clicking the status icon.",
                     () => currentOverlayConfig.AllowTargetActor,
                     isChecked => currentOverlayConfig.AllowTargetActor = isChecked));
             }
@@ -284,8 +285,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Text = "Sorting Priority"
             });
 
-            var sortCriteriaMap = new Dictionary<SortCriterion, string>
-            {
+            Dictionary<SortCriterion, string> sortCriteriaMap = new() {
                 { SortCriterion.None, "None" },
                 { SortCriterion.StatusType, "Status Type" },
                 { SortCriterion.TimeRemaining, "Time Remaining" },
@@ -293,8 +293,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 { SortCriterion.PartyPriority, "Party Priority" }
             };
 
-            if (kind == NodeKind.MultiDoT)
-            {
+            if (kind == NodeKind.MultiDoT) {
                 sortCriteriaMap.Add(SortCriterion.EnemyLetter, "Enemy Letter");
             }
 
@@ -343,8 +342,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     protected override unsafe void OnUpdate(AtkUnitBase* addon) {
     }
 
-    protected override unsafe void OnHide(AtkUnitBase* addon) =>
-        Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList().ForEach(kind => GetOverlayByKind(kind).IsPreviewEnabled = false);
+    protected override unsafe void OnHide(AtkUnitBase* addon) {
+        Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList()
+            .ForEach(kind => GetOverlayByKind(kind).IsPreviewEnabled = false);
+    }
 
     #region Helper Methods
 
@@ -424,7 +425,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return flexNode;
     }
 
-    private HorizontalFlexNode<NodeBase> CreateLabeledNumericOption(string labelText, Func<int> getter, Action<int> setter) {
+    private HorizontalFlexNode<NodeBase> CreateLabeledNumericOption(string labelText, Func<int> getter,
+        Action<int> setter) {
         HorizontalFlexNode<NodeBase> flexNode = new() {
             IsVisible = true,
             X = OptionOffset,
@@ -454,7 +456,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             Height = CheckBoxHeight,
             IsVisible = true,
             Value = getter(),
-            OnValueUpdate = setter,
+            OnValueUpdate = setter
         };
         flexNode.AddNode(numericInput);
         return flexNode;
@@ -482,8 +484,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         Func<SortOrder> orderGetter,
         Action<SortOrder> orderSetter,
         Dictionary<SortCriterion, string> availableCriteriaMap
-    )
-    {
+    ) {
         HorizontalFlexNode<NodeBase> flexNode = new() {
             IsVisible = true,
             X = OptionOffset,
@@ -511,17 +512,17 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             Height = 24,
             MaxListOptions = 5,
             Options = availableCriteriaMap.Values.ToList(),
-            SelectedOption = availableCriteriaMap.TryGetValue(criterionGetter(), out var selectedCriterion)
+            SelectedOption = availableCriteriaMap.TryGetValue(criterionGetter(), out string? selectedCriterion)
                 ? selectedCriterion
                 : availableCriteriaMap.Values.First(),
             OnOptionSelected = selectedDisplayName => {
-                var selected = availableCriteriaMap.FirstOrDefault(p => p.Value == selectedDisplayName).Key;
+                SortCriterion selected = availableCriteriaMap.FirstOrDefault(p => p.Value == selectedDisplayName).Key;
                 criterionSetter(selected);
             }
         };
         flexNode.AddNode(criterionDropdown);
 
-        var orderMap = new Dictionary<SortOrder, string> {
+        Dictionary<SortOrder, string> orderMap = new() {
             { SortOrder.Ascending, "Ascending" },
             { SortOrder.Descending, "Descending" }
         };
@@ -532,11 +533,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             Height = 24,
             MaxListOptions = 2,
             Options = orderMap.Values.ToList(),
-            SelectedOption = orderMap.TryGetValue(orderGetter(), out var selectedOrder)
-                ? selectedOrder.ToString()
+            SelectedOption = orderMap.TryGetValue(orderGetter(), out string? selectedOrder)
+                ? selectedOrder
                 : orderMap.Values.First(),
             OnOptionSelected = selectedDisplayName => {
-                var selected = orderMap.FirstOrDefault(p => p.Value == selectedDisplayName).Key;
+                SortOrder selected = orderMap.FirstOrDefault(p => p.Value == selectedDisplayName).Key;
                 orderSetter(selected);
             }
         };

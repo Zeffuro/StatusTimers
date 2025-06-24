@@ -136,7 +136,8 @@ public static class StatusManager {
             }
         }
 
-        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks, partyPrio, isPerma,
+        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks,
+            partyPrio, isPerma,
             actorName, enemyLetter, statusType);
     }
 

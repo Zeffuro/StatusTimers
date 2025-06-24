@@ -6,7 +6,6 @@ using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using StatusTimers.Helpers;
-using StatusTimers.StatusSources;
 using System;
 using System.Linq;
 using System.Numerics;
@@ -15,22 +14,22 @@ using StatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
 namespace StatusTimers.Windows;
 
 public sealed class StatusTimerNode<TKey> : ResNode {
-    private ResNode _containerResNode;
     private TextNode _actorName;
+    private ResNode _containerResNode;
     private IconImageNode _iconNode;
-    private CastBarProgressBarNode _progressNode;
-    private TextNode _statusName;
-    private NodeBase _statusRemaining;
-    private StatusInfo _statusInfo;
 
     private bool _lastShowStatusRemainingBackgroundState;
+    private CastBarProgressBarNode _progressNode;
+    private StatusInfo _statusInfo;
+    private TextNode _statusName;
+    private NodeBase _statusRemaining;
 
     public StatusTimerNode(StatusTimerOverlay<TKey> parent) {
         Parent = parent;
         _containerResNode = new ResNode {
-            Position = this.Position,
-            Size = this.Size,
-            IsVisible = true,
+            Position = Position,
+            Size = Size,
+            IsVisible = true
         };
         Services.NativeController.AttachNode(_containerResNode, this);
 
@@ -41,7 +40,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         };
         Services.NativeController.AttachNode(_iconNode, _containerResNode);
 
-        _progressNode = new CastBarProgressBarNode() {
+        _progressNode = new CastBarProgressBarNode {
             Height = 20,
             Progress = 1f,
             IsVisible = true,
@@ -100,48 +99,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     public NodeKind Kind { get; set; }
     public StatusTimerOverlay<TKey> Parent { get; }
 
-    private void SetRemainingNode() {
-        bool shouldBeNineGrid = Parent.ShowStatusRemainingBackground;
-        bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
-
-        if (shouldBeNineGrid == isCurrentlyNineGrid && _statusRemaining != null) {
-            return;
-        }
-
-        if (_statusRemaining != null) {
-            Services.NativeController.DetachNode(_statusRemaining);
-            _statusRemaining.Dispose();
-            _statusRemaining = null;
-        }
-
-        if (shouldBeNineGrid) {
-            _statusRemaining = new TextNineGridNode {
-                IsVisible = Parent.ShowStatusRemaining,
-                Width = Parent.StatusRemainingTextStyle.Width,
-                Height = Parent.StatusRemainingTextStyle.Height,
-                FontSize = Parent.StatusRemainingTextStyle.FontSize,
-                FontType = Parent.StatusRemainingTextStyle.FontType,
-                TextColor = Parent.StatusRemainingTextStyle.TextColor,
-                TextOutlineColor = Parent.StatusRemainingTextStyle.TextOutlineColor,
-                TextFlags = Parent.StatusRemainingTextStyle.TextFlags,
-            };
-        } else {
-            _statusRemaining = new TextNode {
-                IsVisible = Parent.ShowStatusRemaining,
-                Width = Parent.StatusRemainingTextStyle.Width,
-                Height = Parent.StatusRemainingTextStyle.Height,
-                FontSize = (uint)Parent.StatusRemainingTextStyle.FontSize,
-                FontType = Parent.StatusRemainingTextStyle.FontType,
-                TextColor = Parent.StatusRemainingTextStyle.TextColor,
-                TextOutlineColor = Parent.StatusRemainingTextStyle.TextOutlineColor,
-                TextFlags = Parent.StatusRemainingTextStyle.TextFlags
-            };
-        }
-
-        Services.NativeController.AttachNode(_statusRemaining, _containerResNode);
-        _statusRemaining.X = Width - _statusRemaining.Width;
-    }
-
     public NodeBase OuterContainer { get; set; }
 
     public StatusInfo StatusInfo {
@@ -169,10 +126,54 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
+    private void SetRemainingNode() {
+        bool shouldBeNineGrid = Parent.ShowStatusRemainingBackground;
+        bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
+
+        if (shouldBeNineGrid == isCurrentlyNineGrid && _statusRemaining != null) {
+            return;
+        }
+
+        if (_statusRemaining != null) {
+            Services.NativeController.DetachNode(_statusRemaining);
+            _statusRemaining.Dispose();
+            _statusRemaining = null;
+        }
+
+        if (shouldBeNineGrid) {
+            _statusRemaining = new TextNineGridNode {
+                IsVisible = Parent.ShowStatusRemaining,
+                Width = Parent.StatusRemainingTextStyle.Width,
+                Height = Parent.StatusRemainingTextStyle.Height,
+                FontSize = Parent.StatusRemainingTextStyle.FontSize,
+                FontType = Parent.StatusRemainingTextStyle.FontType,
+                TextColor = Parent.StatusRemainingTextStyle.TextColor,
+                TextOutlineColor = Parent.StatusRemainingTextStyle.TextOutlineColor,
+                TextFlags = Parent.StatusRemainingTextStyle.TextFlags
+            };
+        }
+        else {
+            _statusRemaining = new TextNode {
+                IsVisible = Parent.ShowStatusRemaining,
+                Width = Parent.StatusRemainingTextStyle.Width,
+                Height = Parent.StatusRemainingTextStyle.Height,
+                FontSize = (uint)Parent.StatusRemainingTextStyle.FontSize,
+                FontType = Parent.StatusRemainingTextStyle.FontType,
+                TextColor = Parent.StatusRemainingTextStyle.TextColor,
+                TextOutlineColor = Parent.StatusRemainingTextStyle.TextOutlineColor,
+                TextFlags = Parent.StatusRemainingTextStyle.TextFlags
+            };
+        }
+
+        Services.NativeController.AttachNode(_statusRemaining, _containerResNode);
+        _statusRemaining.X = Width - _statusRemaining.Width;
+    }
+
     public void UpdateValues() {
         if (Parent == null) {
             return;
         }
+
         _statusName.Text = _statusInfo.Name;
 
         _iconNode.IconId = _statusInfo.IconId;
@@ -190,6 +191,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             if (Math.Abs(_statusInfo.RemainingSeconds - _statusInfo.MaxSeconds) < 0.01 && Parent.AnimationsEnabled) {
                 Timeline?.StartAnimation(10);
             }
+
             _progressNode.IsVisible = Parent.ShowProgress;
             _statusRemaining.IsVisible = Parent.ShowStatusRemaining;
 
@@ -205,7 +207,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
             if (_statusRemaining is TextNode textNode) {
                 textNode.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
-            }else if (_statusRemaining is TextNineGridNode textNineGridNode) {
+            }
+            else if (_statusRemaining is TextNineGridNode textNineGridNode) {
                 textNineGridNode.Label = $"{_statusInfo.RemainingSeconds:0.0}s";
             }
         }
@@ -226,7 +229,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private void AddLabelTimeLine(NodeBase node) {
         // Future Zeff, this always goes on a parent
-        var labels = new TimelineBuilder()
+        Timeline labels = new TimelineBuilder()
             .BeginFrameSet(1, 20)
             .AddLabel(1, 10, AtkTimelineJumpBehavior.Start, 0)
             .AddLabel(20, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
@@ -238,7 +241,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private void AddKeyFrameTimeline(NodeBase node) {
         // Future Zeff, this always goes on a child
-        var keyFrames = new TimelineBuilder()
+        Timeline keyFrames = new TimelineBuilder()
             .BeginFrameSet(1, 20)
             .AddFrame(1, scale: new Vector2(1.4f, 1.4f))
             .AddFrame(10, scale: new Vector2(0.9f, 0.9f))

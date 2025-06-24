@@ -21,5 +21,4 @@ public class Services {
 
     public static NativeController NativeController { get; set; } = null!;
     public static NameplateAddonController NameplateAddonController { get; set; } = null!;
-
 }

@@ -68,7 +68,6 @@ public class Plugin : IDalamudPlugin {
     }
 
     private void OnCommand(string command, string args) {
-
         if (args is "toggleall") {
             OverlayManager.PlayerCombinedOverlayInstance.IsVisible =
                 !OverlayManager.PlayerCombinedOverlayInstance.IsVisible;
