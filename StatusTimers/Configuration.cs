@@ -10,6 +10,6 @@ public class Configuration : IPluginConfiguration {
     public int Version { get; set; } = 0;
 
     public void Save() {
-        Services.PluginInterface.SavePluginConfig(this);
+        Services.Services.PluginInterface.SavePluginConfig(this);
     }
 }

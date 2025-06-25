@@ -3,7 +3,11 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.ClientState.Statuses;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using StatusTimers.Enums;
 using StatusTimers.Extensions;
+using StatusTimers.Helpers;
+using StatusTimers.Interfaces;
+using StatusTimers.Models;
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
@@ -11,7 +15,7 @@ using System.Linq;
 using Status = Dalamud.Game.ClientState.Statuses.Status;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 
-namespace StatusTimers.Helpers;
+namespace StatusTimers.Services;
 
 public static class StatusManager {
     private static readonly ExcelSheet<Item> _itemSheet = Services.DataManager.GetExcelSheet<Item>();
@@ -39,8 +43,8 @@ public static class StatusManager {
         return player.StatusList
             .Where(status => status.StatusId != 0)
             .Select(status => TransformStatus(status, player.GameObjectId, config))
-            .Where(transformedStatus => transformedStatus != null) // Filter out nulls
-            .Cast<StatusInfo>() // This is the crucial missing piece: cast the whole sequence to non-nullable
+            .Where(transformedStatus => transformedStatus != null)
+            .Cast<StatusInfo>()
             .ToList();
         ;
     }
@@ -179,42 +183,4 @@ public static class StatusManager {
 
         return (item.Name.ExtractText(), item.Icon);
     }
-}
-
-public readonly struct StatusInfo(
-    uint id,
-    uint iconId,
-    string name,
-    float remainingSeconds,
-    float maxSeconds,
-    ulong gameObjectId,
-    bool selfInflicted,
-    uint stacks,
-    byte partyPriority,
-    bool isPermanent = false,
-    string? actorName = null,
-    char? enemyLetter = null,
-    StatusCategory category = StatusCategory.Buff) {
-    public uint Id { get; } = id;
-    public uint IconId { get; } = iconId;
-    public string Name { get; } = name;
-    public float RemainingSeconds { get; } = remainingSeconds;
-    public float MaxSeconds { get; } = maxSeconds;
-    public bool IsPermanent { get; } = isPermanent;
-    public ulong GameObjectId { get; } = gameObjectId;
-    public bool SelfInflicted { get; } = selfInflicted;
-    public uint Stacks { get; } = stacks;
-    public byte PartyPriority { get; } = partyPriority;
-    public string? ActorName { get; } = actorName;
-    public char? EnemyLetter { get; } = enemyLetter;
-    public StatusCategory StatusType { get; } = category;
-
-    public StatusKey Key => new(GameObjectId, Id);
-}
-
-public readonly record struct StatusKey(ulong GameObjectId, uint StatusId);
-
-public enum StatusCategory {
-    Buff,
-    Debuff
 }

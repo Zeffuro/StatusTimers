@@ -14,49 +14,48 @@ public class Plugin : IDalamudPlugin {
     public Configuration Configuration;
 
     public unsafe Plugin(IDalamudPluginInterface pluginInterface) {
-        pluginInterface.Create<Services>();
+        pluginInterface.Create<Services.Services>();
 
-        Configuration = Services.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Configuration = Services.Services.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        Services.NativeController = new NativeController(pluginInterface);
-        Services.NameplateAddonController = new NameplateAddonController(pluginInterface);
+        Services.Services.NativeController = new NativeController(pluginInterface);
+        Services.Services.NameplateAddonController = new NameplateAddonController(pluginInterface);
 
         OverlayManager = new OverlayManager();
 
 
-        Services.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
-        Services.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
+        Services.Services.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
+        Services.Services.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
 
-        Services.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
+        Services.Services.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
             HelpMessage = "Open the main window"
         });
 
-        if (Services.ClientState.IsLoggedIn) {
-            Services.Framework.RunOnFrameworkThread(OnLogin);
+        if (Services.Services.ClientState.IsLoggedIn) {
+            Services.Services.Framework.RunOnFrameworkThread(OnLogin);
         }
 
-        Services.Framework.Update += OnFrameworkUpdate;
-        Services.ClientState.Login += OnLogin;
-        Services.ClientState.Logout += OnLogout;
+        Services.Services.Framework.Update += OnFrameworkUpdate;
+        Services.Services.ClientState.Login += OnLogin;
+        Services.Services.ClientState.Logout += OnLogout;
 
-        Services.NameplateAddonController.OnUpdate += OnNameplateUpdate;
+        Services.Services.NameplateAddonController.OnUpdate += OnNameplateUpdate;
 
-        OverlayManager.OpenAll();
         OverlayManager.ToggleConfig();
     }
 
     public void Dispose() {
-        Services.Framework.Update -= OnFrameworkUpdate;
-        Services.CommandManager.RemoveHandler(CommandName);
+        Services.Services.Framework.Update -= OnFrameworkUpdate;
+        Services.Services.CommandManager.RemoveHandler(CommandName);
 
         Configuration.Save();
 
-        Services.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
-        Services.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
+        Services.Services.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
+        Services.Services.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
 
         OverlayManager.Dispose();
-        Services.NativeController.Dispose();
-        Services.NameplateAddonController.Dispose();
+        Services.Services.NativeController.Dispose();
+        Services.Services.NameplateAddonController.Dispose();
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
@@ -80,10 +79,10 @@ public class Plugin : IDalamudPlugin {
     }
 
     private static void OnLogin() {
-        Services.NameplateAddonController.Enable();
+        Services.Services.NameplateAddonController.Enable();
     }
 
     private static void OnLogout(int type, int code) {
-        Services.NameplateAddonController.Disable();
+        Services.Services.NameplateAddonController.Disable();
     }
 }

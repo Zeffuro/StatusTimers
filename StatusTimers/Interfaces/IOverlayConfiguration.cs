@@ -1,6 +1,7 @@
-using StatusTimers.Windows;
+using StatusTimers.Enums;
+using StatusTimers.Models;
 
-namespace StatusTimers.Helpers;
+namespace StatusTimers.Interfaces;
 
 public interface IOverlayConfiguration {
     bool AllowDismissStatus { get; set; }

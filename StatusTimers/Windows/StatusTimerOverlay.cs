@@ -5,13 +5,17 @@ using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using Newtonsoft.Json;
-using StatusTimers.Helpers;
-using StatusTimers.StatusSources;
+using StatusTimers.Enums;
+using StatusTimers.Interfaces;
+using StatusTimers.Models;
+using StatusTimers.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using GameStatusManager = FFXIVClientStructs.FFXIV.Client.Game.StatusManager;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
@@ -19,48 +23,63 @@ namespace StatusTimers.Windows;
 public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayConfiguration {
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
-    private static readonly Random _rand = new();
 
-    private static readonly List<DummyStatusTemplate> _combinedDummyTemplates = new() {
-        new DummyStatusTemplate(1239, 213409, "Embolden", 20f, StatusCategory.Buff),
-        new DummyStatusTemplate(786, 212578, "Battle Litany", 15f, StatusCategory.Buff),
-        new DummyStatusTemplate(1822, 213709, "Technical Finish", 20f, StatusCategory.Buff),
-        new DummyStatusTemplate(2174, 212532, "Brotherhood", 15f, StatusCategory.Buff),
-        new DummyStatusTemplate(2912, 217101, "Vulnerability Up", 30f, StatusCategory.Buff)
-    };
-
-    private static readonly List<DummyStatusTemplate> _multiDotDummyTemplates = new() {
-        new DummyStatusTemplate(1205, 212616, "Caustic Bite", 45f, StatusCategory.Debuff),
-        new DummyStatusTemplate(1206, 212617, "Stormbite", 45f, StatusCategory.Debuff),
-        new DummyStatusTemplate(1228, 213304, "Higanbana", 60, StatusCategory.Debuff),
-        new DummyStatusTemplate(3871, 212661, "High Thunder", 30, StatusCategory.Debuff)
-    };
-
-    private readonly List<StatusTimerNode<TKey>> _allNodes = new();
     private readonly NodeKind _nodeKind;
+
+    private readonly IStatusSource<TKey> _source;
 
     protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
     protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
+    private StatusDataSourceManager<TKey> _dataSourceManager;
 
-    private NineGridNode _backgroundNode;
-    private List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
-
-    private List<StatusInfo> _dummyActiveStatuses = new();
-
-    private TextNode _headerNode;
-
+    private bool _isConfigLoading;
     private bool _isSetupCompleted;
-    private DateTime _lastDummyUpdateTime;
 
-    private NodeBase _rootContainer;
-    private List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
+    private StatusOverlayLayoutManager<TKey> _layoutManager;
 
-    protected IStatusSource<TKey> Source;
-
-    protected StatusTimerOverlay(NodeKind nodeKind) {
+    protected StatusTimerOverlay(NodeKind nodeKind, IStatusSource<TKey> source) {
         _nodeKind = nodeKind;
+        _source = source;
 
-        LoadConfig();
+        _layoutManager = new StatusOverlayLayoutManager<TKey>(
+            this,
+            _nodeKind,
+            () => MaxStatuses,
+            () => ItemsPerLine,
+            () => StatusHorizontalPadding,
+            () => StatusVerticalPadding,
+            () => GrowDirection,
+            () => IsLocked,
+            () => StatusRemainingTextStyle,
+            () => ShowIcon,
+            () => ShowStatusName,
+            () => ShowStatusRemaining,
+            () => ShowProgress,
+            () => ShowStatusRemainingBackground,
+            () => ShowActorLetter,
+            () => ShowActorName,
+            () => AllowDismissStatus,
+            () => AllowTargetActor,
+            () => AnimationsEnabled,
+            () => FillRowsFirst
+        );
+
+        _layoutManager.SetNodeActionHandler(HandleStatusNodeAction);
+
+        _dataSourceManager = new StatusDataSourceManager<TKey>(
+            _source,
+            _nodeKind,
+            () => IsPreviewEnabled,
+            () => ShowPermaIcons,
+            () => MaxStatuses,
+            () => ItemsPerLine,
+            () => PrimarySort,
+            () => PrimarySortOrder,
+            () => SecondarySort,
+            () => SecondarySortOrder,
+            () => TertiarySort,
+            () => TertiarySortOrder
+        );
     }
 
     [JsonProperty]
@@ -77,13 +96,15 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
 
-    public string Title { get; set; }
-
-    public Vector2 CalculatedOverlaySize { get; private set; }
+    public Vector2 CalculatedOverlaySize => _layoutManager.CalculatedOverlaySize;
 
     public override Vector4 Color { get; set; }
     public override Vector3 AddColor { get; set; }
@@ -94,6 +115,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -103,6 +128,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -112,6 +141,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -121,7 +154,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = false;
 
@@ -130,7 +165,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = GrowDirection.DownRight;
 
@@ -147,7 +184,14 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            ToggleDrag(field);
+            _layoutManager.ToggleDrag(field);
+            if (!field) {
+                EnableClickDrag(true);
+            }
+            else {
+                DisableClickDrag();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -157,7 +201,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = 16;
 
@@ -166,7 +212,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = 30;
 
@@ -176,7 +224,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         set {
             field = value;
             Scale = new Vector2(ScaleInt * 0.01f);
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = 100;
 
@@ -185,6 +235,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -194,6 +248,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -203,8 +261,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            UpdateAllNodes();
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                _layoutManager.RebuildContainers(SaveConfig);
+            }
         }
     } = true;
 
@@ -213,6 +272,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -222,7 +285,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = 4;
 
@@ -231,7 +296,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = 4;
 
@@ -240,8 +307,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            UpdateAllNodes();
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
         }
     } = new() {
         Width = 120,
@@ -258,7 +326,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = SortCriterion.StatusType;
 
@@ -267,7 +337,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = SortCriterion.OwnStatusFirst;
 
@@ -276,7 +348,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = SortCriterion.PartyPriority;
 
@@ -285,7 +359,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = SortOrder.Ascending;
 
@@ -294,7 +370,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = SortOrder.Ascending;
 
@@ -303,7 +381,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            RebuildContainers(SaveConfig);
+            if (!_isConfigLoading) {
+                RebuildContainers(SaveConfig);
+            }
         }
     } = SortOrder.Ascending;
 
@@ -312,6 +392,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -321,6 +405,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
+            if (!_isConfigLoading) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+
             SaveConfig();
         }
     } = true;
@@ -348,7 +436,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             return;
         }
 
-        OnAttach();
+        _isConfigLoading = true;
+        LoadConfig();
+        _isConfigLoading = false;
+
+        _layoutManager.InitializeLayout();
+        Size = _layoutManager.CalculatedOverlaySize;
 
         if (!IsLocked) {
             ToggleDrag(IsLocked);
@@ -360,241 +453,23 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         _isSetupCompleted = true;
     }
 
-    protected void OnAttach() {
-        CalculatedOverlaySize = CalculateOverlaySize();
-
-        _backgroundNode = new NineGridNode {
-            Size = CalculatedOverlaySize,
-            BottomOffset = 8,
-            TopOffset = 21,
-            LeftOffset = 21,
-            RightOffset = 21
-        };
-        _backgroundNode.AddPart(new Part {
-            TexturePath = "ui/uld/HUDLayout.tex",
-            Size = new Vector2(44, 32),
-            TextureCoordinates = new Vector2(0, 0)
-        });
-        _backgroundNode.AddPart(new Part {
-            TexturePath = "ui/uld/HUDLayout.tex",
-            Size = new Vector2(88, 16),
-            TextureCoordinates = new Vector2(0, 16)
-        });
-        _backgroundNode.AddPart(new Part {
-            TexturePath = "ui/uld/HUDLayout.tex",
-            Size = new Vector2(156, 80),
-            TextureCoordinates = new Vector2(0, 24)
-        });
-
-        Services.NativeController.AttachNode(_backgroundNode, this);
-
-        BuildContainers();
-    }
-
     public void OnUpdate() {
-        IReadOnlyList<StatusInfo> current;
+        List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(this);
 
-        if (IsPreviewEnabled) {
-            if (_dummyActiveStatuses.Count == 0 && _allNodes.Count > 0) {
-                InitializeDummyStatuses();
-                _lastDummyUpdateTime = DateTime.Now;
-            }
-            else if (_dummyActiveStatuses.Count > 0) {
-                UpdateDummyStatusTimers();
-            }
-
-            current = _dummyActiveStatuses;
-        }
-        else {
-            current = Source.Fetch(this);
-            if (_dummyActiveStatuses.Count > 0) {
-                _dummyActiveStatuses.Clear();
-            }
-        }
-
-        IEnumerable<StatusInfo> filteredStatuses = current;
-        if (_nodeKind == NodeKind.Combined && !ShowPermaIcons) {
-            filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
-        }
-
-        IOrderedEnumerable<StatusInfo>? sortedStatuses = null;
-        IEnumerable<StatusInfo> initialList = filteredStatuses;
-
-        if (PrimarySort != SortCriterion.None) {
-            sortedStatuses = ApplySingleSort(initialList, PrimarySort, PrimarySortOrder);
-        }
-        else {
-            sortedStatuses = initialList.OrderBy(s => 0);
-        }
-
-        if (SecondarySort != SortCriterion.None) {
-            sortedStatuses = ApplyThenBySort(sortedStatuses, SecondarySort, SecondarySortOrder);
-        }
-
-        if (TertiarySort != SortCriterion.None) {
-            sortedStatuses = ApplyThenBySort(sortedStatuses, TertiarySort, TertiarySortOrder);
-        }
-
-        List<StatusInfo> finalSortedList = sortedStatuses
-            .Take(MaxStatuses)
-            .ToList();
-
-        int i = 0;
-        Dictionary<TKey, StatusTimerNode<TKey>> newActive = new();
-
-        for (; i < finalSortedList.Count && i < _allNodes.Count; i++) {
-            StatusInfo status = finalSortedList[i];
-            StatusTimerNode<TKey> node = _allNodes[i];
-
-            newActive[Source.KeyOf(status)] = node;
-
-            node.StatusInfo = status;
-            node.Kind = _nodeKind;
-            if (!node.IsVisible) {
-                node.IsVisible = true;
-            }
-        }
-
-        for (; i < _allNodes.Count; i++) {
-            _allNodes[i].IsVisible = false;
-        }
-
-        foreach (StatusTimerNode<TKey> node in _allNodes) {
-            if (!node.IsVisible) {
-            }
-        }
+        _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
 
         Active.Clear();
-        foreach (KeyValuePair<TKey, StatusTimerNode<TKey>> kv in newActive) {
-            Active[kv.Key] = kv.Value;
+        foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes) {
+            if (node.IsVisible && node.StatusInfo.Id != 0) {
+                Active[_dataSourceManager.KeyOf(node.StatusInfo)] = node;
+            }
         }
 
-        RecalculateLayout();
-    }
-
-    private void BuildContainers() {
-        CalculatedOverlaySize = CalculateOverlaySize();
-        int outerCount = (int)Math.Ceiling(MaxStatuses / (double)ItemsPerLine);
-
-        if (FillRowsFirst) {
-            _rows.Clear();
-            SetupContainers(
-                () => new VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> {
-                    Width = CalculatedOverlaySize.X,
-                    Height = CalculatedOverlaySize.Y,
-                    IsVisible = true,
-                    ItemVerticalSpacing = StatusVerticalPadding
-                },
-                outer => Services.NativeController.AttachNode(outer, this),
-                () => {
-                    float innerWidth = Math.Min(ItemsPerLine, MaxStatuses) * StatusNodeWidth +
-                                       (Math.Min(ItemsPerLine, MaxStatuses) - 1) * StatusHorizontalPadding;
-                    float innerHeight = StatusNodeHeight;
-
-                    HorizontalListNode<StatusTimerNode<TKey>> list = new() {
-                        Width = innerWidth,
-                        Height = innerHeight,
-                        IsVisible = true,
-                        ItemHorizontalSpacing = StatusHorizontalPadding
-                    };
-                    _rows.Add(list);
-                    return list;
-                },
-                (outer, inner) => outer.AddNode(inner),
-                inner => {
-                    // If we need to edit the StatusTimerNode
-                    //AddLabelTimeLine(inner);
-                },
-                (inner, node) => {
-                    inner.AddNode(node);
-                    node.OuterContainer = inner;
-                },
-                outerCount,
-                ItemsPerLine
-            );
-        }
-        else {
-            _columns.Clear();
-            SetupContainers(
-                () => new HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> {
-                    Width = CalculatedOverlaySize.X,
-                    Height = CalculatedOverlaySize.Y,
-                    IsVisible = true,
-                    ItemHorizontalSpacing = StatusHorizontalPadding
-                },
-                outer => Services.NativeController.AttachNode(outer, this),
-                () => {
-                    float innerWidth = StatusNodeWidth;
-                    float innerHeight = Math.Min(ItemsPerLine, MaxStatuses) * StatusNodeHeight +
-                                        (Math.Min(ItemsPerLine, MaxStatuses) - 1) * StatusHorizontalPadding;
-                    VerticalListNode<StatusTimerNode<TKey>> list = new() {
-                        Height = innerHeight,
-                        Width = innerWidth,
-                        IsVisible = true,
-                        ItemVerticalSpacing = StatusVerticalPadding,
-                        Alignment = VerticalListAnchor.Top
-                    };
-                    _columns.Add(list);
-                    return list;
-                },
-                (outer, inner) => outer.AddNode(inner),
-                inner => {
-                    // If we need to edit the StatusTimerNode
-                    //AddLabelTimeLine(inner);
-                },
-                (inner, node) => {
-                    inner.AddNode(node);
-                    node.OuterContainer = inner;
-                },
-                outerCount,
-                ItemsPerLine
-            );
-        }
-
-        Size = CalculatedOverlaySize;
-
-        RecalculateLayout();
-    }
-
-    private Vector2 CalculateOverlaySize() {
-        float totalWidth;
-        float totalHeight;
-
-        int actualItemsPerLine = Math.Min(ItemsPerLine, MaxStatuses);
-
-        if (FillRowsFirst) {
-            float singleRowWidth = actualItemsPerLine * StatusNodeWidth +
-                                   (actualItemsPerLine - 1) * StatusHorizontalPadding;
-
-            int numRows = (int)Math.Ceiling(MaxStatuses / (double)actualItemsPerLine);
-
-            float allRowsHeight = numRows * StatusNodeHeight +
-                                  (numRows - 1) * StatusVerticalPadding;
-
-            totalWidth = singleRowWidth;
-            totalHeight = allRowsHeight;
-        }
-        else {
-            float singleColumnHeight = actualItemsPerLine * StatusNodeHeight +
-                                       (actualItemsPerLine - 1) * StatusVerticalPadding;
-
-            int numColumns = (int)Math.Ceiling(MaxStatuses / (double)actualItemsPerLine);
-
-            float allColumnsWidth = numColumns * StatusNodeWidth +
-                                    (numColumns - 1) * StatusHorizontalPadding;
-
-            totalWidth = allColumnsWidth;
-            totalHeight = singleColumnHeight;
-        }
-
-        return new Vector2(Math.Max(0, totalWidth), Math.Max(0, totalHeight));
+        _layoutManager.RecalculateLayout();
     }
 
     private void FinalizeOverlayPositionAndSize(Vector2 newPosition, Vector2 newSize) {
         Size = newSize;
-        if (_backgroundNode != null) {
-            _backgroundNode.Size = newSize;
-        }
 
         // Magic
         MagicCornerYeetFix();
@@ -606,348 +481,42 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     private void RebuildContainers(Action onCompleteCallback = null) {
-        if (_rootContainer == null) {
-            BuildContainers();
-            FinalizeOverlayPositionAndSize(Position, CalculatedOverlaySize);
+        _layoutManager.RebuildContainers(() => {
+            Size = _layoutManager.CalculatedOverlaySize;
+            FinalizeOverlayPositionAndSize(Position, _layoutManager.CalculatedOverlaySize);
             onCompleteCallback?.Invoke();
-            return;
-        }
-
-        Vector2 oldPosition = Position;
-
-        Services.NativeController.DetachNode(_rootContainer, () => {
-            foreach (HorizontalListNode<StatusTimerNode<TKey>> row in _rows) {
-                Services.NativeController.DetachNode(row);
-            }
-
-            _rows.Clear();
-
-            foreach (VerticalListNode<StatusTimerNode<TKey>> col in _columns) {
-                Services.NativeController.DetachNode(col);
-            }
-
-            _columns.Clear();
-
-            BuildContainers();
-
-            Services.Framework.RunOnTick(() => {
-                RecalculateLayout();
-                FinalizeOverlayPositionAndSize(oldPosition, CalculatedOverlaySize);
-                onCompleteCallback?.Invoke();
-            }, delayTicks: 3);
         });
-    }
-
-    private void RecalculateLayout() {
-        bool up = GrowDirection is GrowDirection.UpLeft or GrowDirection.UpRight;
-        bool left = GrowDirection is GrowDirection.UpLeft or GrowDirection.DownLeft;
-
-        SetVerticalAlignment(up ? VerticalListAnchor.Bottom : VerticalListAnchor.Top);
-        SetHorizontalAlignment(left ? HorizontalListAnchor.Right : HorizontalListAnchor.Left);
-
-        if (_rootContainer != null) {
-            float rootContainerOffsetX = 0;
-            float rootContainerOffsetY = 0;
-
-            if (up) {
-                rootContainerOffsetY = -StatusNodeHeight;
-            }
-
-            if (left) {
-                rootContainerOffsetX = -StatusNodeWidth;
-            }
-
-            _rootContainer.X = rootContainerOffsetX;
-            _rootContainer.Y = rootContainerOffsetY;
-
-            switch (_rootContainer) {
-                case VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot:
-                    verticalRoot.RecalculateLayout();
-                    break;
-                case HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> horizontalRoot:
-                    horizontalRoot.RecalculateLayout();
-                    break;
-            }
-        }
-    }
-
-    private void SetupContainers<TOuter, TInner>(
-        Func<TOuter> createOuter,
-        Action<TOuter> attachOuter,
-        Func<TInner> createInner,
-        Action<TOuter, TInner> addInnerToOuter,
-        Action<TInner> configureInner,
-        Action<TInner, StatusTimerNode<TKey>> addNodeToInner,
-        int outerCount,
-        int itemsPerInner
-    )
-        where TOuter : NodeBase
-        where TInner : NodeBase {
-        _allNodes.Clear();
-
-        TOuter outer = createOuter();
-
-        for (int i = 0, nodeIndex = 0; i < outerCount && nodeIndex < MaxStatuses; i++) {
-            TInner inner = createInner();
-            configureInner(inner);
-            addInnerToOuter(outer, inner);
-
-            for (int j = 0; j < itemsPerInner && nodeIndex < MaxStatuses; j++, nodeIndex++) {
-                StatusTimerNode<TKey> node = new(this) {
-                    Height = StatusNodeHeight,
-                    Width = StatusNodeWidth,
-                    Origin = new Vector2(StatusNodeWidth / 2, StatusNodeHeight / 2),
-                    IsVisible = false
-                };
-                addNodeToInner(inner, node);
-                _allNodes.Add(node);
-            }
-        }
-
-        attachOuter(outer);
-
-        _rootContainer = outer;
-    }
-
-    private void SetVerticalAlignment(VerticalListAnchor anchor) {
-        if (_rootContainer is VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot) {
-            verticalRoot.Alignment = anchor;
-            verticalRoot.RecalculateLayout();
-        }
-        else if (_rootContainer is HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>>) {
-            foreach (VerticalListNode<StatusTimerNode<TKey>> verticalList in _columns) {
-                verticalList.Alignment = anchor;
-                verticalList.RecalculateLayout();
-            }
-        }
-    }
-
-    private void SetHorizontalAlignment(HorizontalListAnchor anchor) {
-        if (_rootContainer is VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>>) {
-            foreach (HorizontalListNode<StatusTimerNode<TKey>> horizontalList in _rows) {
-                horizontalList.Alignment = anchor;
-                horizontalList.RecalculateLayout();
-            }
-        }
-        else if (_rootContainer is HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> horizontalRoot) {
-            horizontalRoot.Alignment = anchor;
-            horizontalRoot.RecalculateLayout();
-        }
     }
 
     private void ToggleDrag(bool isLocked) {
         if (!isLocked) {
             EnableClickDrag(true);
-            if (_backgroundNode != null) {
-                _backgroundNode.IsVisible = true;
-            }
         }
         else {
             DisableClickDrag();
-            if (_backgroundNode != null) {
-                _backgroundNode.IsVisible = false;
-            }
         }
 
-        foreach (StatusTimerNode<TKey> node in _allNodes) {
-            node.ToggleEventFlags();
-        }
+        _layoutManager.ToggleDrag(isLocked);
     }
 
-    private void UpdateAllNodes() {
-        foreach (StatusTimerNode<TKey> node in _allNodes) {
-            node.UpdateValues();
-        }
-    }
-
-    private void InitializeDummyStatuses() {
-        _dummyActiveStatuses.Clear();
-
-        for (int i = 0; i < MaxStatuses; i++) {
-            _dummyActiveStatuses.Add(CreateNewDummyStatus(i));
-        }
-    }
-
-    private void UpdateDummyStatusTimers() {
-        TimeSpan elapsed = DateTime.Now - _lastDummyUpdateTime;
-        _lastDummyUpdateTime = DateTime.Now;
-
-        float deltaSeconds = (float)elapsed.TotalSeconds;
-
-        List<StatusInfo> updatedList = new();
-
-        foreach (StatusInfo status in _dummyActiveStatuses) {
-            if (status.IsPermanent) {
-                updatedList.Add(status);
-                continue;
-            }
-
-            float newRemaining = status.RemainingSeconds - deltaSeconds;
-            if (newRemaining <= 0) {
-                updatedList.Add(CreateNewDummyStatus());
-            }
-            else {
-                updatedList.Add(new StatusInfo(
-                    status.Id,
-                    status.IconId,
-                    status.Name,
-                    newRemaining,
-                    status.MaxSeconds,
-                    status.GameObjectId,
-                    status.SelfInflicted,
-                    status.Stacks,
-                    status.PartyPriority,
-                    status.IsPermanent,
-                    status.ActorName,
-                    status.EnemyLetter
-                ));
-            }
+    private void HandleStatusNodeAction(uint statusId, ulong? gameObjectToTargetId, NodeKind nodeKind,
+        bool allowDismiss, bool allowTarget) {
+        if (nodeKind == NodeKind.Combined && allowDismiss) {
+            GameStatusManager.ExecuteStatusOff(statusId);
         }
 
-        _dummyActiveStatuses = updatedList;
-    }
-
-    private StatusInfo CreateNewDummyStatus(int? initialIndex = null) {
-        uint dummyId;
-        uint dummyIconId;
-        string dummyName;
-        float maxSeconds;
-        bool isPermanent;
-        bool selfInflicted;
-        StatusCategory statusCategory;
-
-        uint dummyStacks = (uint)_rand.Next(1, 4);
-
-        ulong gameObjectIdToUse = 0UL;
-        string? actorName = null;
-        char? enemyLetter = null;
-
-        DummyStatusTemplate selectedTemplate;
-
-        if (_nodeKind == NodeKind.MultiDoT) {
-            if (initialIndex.HasValue) {
-                int index = initialIndex.Value;
-                selectedTemplate = _multiDotDummyTemplates[index % _multiDotDummyTemplates.Count];
-
-                ulong baseActorId = 1000UL;
-                gameObjectIdToUse = baseActorId + (ulong)(index / ItemsPerLine);
-                actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
-                enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
-                isPermanent = selectedTemplate.IsPermanent;
-                statusCategory = selectedTemplate.StatusType;
-            }
-            else {
-                selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
-
-                ulong baseActorId = 1000UL;
-                int numDummyActors = MaxStatuses / ItemsPerLine;
-                gameObjectIdToUse = baseActorId + (ulong)_rand.Next(0, Math.Max(1, numDummyActors));
-                actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
-                enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
-                isPermanent = selectedTemplate.IsPermanent;
-                statusCategory = selectedTemplate.StatusType;
-            }
+        if (nodeKind == NodeKind.MultiDoT && gameObjectToTargetId.HasValue && allowTarget) {
+            GlobalServices.TargetManager.Target =
+                GlobalServices.ObjectTable.FirstOrDefault(gameObject =>
+                    gameObject is not null && gameObject.GameObjectId == gameObjectToTargetId.Value);
         }
-        else {
-            if (initialIndex.HasValue) {
-                int index = initialIndex.Value;
-                selectedTemplate = _combinedDummyTemplates[index % _combinedDummyTemplates.Count];
-
-                gameObjectIdToUse = 0UL;
-                actorName = null;
-                enemyLetter = null;
-                isPermanent = selectedTemplate.IsPermanent && index % 5 == 0;
-                statusCategory = selectedTemplate.StatusType;
-            }
-            else {
-                selectedTemplate = _combinedDummyTemplates[_rand.Next(0, _combinedDummyTemplates.Count)];
-
-                gameObjectIdToUse = 0UL;
-                actorName = null;
-                enemyLetter = null;
-                isPermanent = selectedTemplate.IsPermanent;
-                statusCategory = selectedTemplate.StatusType;
-            }
-        }
-
-        dummyId = selectedTemplate.Id;
-        dummyIconId = selectedTemplate.IconId;
-        dummyName = selectedTemplate.Name;
-        maxSeconds = selectedTemplate.MaxSeconds;
-        selfInflicted = _rand.Next(100) < 50;
-
-        float remainingSeconds = maxSeconds * (float)(_rand.NextDouble() * 0.8 + 0.1);
-
-        return new StatusInfo(
-            dummyId,
-            dummyIconId,
-            dummyName,
-            remainingSeconds,
-            maxSeconds,
-            gameObjectIdToUse,
-            selfInflicted,
-            dummyStacks,
-            0,
-            isPermanent,
-            actorName,
-            enemyLetter,
-            statusCategory
-        );
-    }
-
-    private IOrderedEnumerable<StatusInfo> ApplySingleSort(IEnumerable<StatusInfo> list, SortCriterion criterion,
-        SortOrder order) {
-        return criterion switch {
-            SortCriterion.StatusType => order == SortOrder.Ascending
-                ? list.OrderBy(status => status.StatusType)
-                : list.OrderByDescending(status => status.StatusType),
-            SortCriterion.TimeRemaining => order == SortOrder.Ascending
-                ? list.OrderBy(status => status.RemainingSeconds)
-                : list.OrderByDescending(status => status.RemainingSeconds),
-            SortCriterion.OwnStatusFirst => order == SortOrder.Ascending
-                ? list.OrderByDescending(status => status.SelfInflicted)
-                : list.OrderBy(status => status.SelfInflicted),
-            SortCriterion.PartyPriority => order == SortOrder.Ascending
-                ? list.OrderByDescending(status => status.SelfInflicted)
-                : list.OrderBy(status => status.SelfInflicted),
-            SortCriterion.EnemyLetter => order == SortOrder.Ascending
-                ? list.OrderByDescending(status => status.EnemyLetter)
-                : list.OrderBy(status => status.EnemyLetter),
-            _ => list.OrderBy(status => 0)
-        };
-    }
-
-    private IOrderedEnumerable<StatusInfo> ApplyThenBySort(IOrderedEnumerable<StatusInfo> orderedList,
-        SortCriterion criterion, SortOrder order) {
-        if (orderedList == null) {
-            return null;
-        }
-
-        return criterion switch {
-            SortCriterion.StatusType => order == SortOrder.Ascending
-                ? orderedList.ThenBy(status => status.StatusType)
-                : orderedList.ThenByDescending(status => status.StatusType),
-            SortCriterion.TimeRemaining => order == SortOrder.Ascending
-                ? orderedList.ThenBy(status => status.RemainingSeconds)
-                : orderedList.ThenByDescending(status => status.RemainingSeconds),
-            SortCriterion.OwnStatusFirst => order == SortOrder.Ascending
-                ? orderedList.ThenByDescending(status => status.SelfInflicted)
-                : orderedList.ThenBy(status => status.SelfInflicted),
-            SortCriterion.PartyPriority => order == SortOrder.Ascending
-                ? orderedList.ThenByDescending(status => status.SelfInflicted)
-                : orderedList.ThenBy(status => status.SelfInflicted),
-            SortCriterion.EnemyLetter => order == SortOrder.Ascending
-                ? orderedList.ThenByDescending(status => status.EnemyLetter)
-                : orderedList.ThenBy(status => status.EnemyLetter),
-            _ => orderedList
-        };
     }
 
     public void LoadConfig() {
-        string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
+        string configPath = Path.Combine(GlobalServices.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Load(configPath);
-        Services.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
+        GlobalServices.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
     }
 
     public void SaveConfig() {
@@ -955,14 +524,33 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             return;
         }
 
-        string configPath = Path.Combine(Services.PluginInterface.GetPluginConfigDirectory(),
+        string configPath = Path.Combine(GlobalServices.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Save(configPath);
-        Services.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
+        GlobalServices.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
     }
 
     public void OnDispose() {
         SaveConfig();
+        _layoutManager.UnsubscribeFromNodeActions();
+
+        foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes)
+        {
+            if (node != null) {
+                GlobalServices.NativeController.DetachNode(node);
+                node.Dispose();
+            }
+        }
+
+        if (_layoutManager.RootContainer != null) {
+            GlobalServices.NativeController.DetachNode(_layoutManager.RootContainer);
+            _layoutManager.RootContainer.Dispose();
+        }
+        if (_layoutManager.BackgroundNode != null) {
+            GlobalServices.NativeController.DetachNode(_layoutManager.BackgroundNode);
+            _layoutManager.BackgroundNode.Dispose();
+        }
+
         _isSetupCompleted = false;
     }
 
@@ -977,44 +565,4 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
         node.AddTimeline(labels);
     }
-}
-
-public class TextStyle {
-    public float Width { get; set; }
-    public float Height { get; set; }
-    public int FontSize { get; set; }
-    public FontType FontType { get; set; }
-    public Vector4 TextColor { get; set; }
-    public Vector4 TextOutlineColor { get; set; }
-    public TextFlags TextFlags { get; set; }
-}
-
-public record DummyStatusTemplate(
-    uint Id,
-    uint IconId,
-    string Name,
-    float MaxSeconds,
-    StatusCategory StatusType,
-    bool IsPermanent = false
-);
-
-public enum GrowDirection {
-    DownRight = 0,
-    DownLeft = 1,
-    UpRight = 2,
-    UpLeft = 3
-}
-
-public enum SortCriterion {
-    None = 0,
-    StatusType = 1,
-    TimeRemaining = 2,
-    OwnStatusFirst = 3,
-    PartyPriority = 4,
-    EnemyLetter = 5
-}
-
-public enum SortOrder {
-    Ascending = 0,
-    Descending = 1
 }

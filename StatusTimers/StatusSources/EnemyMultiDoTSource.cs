@@ -1,12 +1,13 @@
-using StatusTimers.Helpers;
-using StatusTimers.Windows;
+using StatusTimers.Interfaces;
+using StatusTimers.Models;
+using StatusTimers.Services;
 using System.Collections.Generic;
 
 namespace StatusTimers.StatusSources;
 
-public class EnemyMultiDoTSource(EnemyMultiDoTOverlay overlay) : IStatusSource<StatusKey> {
+public class EnemyMultiDoTSource : IStatusSource<StatusKey> {
     public IReadOnlyList<StatusInfo> Fetch(IOverlayConfiguration config) {
-        return StatusManager.GetHostileStatuses(overlay);
+        return StatusManager.GetHostileStatuses(config);
     }
 
     public StatusKey KeyOf(StatusInfo info) {

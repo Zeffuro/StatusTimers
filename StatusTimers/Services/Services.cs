@@ -4,7 +4,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using KamiToolKit;
 
-namespace StatusTimers;
+namespace StatusTimers.Services;
 
 public class Services {
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
