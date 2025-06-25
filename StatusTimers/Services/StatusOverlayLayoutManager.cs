@@ -506,6 +506,15 @@ public class StatusOverlayLayoutManager<TKey> {
         }
     }
 
+    public void SetNodeNull(bool isBackground) {
+        if (isBackground) {
+            _backgroundNode = null;
+        }
+        else {
+            _rootContainer = null;
+        }
+    }
+
     public void UnsubscribeFromNodeActions() {
         if (_onNodeActionTriggered != null) {
             foreach (StatusTimerNode<TKey> node in _allNodes) {

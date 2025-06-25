@@ -536,18 +536,18 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         {
             if (node != null) {
                 GlobalServices.NativeController.DetachNode(node);
-                node.Dispose();
             }
         }
 
         if (_layoutManager.RootContainer != null) {
             GlobalServices.NativeController.DetachNode(_layoutManager.RootContainer);
-            _layoutManager.RootContainer.Dispose();
+            _layoutManager.SetNodeNull(false);
         }
         if (_layoutManager.BackgroundNode != null) {
             GlobalServices.NativeController.DetachNode(_layoutManager.BackgroundNode);
-            _layoutManager.BackgroundNode.Dispose();
+            _layoutManager.SetNodeNull(true);
         }
+
 
         _isSetupCompleted = false;
     }
