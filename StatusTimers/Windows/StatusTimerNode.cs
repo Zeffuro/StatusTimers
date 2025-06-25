@@ -39,7 +39,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _iconNode = new IconImageNode {
             Size = new Vector2(48, 64),
             IsVisible = _currentDisplayConfig.ShowIcon,
-            EnableEventFlags = true
+            EnableEventFlags = !_currentDisplayConfig.IsLocked
         };
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
@@ -77,8 +77,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         SetRemainingNode(_currentDisplayConfig);
 
         if (_currentDisplayConfig.ShowActorLetter || _currentDisplayConfig.AllowTargetActor) {
-            GlobalServices.Framework.RunOnTick(() => _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked),
-                delayTicks: 10);
+            _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
         }
 
         UpdateLayoutOffsets();
@@ -127,6 +126,11 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         ApplyStyle(_statusRemaining, config.StatusRemainingTextStyle);
 
         _iconNode.IsVisible = config.ShowIcon;
+
+        if (config.ShowActorLetter || config.AllowTargetActor) {
+            _iconNode.EventFlagsSet = config.IsLocked;
+        }
+
         _statusName.IsVisible = config.ShowStatusName;
         _progressNode.IsVisible = config.ShowProgress;
         _actorName.IsVisible = config.ShowActorName && _statusInfo.ActorName != null;
@@ -219,7 +223,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     public void ToggleEventFlags(bool isLocked) {
-        _iconNode.EventFlagsSet = !isLocked;
+        GlobalServices.Logger.Info($"[StatusTimerNode] Setting EventFlagsSet={(isLocked)} for node {this.GetHashCode()}");
+        _iconNode.EventFlagsSet = isLocked;
     }
 
     public void UpdateValues(StatusNodeDisplayConfig config) {
@@ -238,6 +243,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusName.Text = _statusInfo.Name;
 
         _iconNode.IsVisible = config.ShowIcon;
+        _iconNode.EventFlagsSet = config.AllowDismissStatus || config.AllowTargetActor;
         _statusRemaining.IsVisible = config.ShowStatusRemaining;
         _statusName.IsVisible = config.ShowStatusName;
         _progressNode.IsVisible = config.ShowProgress;
@@ -277,6 +283,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     private unsafe void OnIconClicked(AddonEventData eventData) {
+        GlobalServices.Logger.Info("OnIconClicked called");
         if (_statusInfo.Id == 0) {
             return;
         }
