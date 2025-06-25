@@ -262,8 +262,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         set {
             field = value;
             if (!_isConfigLoading) {
-                _layoutManager.RebuildContainers(SaveConfig);
+                _layoutManager.UpdateAllNodesDisplay();
             }
+
+            SaveConfig();
         }
     } = true;
 

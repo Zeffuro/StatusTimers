@@ -129,8 +129,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         if (_statusRemaining != null) {
-            GlobalServices.NativeController.DetachNode(_statusRemaining);
-            _statusRemaining.Dispose();
+            try {
+                GlobalServices.NativeController.DetachNode(_statusRemaining);
+            } catch { /* ignore safely or log */ }
+            try {
+                _statusRemaining.Dispose();
+            } catch { /* ignore safely or log */ }
             _statusRemaining = null;
         }
 

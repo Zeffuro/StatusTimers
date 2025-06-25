@@ -255,40 +255,75 @@ public class StatusOverlayLayoutManager<TKey> {
         _ownerOverlay.Size = CalculatedOverlaySize;
     }
 
-    public void RebuildContainers(Action onCompleteCallback = null) {
-        if (_rootContainer == null) {
-            return;
-        }
+    private bool _isRebuilding = false;
 
-        // 1. Unhook event handlers
+public void RebuildContainers(Action onCompleteCallback = null) {
+    if (_rootContainer == null || _isRebuilding) {
+        return;
+    }
+
+    _isRebuilding = true;
+
+    try {
         UnsubscribeFromNodeActions();
 
-// 2. Detach and dispose background
-        if (_backgroundNode != null) {
-            GlobalServices.NativeController.DetachNode(_backgroundNode);
-            _backgroundNode.Dispose();
-            _backgroundNode = null;
+        // Dispose all status nodes first, then clear list
+        foreach (var node in _allNodes.ToArray()) {
+            if (node != null) { // assuming you have IsDisposed or similar
+                GlobalServices.NativeController.DetachNode(node);
+                node.Dispose();
+            }
+        }
+        _allNodes.Clear();
+
+        // Dispose rows or columns depending on layout, then clear
+        if (_getFillRowsFirst()) {
+            foreach (var row in _rows.ToArray()) {
+                if (row != null) {
+                    GlobalServices.NativeController.DetachNode(row);
+                    row.Dispose();
+                }
+            }
+            _rows.Clear();
+        }
+        else {
+            foreach (var col in _columns.ToArray()) {
+                if (col != null) {
+                    GlobalServices.NativeController.DetachNode(col);
+                    col.Dispose();
+                }
+            }
+            _columns.Clear();
         }
 
-// 3. Detach and dispose root container (this will recursively dispose all rows, columns, and nodes)
+        // Dispose root container last
         if (_rootContainer != null) {
             GlobalServices.NativeController.DetachNode(_rootContainer);
             _rootContainer.Dispose();
             _rootContainer = null;
         }
 
-// 4. Clear C# lists (do NOT dispose their contents)
-        _allNodes.Clear();
-        _rows.Clear();
-        _columns.Clear();
+        // Dispose background node last
+        if (_backgroundNode != null) {
+            GlobalServices.NativeController.DetachNode(_backgroundNode);
+            _backgroundNode.Dispose();
+            _backgroundNode = null;
+        }
 
         InitializeLayout();
 
         GlobalServices.Framework.RunOnTick(() => {
             RecalculateLayout();
             onCompleteCallback?.Invoke();
+            _isRebuilding = false;
         }, delayTicks: 3);
     }
+    catch (Exception ex) {
+        _isRebuilding = false;
+        Services.Logger.Error(ex.InnerException?.ToString() ?? string.Empty);
+        throw;
+    }
+}
 
     public void RecalculateLayout() {
         bool up = _getGrowDirection() is GrowDirection.UpLeft or GrowDirection.UpRight;
