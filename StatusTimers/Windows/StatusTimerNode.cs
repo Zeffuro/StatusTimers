@@ -39,7 +39,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _iconNode = new IconImageNode {
             Size = new Vector2(48, 64),
             IsVisible = _currentDisplayConfig.ShowIcon,
-            EnableEventFlags = !_currentDisplayConfig.IsLocked
+            EventFlagsSet = !_currentDisplayConfig.IsLocked
         };
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
