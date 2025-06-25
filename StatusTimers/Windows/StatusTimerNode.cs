@@ -223,7 +223,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     public void ToggleEventFlags(bool isLocked) {
-        GlobalServices.Logger.Info($"[StatusTimerNode] Setting EventFlagsSet={(isLocked)} for node {this.GetHashCode()}");
         _iconNode.EventFlagsSet = isLocked;
     }
 
@@ -283,7 +282,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     private unsafe void OnIconClicked(AddonEventData eventData) {
-        GlobalServices.Logger.Info("OnIconClicked called");
         if (_statusInfo.Id == 0) {
             return;
         }
