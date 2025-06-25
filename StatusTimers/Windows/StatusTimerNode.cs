@@ -87,7 +87,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         SetRemainingNode();
 
         if (Parent.ShowActorLetter || Parent.AllowTargetActor) {
-            _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e));
+            Services.Framework.RunOnTick(() => _iconNode.AddEvent(AddonEventType.MouseClick, e => StatusNodeClick(this, e)), delayTicks: 10);
         }
 
         UpdateValues();
@@ -167,6 +167,18 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         Services.NativeController.AttachNode(_statusRemaining, _containerResNode);
         _statusRemaining.X = Width - _statusRemaining.Width;
+    }
+
+    public void ToggleEventFlags() {
+        _iconNode.EventFlagsSet = !Parent.IsLocked;
+        /*
+        if (!Parent.IsLocked) {
+            _iconNode.ClearEventFlags();
+        }
+        else {
+            _iconNode.SetEventFlags();
+        }
+        */
     }
 
     public void UpdateValues() {

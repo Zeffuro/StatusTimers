@@ -740,15 +740,17 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             EnableClickDrag(true);
             if (_backgroundNode != null) {
                 _backgroundNode.IsVisible = true;
-                _backgroundNode.AddFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
             }
         }
         else {
             DisableClickDrag();
             if (_backgroundNode != null) {
                 _backgroundNode.IsVisible = false;
-                _backgroundNode.RemoveFlags(NodeFlags.Focusable, NodeFlags.IsTopNode);
             }
+        }
+
+        foreach (StatusTimerNode<TKey> node in _allNodes) {
+            node.ToggleEventFlags();
         }
     }
 

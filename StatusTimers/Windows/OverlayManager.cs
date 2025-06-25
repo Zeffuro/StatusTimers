@@ -13,36 +13,31 @@ public unsafe class OverlayManager : IDisposable {
             NativeController = Services.NativeController
         };
 
-        EnemyMultiDoTOverlay.Setup();
-        PlayerCombinedOverlay.Setup();
-
         Services.NameplateAddonController.OnAttach += AttachNodes;
         Services.NameplateAddonController.OnDetach += DetachNodes;
     }
 
     private ConfigurationWindow ConfigurationWindow { get; }
 
-    private EnemyMultiDoTOverlay EnemyMultiDoTOverlay { get; } = new() {
+    private EnemyMultiDoTOverlay? EnemyMultiDoTOverlay { get; set; } = new() {
         Title = "Enemy DoTs",
         Size = new Vector2(400, 400)
     };
 
-    private PlayerCombinedStatusesOverlay PlayerCombinedOverlay { get; } = new() {
+    private PlayerCombinedStatusesOverlay? PlayerCombinedOverlay { get; set; } = new() {
         Title = "Player Statuses",
         Size = new Vector2(400, 400)
     };
 
-    public PlayerCombinedStatusesOverlay PlayerCombinedOverlayInstance => PlayerCombinedOverlay;
-    public EnemyMultiDoTOverlay EnemyMultiDoTOverlayInstance => EnemyMultiDoTOverlay;
+    public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => PlayerCombinedOverlay;
+    public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => EnemyMultiDoTOverlay;
 
     public void Dispose() {
-        PlayerCombinedOverlay.OnDispose();
-        EnemyMultiDoTOverlay.OnDispose();
+
         Services.NativeController.DetachNode(PlayerCombinedOverlay);
         Services.NativeController.DetachNode(EnemyMultiDoTOverlay);
 
-        PlayerCombinedOverlay.Dispose();
-        EnemyMultiDoTOverlay.Dispose();
+
 
         ConfigurationWindow.Dispose();
         Services.NameplateAddonController.PreEnable -= PreAttach;
@@ -56,11 +51,23 @@ public unsafe class OverlayManager : IDisposable {
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
         Services.NativeController.AttachNode(PlayerCombinedOverlay, addonNamePlate->RootNode);
         Services.NativeController.AttachNode(EnemyMultiDoTOverlay, addonNamePlate->RootNode);
+
+        EnemyMultiDoTOverlay?.Setup();
+        PlayerCombinedOverlay?.Setup();
     }
 
     private void DetachNodes(AddonNamePlate* addonNamePlate) {
-        Services.NativeController.DetachNode(PlayerCombinedOverlay);
-        Services.NativeController.DetachNode(EnemyMultiDoTOverlay);
+        Services.NativeController.DetachNode(PlayerCombinedOverlay, () =>
+        {
+            PlayerCombinedOverlay?.OnDispose();
+            PlayerCombinedOverlay?.Dispose();
+            EnemyMultiDoTOverlay = null;
+        });
+        Services.NativeController.DetachNode(EnemyMultiDoTOverlay, () => {
+            EnemyMultiDoTOverlay?.OnDispose();
+            EnemyMultiDoTOverlay?.Dispose();
+            EnemyMultiDoTOverlay = null;
+        });
     }
 
     public void OnUpdate() {

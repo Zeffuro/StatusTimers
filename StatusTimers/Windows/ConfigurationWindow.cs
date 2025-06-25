@@ -46,7 +46,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         NodeKind[] nodeKinds = Enum.GetValues<NodeKind>();
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
-            IOverlayConfiguration currentOverlayConfig = GetOverlayByKind(kind);
+            IOverlayConfiguration? currentOverlayConfig = GetOverlayByKind(kind);
             tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
@@ -546,7 +546,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return flexNode;
     }
 
-    private IOverlayConfiguration GetOverlayByKind(NodeKind kind) {
+    private IOverlayConfiguration? GetOverlayByKind(NodeKind kind) {
         return kind switch {
             NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
             NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
