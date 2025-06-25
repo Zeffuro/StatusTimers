@@ -133,37 +133,83 @@ public class StatusOverlayLayoutManager<TKey> {
     }
 
     public Vector2 CalculateOverlaySize() {
-        float totalWidth;
-        float totalHeight;
+        float totalWidth = 0;
+        float totalHeight = 0;
 
-        int actualItemsPerLine = Math.Min(_getItemsPerLine(), _getMaxStatuses());
+        int maxItems = _getMaxStatuses();
+        int itemsPerLine = Math.Min(_getItemsPerLine(), maxItems);
 
         if (_getFillRowsFirst()) {
-            float singleRowWidth = actualItemsPerLine * StatusNodeWidth +
-                                   (actualItemsPerLine - 1) * _getStatusHorizontalPadding();
+            int numRows = (int)Math.Ceiling(maxItems / (double)itemsPerLine);
 
-            int numRows = (int)Math.Ceiling(_getMaxStatuses() / (double)actualItemsPerLine);
+            int itemsInLastRow = maxItems % itemsPerLine;
+            if (itemsInLastRow == 0 && maxItems > 0) {
+                itemsInLastRow = itemsPerLine;
+            }
+
+            float widestRowWidth = Math.Max(
+                itemsPerLine * StatusNodeWidth + (itemsPerLine - 1) * _getStatusHorizontalPadding(),
+                itemsInLastRow * StatusNodeWidth + Math.Max(0, (itemsInLastRow - 1)) * _getStatusHorizontalPadding()
+            );
 
             float allRowsHeight = numRows * StatusNodeHeight +
                                   (numRows - 1) * _getStatusVerticalPadding();
 
-            totalWidth = singleRowWidth;
+            totalWidth = widestRowWidth;
             totalHeight = allRowsHeight;
         }
         else {
-            float singleColumnHeight = actualItemsPerLine * StatusNodeHeight +
-                                       (actualItemsPerLine - 1) * _getStatusVerticalPadding();
+            int numCols = (int)Math.Ceiling(maxItems / (double)itemsPerLine);
 
-            int numColumns = (int)Math.Ceiling(_getMaxStatuses() / (double)actualItemsPerLine);
+            int itemsInLastCol = maxItems % itemsPerLine;
+            if (itemsInLastCol == 0 && maxItems > 0) {
+                itemsInLastCol = itemsPerLine;
+            }
 
-            float allColumnsWidth = numColumns * StatusNodeWidth +
-                                    (numColumns - 1) * _getStatusHorizontalPadding();
+            float tallestColHeight = Math.Max(
+                itemsPerLine * StatusNodeHeight + (itemsPerLine - 1) * _getStatusVerticalPadding(),
+                itemsInLastCol * StatusNodeHeight + Math.Max(0, (itemsInLastCol - 1)) * _getStatusVerticalPadding()
+            );
 
-            totalWidth = allColumnsWidth;
-            totalHeight = singleColumnHeight;
+            float allColsWidth = numCols * StatusNodeWidth +
+                                 (numCols - 1) * _getStatusHorizontalPadding();
+
+            totalWidth = allColsWidth;
+            totalHeight = tallestColHeight;
         }
 
         return new Vector2(Math.Max(0, totalWidth), Math.Max(0, totalHeight));
+    }
+
+    private void BuildContainersOnly() {
+        CalculatedOverlaySize = CalculateOverlaySize();
+
+        _backgroundNode = new NineGridNode {
+            Size = CalculatedOverlaySize,
+            BottomOffset = 8,
+            TopOffset = 21,
+            LeftOffset = 21,
+            RightOffset = 21
+        };
+        _backgroundNode.AddPart(new Part {
+            TexturePath = "ui/uld/HUDLayout.tex",
+            Size = new Vector2(44, 32),
+            TextureCoordinates = new Vector2(0, 0)
+        });
+        _backgroundNode.AddPart(new Part {
+            TexturePath = "ui/uld/HUDLayout.tex",
+            Size = new Vector2(88, 16),
+            TextureCoordinates = new Vector2(0, 16)
+        });
+        _backgroundNode.AddPart(new Part {
+            TexturePath = "ui/uld/HUDLayout.tex",
+            Size = new Vector2(156, 80),
+            TextureCoordinates = new Vector2(0, 24)
+        });
+
+        GlobalServices.NativeController.AttachNode(_backgroundNode, _ownerOverlay);
+
+        BuildContainers();
     }
 
     public void BuildContainers() {
@@ -172,9 +218,7 @@ public class StatusOverlayLayoutManager<TKey> {
         _columns.Clear();
 
         CalculatedOverlaySize = CalculateOverlaySize();
-
         int outerCount = (int)Math.Ceiling(_getMaxStatuses() / (double)_getItemsPerLine());
-
         StatusNodeDisplayConfig initialNodeConfig = GetCurrentStatusNodeDisplayConfig();
 
         if (_getFillRowsFirst()) {
@@ -205,8 +249,6 @@ public class StatusOverlayLayoutManager<TKey> {
                 inner => { },
                 (inner, node) => {
                     inner.AddNode(node);
-                    if (ReferenceEquals(node, inner))
-                        throw new InvalidOperationException("Attempted to assign node as its own container.");
                     node.OuterContainer = inner;
                 },
                 outerCount,
@@ -242,8 +284,6 @@ public class StatusOverlayLayoutManager<TKey> {
                 inner => { },
                 (inner, node) => {
                     inner.AddNode(node);
-                    if (ReferenceEquals(node, inner))
-                        throw new InvalidOperationException("Attempted to assign node as its own container.");
                     node.OuterContainer = inner;
                 },
                 outerCount,
@@ -253,106 +293,90 @@ public class StatusOverlayLayoutManager<TKey> {
         }
 
         _ownerOverlay.Size = CalculatedOverlaySize;
+        ToggleDrag(_getIsLocked());
     }
 
     private bool _isRebuilding = false;
 
-public void RebuildContainers(Action onCompleteCallback = null) {
-    if (_rootContainer == null || _isRebuilding) {
-        return;
-    }
-
-    _isRebuilding = true;
-
-    try {
-        UnsubscribeFromNodeActions();
-
-        // Dispose all status nodes first, then clear list
-        foreach (var node in _allNodes.ToArray()) {
-            if (node != null) { // assuming you have IsDisposed or similar
-                GlobalServices.NativeController.DetachNode(node);
-                node.Dispose();
-            }
-        }
-        _allNodes.Clear();
-
-        // Dispose rows or columns depending on layout, then clear
-        if (_getFillRowsFirst()) {
-            foreach (var row in _rows.ToArray()) {
-                if (row != null) {
-                    GlobalServices.NativeController.DetachNode(row);
-                    row.Dispose();
-                }
-            }
-            _rows.Clear();
-        }
-        else {
-            foreach (var col in _columns.ToArray()) {
-                if (col != null) {
-                    GlobalServices.NativeController.DetachNode(col);
-                    col.Dispose();
-                }
-            }
-            _columns.Clear();
-        }
-
-        // Dispose root container last
+    public void RebuildContainers(Action onCompleteCallback = null) {
         if (_rootContainer != null) {
             GlobalServices.NativeController.DetachNode(_rootContainer);
-            _rootContainer.Dispose();
             _rootContainer = null;
         }
-
-        // Dispose background node last
         if (_backgroundNode != null) {
             GlobalServices.NativeController.DetachNode(_backgroundNode);
-            _backgroundNode.Dispose();
             _backgroundNode = null;
         }
+        _allNodes.Clear();
+        _rows.Clear();
+        _columns.Clear();
 
-        InitializeLayout();
+        BuildContainersOnly();
 
         GlobalServices.Framework.RunOnTick(() => {
-            RecalculateLayout();
-            onCompleteCallback?.Invoke();
-            _isRebuilding = false;
+            try {
+                RecalculateLayout();
+                onCompleteCallback?.Invoke();
+            }
+            finally {
+                _isRebuilding = false;
+            }
         }, delayTicks: 3);
     }
-    catch (Exception ex) {
-        _isRebuilding = false;
-        Services.Logger.Error(ex.InnerException?.ToString() ?? string.Empty);
-        throw;
-    }
-}
 
-    public void RecalculateLayout() {
-        bool up = _getGrowDirection() is GrowDirection.UpLeft or GrowDirection.UpRight;
-        bool left = _getGrowDirection() is GrowDirection.UpLeft or GrowDirection.DownLeft;
+    public void RecalculateLayout()
+    {
+        var grow = _getGrowDirection();
 
-        SetVerticalAlignment(up ? VerticalListAnchor.Bottom : VerticalListAnchor.Top);
-        SetHorizontalAlignment(left ? HorizontalListAnchor.Right : HorizontalListAnchor.Left);
+        VerticalListAnchor verticalAnchor;
+        HorizontalListAnchor horizontalAnchor;
 
-        if (_rootContainer != null) {
-            float rootContainerOffsetX = 0;
-            float rootContainerOffsetY = 0;
+        switch (grow)
+        {
+            case GrowDirection.UpLeft:
+                verticalAnchor = VerticalListAnchor.Bottom;
+                horizontalAnchor = HorizontalListAnchor.Right;
+                break;
+            case GrowDirection.UpRight:
+                verticalAnchor = VerticalListAnchor.Bottom;
+                horizontalAnchor = HorizontalListAnchor.Left;
+                break;
+            case GrowDirection.DownLeft:
+                verticalAnchor = VerticalListAnchor.Top;
+                horizontalAnchor = HorizontalListAnchor.Right;
+                break;
+            case GrowDirection.DownRight:
+            default:
+                verticalAnchor = VerticalListAnchor.Top;
+                horizontalAnchor = HorizontalListAnchor.Left;
+                break;
+        }
 
-            if (up) {
-                rootContainerOffsetY = -CalculatedOverlaySize.Y;
-            }
+        SetVerticalAlignment(verticalAnchor);
+        SetHorizontalAlignment(horizontalAnchor);
 
-            if (left) {
-                rootContainerOffsetX = -CalculatedOverlaySize.X;
-            }
 
+        float rootContainerOffsetX = 0, rootContainerOffsetY = 0;
+        if (verticalAnchor == VerticalListAnchor.Bottom) {
+            rootContainerOffsetY = -StatusNodeHeight;
+        }
+
+        if (horizontalAnchor == HorizontalListAnchor.Right) {
+            rootContainerOffsetX = -StatusNodeWidth;
+        }
+
+        if (_rootContainer != null)
+        {
             _rootContainer.X = rootContainerOffsetX;
             _rootContainer.Y = rootContainerOffsetY;
 
-            switch (_rootContainer) {
-                case VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot:
-                    verticalRoot.RecalculateLayout();
+            switch (_rootContainer)
+            {
+                case VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> vRoot:
+                    vRoot.RecalculateLayout();
                     break;
-                case HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> horizontalRoot:
-                    horizontalRoot.RecalculateLayout();
+                case HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> hRoot:
+                    hRoot.RecalculateLayout();
                     break;
             }
         }
@@ -371,7 +395,7 @@ public void RebuildContainers(Action onCompleteCallback = null) {
     public void UpdateAllNodesDisplay() {
         StatusNodeDisplayConfig currentConfig = GetCurrentStatusNodeDisplayConfig();
         foreach (StatusTimerNode<TKey> node in _allNodes) {
-            node.UpdateValues(currentConfig);
+            node.ApplyDisplayConfig(currentConfig);
         }
     }
 
@@ -422,10 +446,8 @@ public void RebuildContainers(Action onCompleteCallback = null) {
                     Height = StatusNodeHeight,
                     Width = StatusNodeWidth,
                     Origin = new Vector2(StatusNodeWidth / 2, StatusNodeHeight / 2),
-                    IsVisible = false // Initially hidden, will be made visible in UpdateNodeContent
+                    IsVisible = false
                 };
-                if (node is HorizontalListNode<StatusTimerNode<TKey>> or VerticalListNode<StatusTimerNode<TKey>>)
-                    throw new InvalidOperationException("StatusTimerNode was constructed as a container — invalid configuration.");
                 addNodeToInner(inner, node);
                 _allNodes.Add(node);
 

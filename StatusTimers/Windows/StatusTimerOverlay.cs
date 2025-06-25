@@ -34,11 +34,15 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
     private bool _isConfigLoading;
     private bool _isSetupCompleted;
+    private bool _needsRebuild;
+    private bool _isRebuildingContainers;
 
     private StatusOverlayLayoutManager<TKey> _layoutManager;
 
     protected StatusTimerOverlay(NodeKind nodeKind, IStatusSource<TKey> source) {
         _nodeKind = nodeKind;
+        SetSortDefaults(_nodeKind);
+
         _source = source;
 
         _layoutManager = new StatusOverlayLayoutManager<TKey>(
@@ -115,11 +119,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -128,11 +128,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -141,11 +137,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -154,9 +146,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = false;
 
@@ -165,9 +155,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = GrowDirection.DownRight;
 
@@ -201,9 +189,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = 16;
 
@@ -212,9 +198,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = 30;
 
@@ -224,9 +208,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         set {
             field = value;
             Scale = new Vector2(ScaleInt * 0.01f);
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = 100;
 
@@ -235,11 +217,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -248,11 +226,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -261,11 +235,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -274,11 +244,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -287,9 +253,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = 4;
 
@@ -298,9 +262,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = 4;
 
@@ -309,9 +271,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
+            SaveConfig();
         }
     } = new() {
         Width = 120,
@@ -328,42 +288,34 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
-    } = SortCriterion.StatusType;
+    }
 
     [JsonProperty]
     public SortCriterion SecondarySort {
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
-    } = SortCriterion.OwnStatusFirst;
+    }
 
     [JsonProperty]
     public SortCriterion TertiarySort {
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
-    } = SortCriterion.PartyPriority;
+    }
 
     [JsonProperty]
     public SortOrder PrimarySortOrder {
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = SortOrder.Ascending;
 
@@ -372,9 +324,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = SortOrder.Ascending;
 
@@ -383,9 +333,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                RebuildContainers(SaveConfig);
-            }
+            OnPropertyChanged(needsRebuild: true);
         }
     } = SortOrder.Ascending;
 
@@ -394,11 +342,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -407,11 +351,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
+            OnPropertyChanged(updateNodes: true);
         }
     } = true;
 
@@ -456,6 +396,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     public void OnUpdate() {
+        if (_needsRebuild && !_isRebuildingContainers)
+        {
+            _needsRebuild = false;
+            RebuildContainers(SaveConfig);
+        }
+
         List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(this);
 
         _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
@@ -483,11 +429,21 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     private void RebuildContainers(Action onCompleteCallback = null) {
-        _layoutManager.RebuildContainers(() => {
-            Size = _layoutManager.CalculatedOverlaySize;
-            FinalizeOverlayPositionAndSize(Position, _layoutManager.CalculatedOverlaySize);
-            onCompleteCallback?.Invoke();
-        });
+        if (_isRebuildingContainers) {
+            return;
+        }
+
+        try {
+            _isRebuildingContainers = true;
+            _layoutManager.RebuildContainers(() => {
+                Size = _layoutManager.CalculatedOverlaySize;
+                FinalizeOverlayPositionAndSize(Position, _layoutManager.CalculatedOverlaySize);
+                onCompleteCallback?.Invoke();
+            });
+        }
+        finally {
+            _isRebuildingContainers = false;
+        }
     }
 
     private void ToggleDrag(bool isLocked) {
@@ -514,11 +470,51 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         }
     }
 
+    private void OnPropertyChanged(bool needsRebuild = false, bool updateNodes = false) {
+        if (!_isConfigLoading) {
+            if (needsRebuild) {
+                MarkNeedsRebuild();
+            }
+
+            if (updateNodes) {
+                _layoutManager.UpdateAllNodesDisplay();
+            }
+        }
+        SaveConfig();
+    }
+
+    private void MarkNeedsRebuild()
+    {
+        _needsRebuild = true;
+    }
+
+    private void SubscribeToEvents() {
+        StatusRemainingTextStyle.Changed += () => OnPropertyChanged(needsRebuild: true);
+    }
+
+    private void SetSortDefaults(NodeKind nodeKind)
+    {
+        switch (nodeKind) {
+            case NodeKind.MultiDoT:
+                PrimarySort   = SortCriterion.EnemyLetter;
+                SecondarySort = SortCriterion.TimeRemaining;
+                TertiarySort  = SortCriterion.None;
+                break;
+            case NodeKind.Combined:
+            default:
+                PrimarySort   = SortCriterion.StatusType;
+                SecondarySort = SortCriterion.OwnStatusFirst;
+                TertiarySort  = SortCriterion.PartyPriority;
+                break;
+        }
+    }
+
     public void LoadConfig() {
         string configPath = Path.Combine(GlobalServices.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Load(configPath);
         GlobalServices.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
+        SubscribeToEvents();
     }
 
     public void SaveConfig() {

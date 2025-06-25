@@ -108,6 +108,57 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
 
+    public void ApplyDisplayConfig(StatusNodeDisplayConfig config)
+    {
+        if (_currentDisplayConfig.Equals(config)) {
+            return;
+        }
+
+        _currentDisplayConfig = config;
+
+        bool needsRebuild =
+            (_statusRemaining is TextNineGridNode) != config.ShowStatusRemainingBackground
+            || !GetCurrentTextStyle(_statusRemaining)!.Equals(config.StatusRemainingTextStyle);
+
+        if (needsRebuild) {
+            SetRemainingNode(config);
+        }
+
+        ApplyStyle(_statusRemaining, config.StatusRemainingTextStyle);
+
+        _iconNode.IsVisible = config.ShowIcon;
+        _statusName.IsVisible = config.ShowStatusName;
+        _progressNode.IsVisible = config.ShowProgress;
+        _actorName.IsVisible = config.ShowActorName && _statusInfo.ActorName != null;
+
+        UpdateValues(config);
+    }
+
+    private void ApplyStyle(NodeBase node, TextStyle style)
+    {
+        switch (node)
+        {
+            case TextNode tn:
+                tn.Width = style.Width;
+                tn.Height = style.Height;
+                tn.FontSize = (uint)style.FontSize;
+                tn.FontType = style.FontType;
+                tn.TextColor = style.TextColor;
+                tn.TextOutlineColor = style.TextOutlineColor;
+                tn.TextFlags = style.TextFlags;
+                break;
+            case TextNineGridNode ngn:
+                ngn.Width = style.Width;
+                ngn.Height = style.Height;
+                ngn.FontSize = style.FontSize;
+                ngn.FontType = style.FontType;
+                ngn.TextColor = style.TextColor;
+                ngn.TextOutlineColor = style.TextOutlineColor;
+                ngn.TextFlags = style.TextFlags;
+                break;
+        }
+    }
+
     private void UpdateLayoutOffsets() {
         _statusName.X = _iconNode.Width + 4;
         _actorName.X = _iconNode.Width + 4;
@@ -169,22 +220,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public void ToggleEventFlags(bool isLocked) {
         _iconNode.EventFlagsSet = !isLocked;
-        /*
-        if (!Parent.IsLocked) {
-            _iconNode.ClearEventFlags();
-        }
-        else {
-            _iconNode.SetEventFlags();
-        }
-        */
     }
 
     public void UpdateValues(StatusNodeDisplayConfig config) {
         if (_statusInfo.Id != 0) {
-            _iconNode.IconId = _statusInfo.IconId; // NEW: Set the actual icon ID
+            _iconNode.IconId = _statusInfo.IconId;
         }
         if (_statusInfo.Id == 0) {
-            // If no status info, make all relevant nodes invisible.
             _iconNode.IsVisible = false;
             _statusName.IsVisible = false;
             _statusRemaining.IsVisible = false;
@@ -217,7 +259,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 _actorName.Text = $"{(config.ShowActorLetter ? _statusInfo.EnemyLetter : "")}{_statusInfo.ActorName}";
             }
             else {
-                _actorName.Text = ""; // Clear text if actor name is not visible
+                _actorName.Text = "";
             }
 
             float max = Math.Max(_statusInfo.MaxSeconds, 1f);
@@ -280,6 +322,35 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             .Build();
 
         node.AddTimeline(keyFrames);
+    }
+
+    private TextStyle? GetCurrentTextStyle(NodeBase node)
+    {
+        // If _statusRemaining could be null, add a null check
+        return node switch
+        {
+            TextNode text => new TextStyle
+            {
+                Width = text.Width,
+                Height = text.Height,
+                FontSize = (int)text.FontSize,
+                FontType = text.FontType,
+                TextColor = text.TextColor,
+                TextOutlineColor = text.TextOutlineColor,
+                TextFlags = text.TextFlags
+            },
+            TextNineGridNode nine => new TextStyle
+            {
+                Width = nine.Width,
+                Height = nine.Height,
+                FontSize = nine.FontSize,
+                FontType = nine.FontType,
+                TextColor = nine.TextColor,
+                TextOutlineColor = nine.TextOutlineColor,
+                TextFlags = nine.TextFlags
+            },
+            _ => null
+        };
     }
 
     protected override void Dispose(bool disposing) {
