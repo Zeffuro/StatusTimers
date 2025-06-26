@@ -386,12 +386,6 @@ public class StatusOverlayLayoutManager<TKey> {
         if (_backgroundNode != null) {
             _backgroundNode.IsVisible = !isLocked;
         }
-        GlobalServices.Framework.RunOnTick(() => {
-            foreach (StatusTimerNode<TKey> node in _allNodes) {
-                node.ToggleEventFlags(isLocked);
-            }
-        }, delayTicks: 3);
-
     }
 
     public void UpdateAllNodesDisplay() {

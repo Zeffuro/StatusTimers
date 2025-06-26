@@ -174,7 +174,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             field = value;
             _layoutManager.ToggleDrag(field);
             if (!field) {
-                EnableClickDrag(true);
+                EnableClickDrag();
             }
             else {
                 DisableClickDrag();
@@ -448,7 +448,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
 
     private void ToggleDrag(bool isLocked) {
         if (!isLocked) {
-            EnableClickDrag(true);
+            EnableClickDrag();
         }
         else {
             DisableClickDrag();

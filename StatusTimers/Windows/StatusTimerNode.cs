@@ -39,7 +39,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _iconNode = new IconImageNode {
             Size = new Vector2(48, 64),
             IsVisible = _currentDisplayConfig.ShowIcon,
-            EventFlagsSet = !_currentDisplayConfig.IsLocked
         };
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
@@ -78,6 +77,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         if (_currentDisplayConfig.ShowActorLetter || _currentDisplayConfig.AllowTargetActor) {
             _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
+            _iconNode.EventFlagsSet = true;
         }
 
         UpdateLayoutOffsets();
@@ -126,10 +126,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         ApplyStyle(_statusRemaining, config.StatusRemainingTextStyle);
 
         _iconNode.IsVisible = config.ShowIcon;
-
-        if (config.ShowActorLetter || config.AllowTargetActor) {
-            _iconNode.EventFlagsSet = config.IsLocked;
-        }
 
         _statusName.IsVisible = config.ShowStatusName;
         _progressNode.IsVisible = config.ShowProgress;
@@ -222,10 +218,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusRemaining.X = Width - _statusRemaining.Width;
     }
 
-    public void ToggleEventFlags(bool isLocked) {
-        _iconNode.EventFlagsSet = isLocked;
-    }
-
     public void UpdateValues(StatusNodeDisplayConfig config) {
         if (_statusInfo.Id != 0) {
             _iconNode.IconId = _statusInfo.IconId;
@@ -242,7 +234,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusName.Text = _statusInfo.Name;
 
         _iconNode.IsVisible = config.ShowIcon;
-        _iconNode.EventFlagsSet = config.AllowDismissStatus || config.AllowTargetActor;
         _statusRemaining.IsVisible = config.ShowStatusRemaining;
         _statusName.IsVisible = config.ShowStatusName;
         _progressNode.IsVisible = config.ShowProgress;
