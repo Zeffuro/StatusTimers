@@ -93,4 +93,8 @@ public unsafe class OverlayManager : IDisposable {
     public void ToggleConfig() {
         configurationWindow?.Toggle();
     }
+
+    public void OpenConfig() {
+        configurationWindow?.Open();
+    }
 }

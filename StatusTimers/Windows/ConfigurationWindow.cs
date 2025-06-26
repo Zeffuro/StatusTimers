@@ -11,6 +11,7 @@ using StatusTimers.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace StatusTimers.Windows;
 
@@ -18,6 +19,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
     private const float CheckBoxWidth = 300;
+    private const float ButtonHeight = 30;
 
     private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new() {
         { GrowDirection.DownRight, "Down and Right" },
@@ -68,6 +70,33 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 ItemVerticalSpacing = 3
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
+
+            _configLists[kind].AddNode(CreateTwoOptionsRow(
+                new CircleButtonNode {
+                    Height = ButtonHeight,
+                    Width = ButtonHeight,
+                    IsVisible = true,
+                    Tooltip = "Export Configuration",
+                    Icon = ButtonIcon.Document,
+                    AddColor = new Vector3(150, 0, 150),
+                    OnClick = () => {
+                        Services.Services.Logger.Info("Export");
+                    }
+                },
+                new CircleButtonNode {
+                    X = 52,
+                    Height = ButtonHeight,
+                    Width = ButtonHeight,
+                    IsVisible = true,
+                    Tooltip = "Import Configuration",
+                    Icon = ButtonIcon.Document,
+                    AddColor = new Vector3(0, 150, 150),
+                    OnClick = () => {
+                        Services.Services.Logger.Info("Import");
+                    }
+                },
+                ButtonHeight
+                ));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
@@ -346,7 +375,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     protected override unsafe void OnHide(AtkUnitBase* addon) {
         Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList()
-            .ForEach(kind => GetOverlayByKind(kind).IsPreviewEnabled = false);
+            .ForEach(kind => {
+                var overlay = GetOverlayByKind(kind);
+                if (overlay != null) {
+                    overlay.IsPreviewEnabled = false;
+                }
+            });
     }
 
     #region Helper Methods

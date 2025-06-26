@@ -64,7 +64,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         _statusName = new TextNode {
             IsVisible = _currentDisplayConfig.ShowStatusName,
-            Width = 180,
+            Width = 160,
             Height = 22,
             FontSize = 20,
             TextColor = ColorHelper.GetColor(50),

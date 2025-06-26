@@ -41,7 +41,7 @@ public class Plugin : IDalamudPlugin {
 
         Services.Services.NameplateAddonController.OnUpdate += OnNameplateUpdate;
 
-        OverlayManager.ToggleConfig();
+        OverlayManager.OpenConfig();
     }
 
     public void Dispose() {
@@ -78,8 +78,9 @@ public class Plugin : IDalamudPlugin {
         }
     }
 
-    private static void OnLogin() {
+    private void OnLogin() {
         Services.Services.NameplateAddonController.Enable();
+        OverlayManager.OpenConfig();
     }
 
     private static void OnLogout(int type, int code) {
