@@ -387,6 +387,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 var overlay = GetOverlayByKind(kind);
                 if (overlay != null) {
                     overlay.IsPreviewEnabled = false;
+                    overlay.IsLocked = true;
                 }
             });
     }

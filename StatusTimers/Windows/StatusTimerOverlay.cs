@@ -173,7 +173,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            _layoutManager.ToggleBackground(field);
+            _layoutManager.ToggleBackground(value);
             if (_isSetupCompleted && !_isConfigLoading) {
                 GlobalServices.Framework.RunOnFrameworkThread(() => ToggleDrag(IsLocked));
             }
