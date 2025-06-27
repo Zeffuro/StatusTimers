@@ -1,3 +1,4 @@
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
@@ -172,12 +173,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         get;
         set {
             field = value;
-            _layoutManager.ToggleDrag(field);
-            if (!field) {
-                EnableClickDrag();
-            }
-            else {
-                DisableClickDrag();
+            _layoutManager.ToggleBackground(field);
+            if (_isSetupCompleted && !_isConfigLoading) {
+                GlobalServices.Framework.RunOnFrameworkThread(() => ToggleDrag(IsLocked));
             }
 
             SaveConfig();
@@ -385,13 +383,14 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         _layoutManager.InitializeLayout();
         Size = _layoutManager.CalculatedOverlaySize;
 
+
         if (!IsLocked) {
             ToggleDrag(IsLocked);
         }
 
         Scale = new Vector2(ScaleInt * 0.01f);
 
-        OnClickDragComplete = SaveConfig;
+        OnMoveComplete = SaveConfig;
         _isSetupCompleted = true;
     }
 
@@ -447,14 +446,17 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     private void ToggleDrag(bool isLocked) {
+        if (!ThreadSafety.IsMainThread) {
+            return;
+        }
         if (!isLocked) {
-            EnableClickDrag();
+            EnableEditMode(NodeEditMode.Move);
         }
         else {
-            DisableClickDrag();
+            DisableEditMode(NodeEditMode.Move);
         }
 
-        _layoutManager.ToggleDrag(isLocked);
+        _layoutManager.ToggleBackground(isLocked);
     }
 
     private void HandleStatusNodeAction(uint statusId, ulong? gameObjectToTargetId, NodeKind nodeKind,
