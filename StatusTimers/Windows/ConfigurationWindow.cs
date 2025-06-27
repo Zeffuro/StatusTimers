@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
@@ -43,9 +44,37 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
+    private TabBarNode _tabBar;
+    //private ModalNode _modal;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
-        TabBarNode tabBar = new() {
+        //_modal = new ModalNode();
+        //NativeController.AttachNode(_modal.RootNode, this);
+        SetupOptions();
+    }
+
+    private void OnTabButtonClick(NodeKind kind) {
+        foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
+            node.IsVisible = k == kind;
+        }
+    }
+
+    protected override unsafe void OnUpdate(AtkUnitBase* addon) {
+    }
+
+    protected override unsafe void OnHide(AtkUnitBase* addon) {
+        Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList()
+            .ForEach(kind => {
+                var overlay = GetOverlayByKind(kind);
+                if (overlay != null) {
+                    overlay.IsPreviewEnabled = false;
+                    overlay.IsLocked = true;
+                }
+            });
+    }
+
+    private void SetupOptions() {
+        _tabBar = new() {
             Position = ContentStartPosition,
             Size = ContentSize with { Y = 24 },
             Height = 24,
@@ -56,13 +85,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
             IOverlayConfiguration? currentOverlayConfig = GetOverlayByKind(kind);
-            tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
+            _tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
                 X = ContentStartPosition.X,
-                Y = ContentStartPosition.Y + tabBar.Height,
+                Y = ContentStartPosition.Y + _tabBar.Height,
                 Width = ContentSize.X,
-                Height = ContentSize.Y - tabBar.Height,
+                Height = ContentSize.Y - _tabBar.Height,
                 ContentHeight = 2000.0f,
                 IsVisible = false
             };
@@ -77,7 +106,6 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
-            //_configLists[kind].AddNode(CreateFilteredDropdown());
 
             _configLists[kind].AddNode(CreateTwoOptionsRow(
                 new CircleButtonNode {
@@ -88,7 +116,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     Icon = ButtonIcon.Document,
                     AddColor = new Vector3(150, 0, 150),
                     OnClick = () => {
-                        Services.Services.Logger.Info("Export");
+                        _modal.Show("Yessss", (chosen) => {
+                            GlobalServices.Logger.Info($"Chosen {chosen}");
+                        });
+                        GlobalServices.Logger.Info("Export");
                     }
                 },
                 new CircleButtonNode {
@@ -100,7 +131,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     Icon = ButtonIcon.Document,
                     AddColor = new Vector3(0, 150, 150),
                     OnClick = () => {
-                        Services.Services.Logger.Info("Import");
+                        GlobalServices.Logger.Info("Import");
                     }
                 },
                 ButtonHeight
@@ -366,30 +397,29 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 value => currentOverlayConfig.TertiarySortOrder = value,
                 sortCriteriaMap
             ));
-        }
 
-        NativeController.AttachNode(tabBar, this);
-        _configScrollingAreas.First().Value.IsVisible = true;
-    }
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight * 5);
 
-    private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
-            node.IsVisible = k == kind;
-        }
-    }
-
-    protected override unsafe void OnUpdate(AtkUnitBase* addon) {
-    }
-
-    protected override unsafe void OnHide(AtkUnitBase* addon) {
-        Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList()
-            .ForEach(kind => {
-                var overlay = GetOverlayByKind(kind);
-                if (overlay != null) {
-                    overlay.IsPreviewEnabled = false;
-                    overlay.IsLocked = true;
-                }
+            _configLists[kind].AddNode(new TextNode {
+                IsVisible = true,
+                Width = 120,
+                Height = TextStyles.Header.Height,
+                FontSize = TextStyles.Defaults.FontSize,
+                TextColor = TextStyles.Header.TextColor,
+                TextOutlineColor = TextStyles.Defaults.OutlineColor,
+                TextFlags = TextStyles.Defaults.Flags,
+                Text = "Filter Settings"
             });
+
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+
+            _configLists[kind].AddNode(CreateFilteredDropdown());
+        }
+
+
+
+        NativeController.AttachNode(_tabBar, this);
+        _configScrollingAreas.First().Value.IsVisible = true;
     }
 
     #region Helper Methods
@@ -470,59 +500,59 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return flexNode;
     }
 
-    private VerticalListNode<NodeBase> CreateFilteredDropdown() {
-        VerticalListNode<NodeBase> flexNode = new() {
+    private HorizontalFlexNode<NodeBase> CreateFilteredDropdown() {
+        HorizontalFlexNode<NodeBase> flexNode = new() {
             IsVisible = true,
             X = OptionOffset,
             Y = 0,
-            Width = 300,
+            Width = 600,
             Height = 60,
-            ItemVerticalSpacing = 4,
+            AlignmentFlags = FlexFlags.FitContentHeight
         };
 
-        TextDropDownNode textDropDown = new() {
-            IsVisible = true,
-            Width = 150,
-            Height = 28,
-            MaxListOptions = 1,
-            Options = ["No results found"],
-            OnOptionSelected = option => {
-                //textNode.Text = $"Option Selected: {option}";
-            },
-        };
+        TextDropDownNode textDropDown = MakeDropDown(["No results found"]);
+
+        void ReplaceDropDown(List<string> options) {
+            flexNode.RemoveNode(textDropDown);
+            textDropDown = MakeDropDown(options);
+            flexNode.AddNode(textDropDown);
+        }
 
         void UpdateDropdownOptions(string filter) {
-            var filteredOptions = Services.Services.DataManager.GetExcelSheet<LuminaStatus>()
+            var filteredOptions = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
                 .Where(option => option.Icon != null
                                  && !option.Name.ExtractText().IsNullOrEmpty()
-                                 && option.Name.ExtractText().Contains(filter, StringComparison.OrdinalIgnoreCase))
+                                 && (option.Name.ExtractText().Contains(filter, StringComparison.OrdinalIgnoreCase)) || option.RowId.ToString().Contains(filter))
                 .Select(option => $"{option.RowId} {option.Name.ExtractText()}")
                 .ToList();
-
-            // Fix: Ensure at least one option exists
             if (filteredOptions.Count == 0) {
                 filteredOptions.Add("No results found");
             }
-            textDropDown.Options = filteredOptions;
-            textDropDown.SelectedOption = filteredOptions.First();
+
+            ReplaceDropDown(filteredOptions);
         }
 
-        UpdateDropdownOptions(string.Empty);
+        TextDropDownNode MakeDropDown(List<string> options) => new() {
+            IsVisible = true,
+            Width = 200,
+            Height = 28,
+            MaxListOptions = 5,
+            Options = options,
+            OnOptionSelected = o => { /* ... */ },
+            SelectedOption = options.FirstOrDefault()
+        };
 
         TextInputNode textInput = new() {
             IsVisible = true,
-            X = OptionOffset,
-            Width = 150,
+            Width = 100,
             Height = 28,
-            OnInputComplete = (input) => {
+            OnInputComplete = input => {
                 string currentTextInput = input.TextValue ?? "";
-                UpdateDropdownOptions(currentTextInput);
+                GlobalServices.Framework.RunOnTick(() => UpdateDropdownOptions(currentTextInput), delayTicks: 1);
             }
         };
-
-        flexNode.AddNode(textDropDown);
         flexNode.AddNode(textInput);
-
+        flexNode.AddNode(textDropDown);
         return flexNode;
     }
 
