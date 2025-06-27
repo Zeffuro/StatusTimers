@@ -1,3 +1,6 @@
+using Dalamud.Game.ClientState.Statuses;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
@@ -5,6 +8,7 @@ using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Slider;
 using KamiToolKit.Nodes.TabBar;
 using KamiToolKit.System;
+using Lumina.Excel.Sheets;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
 using StatusTimers.Interfaces;
@@ -12,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using LuminaStatus = Lumina.Excel.Sheets.Status;
 
 namespace StatusTimers.Windows;
 
@@ -70,6 +75,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 ItemVerticalSpacing = 3
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
+
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+            //_configLists[kind].AddNode(CreateFilteredDropdown());
 
             _configLists[kind].AddNode(CreateTwoOptionsRow(
                 new CircleButtonNode {
@@ -458,6 +466,62 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             SelectedOption = enumToDisplayNameMap[getter()]
         };
         flexNode.AddNode(dropdownNode);
+        return flexNode;
+    }
+
+    private VerticalListNode<NodeBase> CreateFilteredDropdown() {
+        VerticalListNode<NodeBase> flexNode = new() {
+            IsVisible = true,
+            X = OptionOffset,
+            Y = 0,
+            Width = 300,
+            Height = 60,
+            ItemVerticalSpacing = 4,
+        };
+
+        TextDropDownNode textDropDown = new() {
+            IsVisible = true,
+            Width = 150,
+            Height = 28,
+            MaxListOptions = 1,
+            Options = ["No results found"],
+            OnOptionSelected = option => {
+                //textNode.Text = $"Option Selected: {option}";
+            },
+        };
+
+        void UpdateDropdownOptions(string filter) {
+            var filteredOptions = Services.Services.DataManager.GetExcelSheet<LuminaStatus>()
+                .Where(option => option.Icon != null
+                                 && !option.Name.ExtractText().IsNullOrEmpty()
+                                 && option.Name.ExtractText().Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .Select(option => $"{option.RowId} {option.Name.ExtractText()}")
+                .ToList();
+
+            // Fix: Ensure at least one option exists
+            if (filteredOptions.Count == 0) {
+                filteredOptions.Add("No results found");
+            }
+            textDropDown.Options = filteredOptions;
+            textDropDown.SelectedOption = filteredOptions.First();
+        }
+
+        UpdateDropdownOptions(string.Empty);
+
+        TextInputNode textInput = new() {
+            IsVisible = true,
+            X = OptionOffset,
+            Width = 150,
+            Height = 28,
+            OnInputComplete = (input) => {
+                string currentTextInput = input.TextValue ?? "";
+                UpdateDropdownOptions(currentTextInput);
+            }
+        };
+
+        flexNode.AddNode(textDropDown);
+        flexNode.AddNode(textInput);
+
         return flexNode;
     }
 

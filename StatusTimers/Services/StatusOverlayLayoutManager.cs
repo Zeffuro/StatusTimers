@@ -293,7 +293,7 @@ public class StatusOverlayLayoutManager<TKey> {
         }
 
         _ownerOverlay.Size = CalculatedOverlaySize;
-        ToggleDrag(_getIsLocked());
+        ToggleBackground(_getIsLocked());
     }
 
     private bool _isRebuilding = false;
@@ -382,7 +382,7 @@ public class StatusOverlayLayoutManager<TKey> {
         }
     }
 
-    public void ToggleDrag(bool isLocked) {
+    public void ToggleBackground(bool isLocked) {
         if (_backgroundNode != null) {
             _backgroundNode.IsVisible = !isLocked;
         }
