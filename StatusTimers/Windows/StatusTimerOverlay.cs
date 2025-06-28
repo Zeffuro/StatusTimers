@@ -21,7 +21,7 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
-public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayConfiguration {
+public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
 
@@ -49,24 +49,24 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
         _layoutManager = new StatusOverlayLayoutManager<TKey>(
             this,
             _nodeKind,
-            () => MaxStatuses,
-            () => ItemsPerLine,
-            () => StatusHorizontalPadding,
-            () => StatusVerticalPadding,
-            () => GrowDirection,
+            () => OverlayConfig.MaxStatuses,
+            () => OverlayConfig.ItemsPerLine,
+            () => OverlayConfig.StatusHorizontalPadding,
+            () => OverlayConfig.StatusVerticalPadding,
+            () => OverlayConfig.GrowDirection,
             () => IsLocked,
-            () => StatusRemainingTextStyle,
-            () => ShowIcon,
-            () => ShowStatusName,
-            () => ShowStatusRemaining,
-            () => ShowProgress,
-            () => ShowStatusRemainingBackground,
-            () => ShowActorLetter,
-            () => ShowActorName,
-            () => AllowDismissStatus,
-            () => AllowTargetActor,
-            () => AnimationsEnabled,
-            () => FillRowsFirst
+            () => OverlayConfig.StatusRemainingTextStyle,
+            () => OverlayConfig.ShowIcon,
+            () => OverlayConfig.ShowStatusName,
+            () => OverlayConfig.ShowStatusRemaining,
+            () => OverlayConfig.ShowProgress,
+            () => OverlayConfig.ShowStatusRemainingBackground,
+            () => OverlayConfig.ShowActorLetter,
+            () => OverlayConfig.ShowActorName,
+            () => OverlayConfig.AllowDismissStatus,
+            () => OverlayConfig.AllowTargetActor,
+            () => OverlayConfig.AnimationsEnabled,
+            () => OverlayConfig.FillRowsFirst
         );
 
         _layoutManager.SetNodeActionHandler(HandleStatusNodeAction);
@@ -75,39 +75,21 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             _source,
             _nodeKind,
             () => IsPreviewEnabled,
-            () => ShowPermaIcons,
-            () => MaxStatuses,
-            () => ItemsPerLine,
-            () => PrimarySort,
-            () => PrimarySortOrder,
-            () => SecondarySort,
-            () => SecondarySortOrder,
-            () => TertiarySort,
-            () => TertiarySortOrder
+            () => OverlayConfig.ShowPermaIcons,
+            () => OverlayConfig.MaxStatuses,
+            () => OverlayConfig.ItemsPerLine,
+            () => OverlayConfig.PrimarySort,
+            () => OverlayConfig.PrimarySortOrder,
+            () => OverlayConfig.SecondarySort,
+            () => OverlayConfig.SecondarySortOrder,
+            () => OverlayConfig.TertiarySort,
+            () => OverlayConfig.TertiarySortOrder
         );
+
+        OverlayConfig.OnPropertyChanged += (property, updateNodes, needsRebuild) => {
+            OnPropertyChanged(needsRebuild, updateNodes);
+        };
     }
-
-    [JsonProperty]
-    public bool FilterStatuses {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowIcon {
-        get;
-        set {
-            field = value;
-            if (!_isConfigLoading) {
-                _layoutManager.UpdateAllNodesDisplay();
-            }
-
-            SaveConfig();
-        }
-    } = true;
 
     public Vector2 CalculatedOverlaySize => _layoutManager.CalculatedOverlaySize;
 
@@ -115,288 +97,25 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     public override Vector3 AddColor { get; set; }
     public override Vector3 MultiplyColor { get; set; }
 
-    [JsonProperty]
-    public bool AllowDismissStatus {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool AllowTargetActor {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool AnimationsEnabled {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool FillRowsFirst {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = false;
-
-    [JsonProperty]
-    public bool FilterEnabled {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = false;
-
-    [JsonProperty]
-    public bool FilterIsBlacklist {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public HashSet<uint> FilterList {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = new();
-
-    [JsonProperty]
-    public GrowDirection GrowDirection {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = GrowDirection.DownRight;
-
-    public bool IsPreviewEnabled {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = false;
-
-    [JsonProperty]
     public bool IsLocked {
         get;
         set {
+            if (field == value) {
+                return;
+            }
+
             field = value;
             _layoutManager.ToggleBackground(value);
             if (_isSetupCompleted && !_isConfigLoading) {
                 GlobalServices.Framework.RunOnFrameworkThread(() => ToggleDrag(IsLocked));
             }
-
-            SaveConfig();
         }
     } = true;
 
-    [JsonProperty]
-    public int ItemsPerLine {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = 16;
+    public bool IsPreviewEnabled { get; set; }
 
     [JsonProperty]
-    public int MaxStatuses {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = 30;
-
-    [JsonProperty]
-    public int ScaleInt {
-        get;
-        set {
-            field = value;
-            Scale = new Vector2(ScaleInt * 0.01f);
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = 100;
-
-    [JsonProperty]
-    public bool ShowStatusName {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowStatusRemaining {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowStatusRemainingBackground {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowProgress {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public int StatusHorizontalPadding {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = 4;
-
-    [JsonProperty]
-    public int StatusVerticalPadding {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = 4;
-
-    [JsonProperty]
-    public TextStyle StatusRemainingTextStyle {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = new() {
-        Width = 120,
-        Height = 22,
-        FontSize = 20,
-        FontType = FontType.Axis,
-        TextColor = ColorHelper.GetColor(50),
-        TextOutlineColor = ColorHelper.GetColor(53),
-        TextFlags = TextFlags.Edge
-    };
-
-    [JsonProperty]
-    public SortCriterion PrimarySort {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    }
-
-    [JsonProperty]
-    public SortCriterion SecondarySort {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    }
-
-    [JsonProperty]
-    public SortCriterion TertiarySort {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    }
-
-    [JsonProperty]
-    public SortOrder PrimarySortOrder {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = SortOrder.Ascending;
-
-    [JsonProperty]
-    public SortOrder SecondarySortOrder {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = SortOrder.Ascending;
-
-    [JsonProperty]
-    public SortOrder TertiarySortOrder {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(needsRebuild: true);
-        }
-    } = SortOrder.Ascending;
-
-    [JsonProperty]
-    public bool ShowActorLetter {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowActorName {
-        get;
-        set {
-            field = value;
-            OnPropertyChanged(updateNodes: true);
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowPermaIcons {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool StatusAsItemName {
-        get;
-        set {
-            field = value;
-            SaveConfig();
-        }
-    } = true;
+    public StatusTimerOverlayConfig OverlayConfig { get; set; } = new();
 
     public void Setup() {
         if (_isSetupCompleted) {
@@ -415,7 +134,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             ToggleDrag(IsLocked);
         }
 
-        Scale = new Vector2(ScaleInt * 0.01f);
+        Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
 
         OnMoveComplete = SaveConfig;
         _isSetupCompleted = true;
@@ -428,7 +147,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
             RebuildContainers(SaveConfig);
         }
 
-        List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(this);
+        List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
 
         _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
 
@@ -518,22 +237,22 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     }
 
     private void SubscribeToEvents() {
-        StatusRemainingTextStyle.Changed += () => OnPropertyChanged(needsRebuild: true);
+        OverlayConfig.StatusRemainingTextStyle.Changed += () => OnPropertyChanged(needsRebuild: true);
     }
 
     private void SetSortDefaults(NodeKind nodeKind)
     {
         switch (nodeKind) {
             case NodeKind.MultiDoT:
-                PrimarySort   = SortCriterion.EnemyLetter;
-                SecondarySort = SortCriterion.TimeRemaining;
-                TertiarySort  = SortCriterion.None;
+                OverlayConfig.PrimarySort   = SortCriterion.EnemyLetter;
+                OverlayConfig.SecondarySort = SortCriterion.TimeRemaining;
+                OverlayConfig.TertiarySort  = SortCriterion.None;
                 break;
             case NodeKind.Combined:
             default:
-                PrimarySort   = SortCriterion.StatusType;
-                SecondarySort = SortCriterion.OwnStatusFirst;
-                TertiarySort  = SortCriterion.PartyPriority;
+                OverlayConfig.PrimarySort   = SortCriterion.StatusType;
+                OverlayConfig.SecondarySort = SortCriterion.OwnStatusFirst;
+                OverlayConfig.TertiarySort  = SortCriterion.PartyPriority;
                 break;
         }
     }

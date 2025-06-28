@@ -4,6 +4,6 @@ using System.Collections.Generic;
 namespace StatusTimers.Interfaces;
 
 public interface IStatusSource<TKey> {
-    IReadOnlyList<StatusInfo> Fetch(IOverlayConfiguration config);
+    IReadOnlyList<StatusInfo> Fetch(StatusTimerOverlayConfig config);
     TKey KeyOf(StatusInfo info);
 }

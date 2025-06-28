@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace StatusTimers.StatusSources;
 
 public class EnemyMultiDoTSource : IStatusSource<StatusKey> {
-    public IReadOnlyList<StatusInfo> Fetch(IOverlayConfiguration config) {
+    public IReadOnlyList<StatusInfo> Fetch(StatusTimerOverlayConfig config) {
         return StatusManager.GetHostileStatuses(config);
     }
 

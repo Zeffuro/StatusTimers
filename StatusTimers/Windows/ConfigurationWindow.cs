@@ -12,6 +12,7 @@ using Lumina.Excel.Sheets;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
 using StatusTimers.Interfaces;
+using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -84,7 +85,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         NodeKind[] nodeKinds = Enum.GetValues<NodeKind>();
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
-            IOverlayConfiguration? currentOverlayConfig = GetOverlayByKind(kind);
+            StatusTimerOverlay<StatusKey>? overlay = GetOverlayByKind(kind);
+            StatusTimerOverlayConfig? currentOverlayConfig = GetOverlayByKind(kind)?.OverlayConfig;
             _tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
@@ -152,16 +154,16 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             _configLists[kind].AddNode(CreateTwoOptionsRow(
                 CreateCheckboxOption("Enabled",
-                    () => currentOverlayConfig.IsVisible,
-                    isChecked => currentOverlayConfig.IsVisible = isChecked),
+                    () => overlay.IsVisible,
+                    isChecked => overlay.IsVisible = isChecked),
                 CreateCheckboxOption("Preview Mode",
-                    () => currentOverlayConfig.IsPreviewEnabled,
-                    isChecked => currentOverlayConfig.IsPreviewEnabled = isChecked),
+                    () => overlay.IsPreviewEnabled,
+                    isChecked => overlay.IsPreviewEnabled = isChecked),
                 CheckBoxHeight)
             );
             _configLists[kind].AddNode(CreateCheckboxOption("Locked",
-                () => currentOverlayConfig.IsLocked,
-                isChecked => currentOverlayConfig.IsLocked = isChecked));
+                () => overlay.IsLocked,
+                isChecked => overlay.IsLocked = isChecked));
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
@@ -813,7 +815,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return statusListNode;
     }
 
-    private void RebuildFilterSection(IOverlayConfiguration currentOverlayConfig,
+    private void RebuildFilterSection(StatusTimerOverlayConfig currentOverlayConfig,
         VerticalListNode<NodeBase> filterSectionNode,
         List<LuminaStatus> allStatusList
     ) {
@@ -836,27 +838,18 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Height = TextStyles.Header.Height,
                 IsVisible = true,
             };
-            if (currentOverlayConfig.FilterIsBlacklist) {
-                radioButtonGroup.AddButton("Blacklist", () => {
-                    currentOverlayConfig.FilterIsBlacklist = true;
-                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
-                });
-                radioButtonGroup.AddButton("Whitelist", () => {
-                    currentOverlayConfig.FilterIsBlacklist = false;
-                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
-                });
-            }
-            else {
-                radioButtonGroup.AddButton("Whitelist", () => {
-                    currentOverlayConfig.FilterIsBlacklist = false;
-                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
-                });
-                radioButtonGroup.AddButton("Blacklist", () => {
-                    currentOverlayConfig.FilterIsBlacklist = true;
-                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
-                });
-            }
+
+            radioButtonGroup.AddButton("Blacklist", () => {
+                currentOverlayConfig.FilterIsBlacklist = true;
+                RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+            });
+            radioButtonGroup.AddButton("Whitelist", () => {
+                currentOverlayConfig.FilterIsBlacklist = false;
+                RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+            });
+
             filterSectionNode.AddNode(radioButtonGroup);
+            radioButtonGroup.SelectedOption = currentOverlayConfig.FilterIsBlacklist ? "Blacklist" : "Whitelist";
 
             var filteredDropdownNode = CreateFilteredDropdown(
                 optionsProvider: () => allStatusList,
@@ -883,14 +876,22 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         }
     }
 
-    private IOverlayConfiguration? GetOverlayByKind(NodeKind kind) {
+    private StatusTimerOverlay<StatusKey>? GetOverlayByKind(NodeKind kind) {
         return kind switch {
             NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
             NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind,
-                "The provided NodeKind is not supported by GetOverlayByKind.")
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported NodeKind")
         };
     }
+    /*
+    private StatusTimerOverlayConfig? GetOverlayByKind(NodeKind kind) {
+        return kind switch {
+            NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance?.OverlayConfig,
+            NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance?.OverlayConfig,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "The provided NodeKind is not supported by GetOverlayByKind.")
+        };
+    }
+    */
 
     #endregion
 }
