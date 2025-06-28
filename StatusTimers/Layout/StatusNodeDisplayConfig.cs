@@ -1,6 +1,6 @@
 using System;
 
-namespace StatusTimers.Models;
+namespace StatusTimers.Layout;
 
 public readonly struct StatusNodeDisplayConfig {
     public bool ShowIcon { get; init; }

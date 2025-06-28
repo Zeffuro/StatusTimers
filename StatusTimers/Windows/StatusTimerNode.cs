@@ -5,7 +5,9 @@ using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
+using StatusTimers.Config;
 using StatusTimers.Enums;
+using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
 using System.Numerics;
@@ -20,7 +22,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private TextNode _actorName;
     private ResNode _containerResNode;
 
-    private StatusNodeDisplayConfig _currentDisplayConfig;
+    private StatusTimerOverlayConfig _currentOverlayConfig;
     private IconImageNode _iconNode;
 
     private CastBarProgressBarNode _progressNode;
@@ -28,8 +30,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private TextNode _statusName;
     private NodeBase _statusRemaining;
 
-    public StatusTimerNode(StatusNodeDisplayConfig initialDisplayConfig) {
-        _currentDisplayConfig = initialDisplayConfig;
+    public StatusTimerNode(StatusTimerOverlayConfig initialOverlayConfig) {
+        _currentOverlayConfig = initialOverlayConfig;
+
+        StatusNodeLayoutConfig layout = _currentOverlayConfig.StatusNodeLayout;
 
         _containerResNode = new ResNode {
             IsVisible = true
@@ -38,20 +42,20 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         _iconNode = new IconImageNode {
             Size = new Vector2(48, 64),
-            IsVisible = _currentDisplayConfig.ShowIcon,
+            IsVisible = _currentOverlayConfig.ShowIcon,
         };
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
         _progressNode = new CastBarProgressBarNode {
             Height = 20,
             Progress = 1f,
-            IsVisible = _currentDisplayConfig.ShowProgress,
+            IsVisible = _currentOverlayConfig.ShowProgress,
             Width = 200
         };
         GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
 
         _actorName = new TextNode {
-            IsVisible = _currentDisplayConfig.ShowActorName,
+            IsVisible = _currentOverlayConfig.ShowActorName,
             Width = 180,
             Height = 14,
             FontSize = 12,
@@ -62,7 +66,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
 
         _statusName = new TextNode {
-            IsVisible = _currentDisplayConfig.ShowStatusName,
+            IsVisible = _currentOverlayConfig.ShowStatusName,
             Width = 160,
             Height = 22,
             FontSize = 20,
@@ -73,9 +77,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         };
         GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
-        SetRemainingNode(_currentDisplayConfig);
+        SetRemainingNode(_currentOverlayConfig);
 
-        if (_currentDisplayConfig.ShowActorLetter || _currentDisplayConfig.AllowTargetActor) {
+        if (_currentOverlayConfig.ShowActorLetter || _currentOverlayConfig.AllowTargetActor) {
             _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
             _iconNode.EventFlagsSet = true;
         }
@@ -93,7 +97,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         get => _statusInfo;
         set {
             _statusInfo = value;
-            UpdateValues(_currentDisplayConfig);
+            UpdateValues(_currentOverlayConfig);
         }
     }
 
@@ -107,13 +111,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
 
-    public void ApplyDisplayConfig(StatusNodeDisplayConfig config)
+    public void ApplyOverlayConfig(StatusTimerOverlayConfig config)
     {
-        if (_currentDisplayConfig.Equals(config)) {
+        if (_currentOverlayConfig.Equals(config)) {
             return;
         }
 
-        _currentDisplayConfig = config;
+        _currentOverlayConfig = config;
 
         bool needsRebuild =
             (_statusRemaining is TextNineGridNode) != config.ShowStatusRemainingBackground
@@ -171,7 +175,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void SetRemainingNode(StatusNodeDisplayConfig config) {
+    private void SetRemainingNode(StatusTimerOverlayConfig config) {
         bool shouldBeNineGrid = config.ShowStatusRemainingBackground;
         bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
 
@@ -218,7 +222,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusRemaining.X = Width - _statusRemaining.Width;
     }
 
-    public void UpdateValues(StatusNodeDisplayConfig config) {
+    public void UpdateValues(StatusTimerOverlayConfig config) {
         if (_statusInfo.Id != 0) {
             _iconNode.IconId = _statusInfo.IconId;
         }
@@ -282,7 +286,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         ulong? gameObjectToTargetId = null;
 
         if (atkEventData->MouseData.ButtonId == 1 && Kind == NodeKind.Combined &&
-            _currentDisplayConfig.AllowDismissStatus) {
+            _currentOverlayConfig.AllowDismissStatus) {
             gameObjectToTargetId = _statusInfo.GameObjectId;
         }
 
@@ -290,8 +294,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _statusInfo.Id,
             gameObjectToTargetId,
             Kind,
-            _currentDisplayConfig.AllowDismissStatus,
-            _currentDisplayConfig.AllowTargetActor
+            _currentOverlayConfig.AllowDismissStatus,
+            _currentOverlayConfig.AllowTargetActor
         );
     }
 

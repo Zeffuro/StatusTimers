@@ -6,6 +6,7 @@ using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using Newtonsoft.Json;
+using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Interfaces;
 using StatusTimers.Models;
@@ -49,24 +50,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         _layoutManager = new StatusOverlayLayoutManager<TKey>(
             this,
             _nodeKind,
-            () => OverlayConfig.MaxStatuses,
-            () => OverlayConfig.ItemsPerLine,
-            () => OverlayConfig.StatusHorizontalPadding,
-            () => OverlayConfig.StatusVerticalPadding,
-            () => OverlayConfig.GrowDirection,
-            () => IsLocked,
-            () => OverlayConfig.StatusRemainingTextStyle,
-            () => OverlayConfig.ShowIcon,
-            () => OverlayConfig.ShowStatusName,
-            () => OverlayConfig.ShowStatusRemaining,
-            () => OverlayConfig.ShowProgress,
-            () => OverlayConfig.ShowStatusRemainingBackground,
-            () => OverlayConfig.ShowActorLetter,
-            () => OverlayConfig.ShowActorName,
-            () => OverlayConfig.AllowDismissStatus,
-            () => OverlayConfig.AllowTargetActor,
-            () => OverlayConfig.AnimationsEnabled,
-            () => OverlayConfig.FillRowsFirst
+            OverlayConfig
         );
 
         _layoutManager.SetNodeActionHandler(HandleStatusNodeAction);

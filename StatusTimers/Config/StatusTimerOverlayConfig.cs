@@ -2,10 +2,12 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using Newtonsoft.Json;
 using StatusTimers.Enums;
+using StatusTimers.Layout;
+using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
 
-namespace StatusTimers.Models;
+namespace StatusTimers.Config;
 
 /// <summary>
 /// Stores overlay configuration and notifies listeners on change.
@@ -445,4 +447,7 @@ public class StatusTimerOverlayConfig
             }
         }
     } = true;
+
+    [JsonProperty]
+    public StatusNodeLayoutConfig StatusNodeLayout { get; set; } = new StatusNodeLayoutConfig();
 }

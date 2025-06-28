@@ -2,7 +2,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Numerics;
 
-namespace StatusTimers.Models
+namespace StatusTimers.Layout
 {
     public class TextStyle : IEquatable<TextStyle>
     {

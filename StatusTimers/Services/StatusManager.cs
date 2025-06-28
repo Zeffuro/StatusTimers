@@ -3,6 +3,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.ClientState.Statuses;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
+using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Extensions;
 using StatusTimers.Helpers;

@@ -9,6 +9,7 @@ using KamiToolKit.Nodes.Slider;
 using KamiToolKit.Nodes.TabBar;
 using KamiToolKit.System;
 using Lumina.Excel.Sheets;
+using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
 using StatusTimers.Interfaces;

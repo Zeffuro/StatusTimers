@@ -1,6 +1,6 @@
 using StatusTimers.Enums;
 
-namespace StatusTimers.Models;
+namespace StatusTimers.Layout;
 
 public class StatusNodeAnchorConfig
 {
