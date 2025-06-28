@@ -1,5 +1,6 @@
 using StatusTimers.Enums;
 using StatusTimers.Models;
+using System.Collections.Generic;
 
 namespace StatusTimers.Interfaces;
 
@@ -8,6 +9,9 @@ public interface IOverlayConfiguration {
     bool AllowTargetActor { get; set; }
     bool AnimationsEnabled { get; set; }
     bool FillRowsFirst { get; set; }
+    bool FilterEnabled { get; set; }
+    bool FilterIsBlacklist { get; set; }
+    HashSet<uint> FilterList { get; set; }
     GrowDirection GrowDirection { get; set; }
     bool IsLocked { get; set; }
     bool IsPreviewEnabled { get; set; }

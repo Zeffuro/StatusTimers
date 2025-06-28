@@ -94,6 +94,10 @@ public class StatusDataSourceManager<TKey> {
             filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
         }
 
+        if (overlayConfig.FilterEnabled && overlayConfig.FilterList is { Count: > 0 }) {
+            filteredStatuses = overlayConfig.FilterIsBlacklist ? filteredStatuses.Where(s => !overlayConfig.FilterList.Contains(s.Id)) : filteredStatuses.Where(s => overlayConfig.FilterList.Contains(s.Id));
+        }
+
         List<StatusInfo> finalSortedList = StatusSorter.ApplyAllSorts(
             filteredStatuses,
             _getPrimarySort(), _getPrimarySortOrder(),

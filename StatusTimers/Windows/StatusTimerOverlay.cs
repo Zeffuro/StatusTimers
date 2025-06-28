@@ -152,6 +152,33 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode, IOverlayCo
     } = false;
 
     [JsonProperty]
+    public bool FilterEnabled {
+        get;
+        set {
+            field = value;
+            OnPropertyChanged(updateNodes: true);
+        }
+    } = false;
+
+    [JsonProperty]
+    public bool FilterIsBlacklist {
+        get;
+        set {
+            field = value;
+            OnPropertyChanged(updateNodes: true);
+        }
+    } = true;
+
+    [JsonProperty]
+    public HashSet<uint> FilterList {
+        get;
+        set {
+            field = value;
+            OnPropertyChanged(updateNodes: true);
+        }
+    } = new();
+
+    [JsonProperty]
     public GrowDirection GrowDirection {
         get;
         set {

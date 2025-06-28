@@ -115,11 +115,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     Tooltip = "Export Configuration",
                     Icon = ButtonIcon.Document,
                     AddColor = new Vector3(150, 0, 150),
-                    OnClick = () => {
+                    OnClick = () => {/*
                         _modal.Show("Yessss", (chosen) => {
                             GlobalServices.Logger.Info($"Chosen {chosen}");
                         });
-                        GlobalServices.Logger.Info("Export");
+                        GlobalServices.Logger.Info("Export");*/
                     }
                 },
                 new CircleButtonNode {
@@ -411,12 +411,19 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Text = "Filter Settings"
             });
 
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+            var filterSectionNode = new VerticalListNode<NodeBase> {
+                IsVisible = true,
+                Width = 600,
+                Height = 400,
+                ItemVerticalSpacing = 4
+            };
+            _configLists[kind].AddNode(filterSectionNode);
 
-            _configLists[kind].AddNode(CreateFilteredDropdown());
+            List<LuminaStatus> allStatusList = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
+                .Where(status => status.RowId != 0).ToList();
+
+            RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
         }
-
-
 
         NativeController.AttachNode(_tabBar, this);
         _configScrollingAreas.First().Value.IsVisible = true;
@@ -500,59 +507,126 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return flexNode;
     }
 
-    private HorizontalFlexNode<NodeBase> CreateFilteredDropdown() {
-        HorizontalFlexNode<NodeBase> flexNode = new() {
+    private HorizontalListNode<NodeBase> CreateFilteredDropdown<T>(
+        Func<List<T>> optionsProvider,
+        Func<T, string> displaySelector,
+        Func<T, uint>? iconSelector,
+        Action<T?> setter,
+        bool allowNoResult = true
+    ) {
+        HorizontalListNode<NodeBase> flexNode = new() {
             IsVisible = true,
             X = OptionOffset,
-            Y = 0,
             Width = 600,
             Height = 60,
-            AlignmentFlags = FlexFlags.FitContentHeight
         };
 
-        TextDropDownNode textDropDown = MakeDropDown(["No results found"]);
-
-        void ReplaceDropDown(List<string> options) {
-            flexNode.RemoveNode(textDropDown);
-            textDropDown = MakeDropDown(options);
-            flexNode.AddNode(textDropDown);
-        }
-
-        void UpdateDropdownOptions(string filter) {
-            var filteredOptions = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
-                .Where(option => option.Icon != null
-                                 && !option.Name.ExtractText().IsNullOrEmpty()
-                                 && (option.Name.ExtractText().Contains(filter, StringComparison.OrdinalIgnoreCase)) || option.RowId.ToString().Contains(filter))
-                .Select(option => $"{option.RowId} {option.Name.ExtractText()}")
-                .ToList();
-            if (filteredOptions.Count == 0) {
-                filteredOptions.Add("No results found");
-            }
-
-            ReplaceDropDown(filteredOptions);
-        }
-
-        TextDropDownNode MakeDropDown(List<string> options) => new() {
-            IsVisible = true,
-            Width = 200,
-            Height = 28,
-            MaxListOptions = 5,
-            Options = options,
-            OnOptionSelected = o => { /* ... */ },
-            SelectedOption = options.FirstOrDefault()
-        };
+        TextDropDownNode? textDropDown = null;
+        IconImageNode? iconNode = null;
+        List<T> lastFiltered = new();
+        T? currentSelection = default;
 
         TextInputNode textInput = new() {
             IsVisible = true,
-            Width = 100,
+            Width = 200,
             Height = 28,
-            OnInputComplete = input => {
-                string currentTextInput = input.TextValue ?? "";
-                GlobalServices.Framework.RunOnTick(() => UpdateDropdownOptions(currentTextInput), delayTicks: 1);
-            }
         };
+
+        TextButtonNode textButton = new() {
+            IsVisible = true,
+            Y = 2,
+            Height = 28,
+            Width = 32,
+            Label = "+",
+            OnClick = () => setter(currentSelection)
+        };
+
+        void ReplaceDropDown(List<T> filtered) {
+            lastFiltered = filtered;
+            if (textDropDown != null) {
+                flexNode.RemoveNode(textDropDown);
+            }
+            if (textButton != null) {
+                flexNode.RemoveNode(textButton);
+            }
+
+            // Always have at least one option for the dropdown to avoid issues
+            List<string> displayOptions;
+            if (filtered.Count == 0 && allowNoResult) {
+                displayOptions = new List<string> { "No results found" };
+            } else {
+                displayOptions = filtered.Select(displaySelector).ToList();
+            }
+
+            textDropDown = new TextDropDownNode {
+                IsVisible = true,
+                Y = 2,
+                Width = 200,
+                Height = 28,
+                MaxListOptions = 5,
+                Options = displayOptions,
+                OnOptionSelected = s => {
+                    SetIcon(s, filtered);
+                    if (s == "No results found") {
+                        return;
+                    }
+                },
+                SelectedOption = displayOptions.FirstOrDefault() ?? "No results found",
+            };
+            flexNode.AddNode(textDropDown);
+            flexNode.AddNode(textButton);
+
+            if (displayOptions.Count > 0 && displayOptions[0] != "No results found") {
+                SetIcon(displayOptions[0], filtered);
+            }
+            else {
+                SetIcon("", filtered);
+            }
+        }
+
+        void SetIcon(string selectedOption, List<T> filtered) {
+            var idx = filtered.FindIndex(opt => displaySelector(opt) == selectedOption);
+            currentSelection = idx >= 0 ? filtered[idx] : default;
+            if (iconNode != null && currentSelection != null && iconSelector != null) {
+                iconNode.IconId = iconSelector(currentSelection);
+            }
+            else {
+                iconNode.IconId = 230402;
+            }
+        }
+
+        void UpdateDropdownOptions(string filter) {
+            var allOptions = optionsProvider();
+            var filtered = allOptions
+                .Where(opt =>
+                    string.IsNullOrEmpty(filter) ||
+                    (opt is LuminaStatus s &&
+                     (s.RowId.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                      s.Name.ExtractText()?.Contains(filter, StringComparison.OrdinalIgnoreCase) == true)
+                    )
+                )
+                .ToList();
+
+            ReplaceDropDown(filtered);
+        }
+
+        textInput.OnInputComplete = input => {
+            string filter = input.TextValue ?? "";
+            GlobalServices.Framework.RunOnTick(() => UpdateDropdownOptions(filter), delayTicks: 1);
+        };
+
         flexNode.AddNode(textInput);
-        flexNode.AddNode(textDropDown);
+        flexNode.AddDummy(new ResNode(), 120);
+        if (iconSelector != null) {
+            iconNode = new IconImageNode {
+                Size = new Vector2(24, 32),
+                IsVisible = true,
+                IconId = 0
+            };
+            flexNode.AddNode(iconNode);
+        }
+        UpdateDropdownOptions(string.Empty);
+
         return flexNode;
     }
 
@@ -675,6 +749,138 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         flexNode.AddNode(orderDropdown);
 
         return flexNode;
+    }
+
+    private VerticalListNode<NodeBase> CreateStatusListNode(
+        HashSet<uint> filterList,
+        List<LuminaStatus> allStatuses,
+        Action<uint> onRemove = null
+    ) {
+        var statusListNode = new VerticalListNode<NodeBase> {
+            Height = 200,
+            Width = 300,
+            IsVisible = true,
+            ItemVerticalSpacing = 4
+        };
+
+        foreach (var rowId in filterList.ToList().Order()) {
+            var status = allStatuses.FirstOrDefault(s => s.RowId == rowId);
+
+            var row = new HorizontalListNode<NodeBase> {
+                X = OptionOffset,
+                Height = 32,
+                Width = 300,
+                IsVisible = true,
+                ItemHorizontalSpacing = 4
+            };
+
+            row.AddNode(new IconImageNode {
+                Size = new Vector2(24, 32),
+                IsVisible = true,
+                IconId = status.Icon
+            });
+
+            row.AddNode(new TextNode {
+                Y = 2,
+                Text = status.RowId.ToString(),
+                IsVisible = true,
+                Height = 24,
+                Width = 32,
+                AlignmentType = AlignmentType.Right
+            });
+
+            row.AddNode(new TextNode {
+                Y = 4,
+                Text = status.Name.ExtractText(),
+                IsVisible = true,
+                Height = 24,
+                Width = 190,
+            });
+
+            row.AddNode(new TextButtonNode {
+                Label = "-",
+                Width = 32,
+                Height = 28,
+                IsVisible = true,
+                OnClick = () => {
+                    onRemove?.Invoke(rowId);
+                }
+            });
+
+            statusListNode.AddNode(row);
+        }
+
+        return statusListNode;
+    }
+
+    private void RebuildFilterSection(IOverlayConfiguration currentOverlayConfig,
+        VerticalListNode<NodeBase> filterSectionNode,
+        List<LuminaStatus> allStatusList
+    ) {
+        filterSectionNode.Clear();
+
+        filterSectionNode.AddNode(CreateCheckboxOption(
+            "Enabled",
+            () => currentOverlayConfig.FilterEnabled,
+            isChecked => {
+                currentOverlayConfig.FilterEnabled = isChecked;
+                RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+            }));
+
+        filterSectionNode.AddDummy(new ResNode(), CheckBoxHeight);
+
+        if (currentOverlayConfig.FilterEnabled) {
+            RadioButtonGroupNode radioButtonGroup = new() {
+                X = OptionOffset,
+                Width = 200,
+                Height = TextStyles.Header.Height,
+                IsVisible = true,
+            };
+            if (currentOverlayConfig.FilterIsBlacklist) {
+                radioButtonGroup.AddButton("Blacklist", () => {
+                    currentOverlayConfig.FilterIsBlacklist = true;
+                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+                });
+                radioButtonGroup.AddButton("Whitelist", () => {
+                    currentOverlayConfig.FilterIsBlacklist = false;
+                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+                });
+            }
+            else {
+                radioButtonGroup.AddButton("Whitelist", () => {
+                    currentOverlayConfig.FilterIsBlacklist = false;
+                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+                });
+                radioButtonGroup.AddButton("Blacklist", () => {
+                    currentOverlayConfig.FilterIsBlacklist = true;
+                    RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+                });
+            }
+            filterSectionNode.AddNode(radioButtonGroup);
+
+            var filteredDropdownNode = CreateFilteredDropdown(
+                optionsProvider: () => allStatusList,
+                displaySelector: status => $"{status.RowId} {status.Name.ExtractText()}",
+                iconSelector: status => status.Icon,
+                setter: val => {
+                    if (currentOverlayConfig.FilterList.Add(val.RowId)) {
+                        RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+                    }
+                });
+
+            filterSectionNode.AddNode(filteredDropdownNode);
+
+            var statusListNode = CreateStatusListNode(
+                currentOverlayConfig.FilterList,
+                allStatusList,
+                onRemove: rowId => {
+                    if (currentOverlayConfig.FilterList.Remove(rowId)) {
+                        RebuildFilterSection(currentOverlayConfig, filterSectionNode, allStatusList);
+                    }
+                }
+            );
+            filterSectionNode.AddNode(statusListNode);
+        }
     }
 
     private IOverlayConfiguration? GetOverlayByKind(NodeKind kind) {
