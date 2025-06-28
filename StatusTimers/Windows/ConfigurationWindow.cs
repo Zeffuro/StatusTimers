@@ -771,30 +771,30 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Height = 32,
                 Width = 300,
                 IsVisible = true,
-                ItemHorizontalSpacing = 4
+                ItemHorizontalSpacing = 4,
             };
 
             row.AddNode(new IconImageNode {
+                Y = -4,
                 Size = new Vector2(24, 32),
                 IsVisible = true,
                 IconId = status.Icon
             });
 
             row.AddNode(new TextNode {
-                Y = 2,
                 Text = status.RowId.ToString(),
                 IsVisible = true,
                 Height = 24,
-                Width = 32,
+                Width = 40,
                 AlignmentType = AlignmentType.Right
             });
 
             row.AddNode(new TextNode {
-                Y = 4,
                 Text = status.Name.ExtractText(),
                 IsVisible = true,
                 Height = 24,
-                Width = 190,
+                Width = 180,
+                AlignmentType = AlignmentType.Left
             });
 
             row.AddNode(new TextButtonNode {
