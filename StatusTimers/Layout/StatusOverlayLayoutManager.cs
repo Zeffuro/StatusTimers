@@ -13,7 +13,9 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Layout;
 
-public class StatusOverlayLayoutManager<TKey> {
+public class StatusOverlayLayoutManager<TKey> : IDisposable {
+    private bool isDisposed = false;
+
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
 
@@ -259,6 +261,10 @@ public class StatusOverlayLayoutManager<TKey> {
         BuildContainersOnly();
 
         GlobalServices.Framework.RunOnTick(() => {
+            if (isDisposed) {
+                return;
+            }
+
             try {
                 RecalculateLayout();
                 onCompleteCallback?.Invoke();
@@ -440,5 +446,8 @@ public class StatusOverlayLayoutManager<TKey> {
                 node.OnStatusNodeActionTriggered -= _onNodeActionTriggered;
             }
         }
+    }
+    public void Dispose() {
+        isDisposed = true;
     }
 }

@@ -7,6 +7,7 @@ using System.Numerics;
 namespace StatusTimers.Windows;
 
 public unsafe class OverlayManager : IDisposable {
+    private bool isDisposed = false;
     private ConfigurationWindow? configurationWindow;
     private EnemyMultiDoTOverlay? enemyMultiDoTOverlay;
     private PlayerCombinedStatusesOverlay? playerCombinedOverlay;
@@ -21,7 +22,11 @@ public unsafe class OverlayManager : IDisposable {
     public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => enemyMultiDoTOverlay;
 
     public void Dispose() {
-        // Detach and dispose overlays and config window
+        if (isDisposed) {
+            return;
+        }
+        isDisposed = true;
+
         DetachAndDisposeAll();
         Services.Services.NameplateAddonController.PreEnable -= PreAttach;
         Services.Services.NameplateAddonController.OnAttach -= AttachNodes;
@@ -88,15 +93,27 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     public void OnUpdate() {
+        if (isDisposed) {
+            return;
+        }
+
         playerCombinedOverlay?.OnUpdate();
         enemyMultiDoTOverlay?.OnUpdate();
     }
 
     public void ToggleConfig() {
+        if (isDisposed) {
+            return;
+        }
+
         configurationWindow?.Toggle();
     }
 
     public void OpenConfig() {
+        if (isDisposed) {
+            return;
+        }
+
         configurationWindow?.Open();
     }
 }

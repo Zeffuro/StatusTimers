@@ -24,6 +24,7 @@ namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
 public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
+    private bool isDisposed = false;
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
 
@@ -264,6 +265,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     public void OnDispose() {
+        if (isDisposed) {
+            return;
+        }
+        isDisposed = true;
+
         SaveConfig();
         _layoutManager.UnsubscribeFromNodeActions();
 
