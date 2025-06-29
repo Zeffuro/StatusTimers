@@ -72,8 +72,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>().ToList()
             .ForEach(kind => {
                 var overlay = GetOverlayByKind(kind);
-                overlay.IsPreviewEnabled = false;
-                overlay.IsLocked = true;
+                if (overlay != null) {
+                    overlay.IsPreviewEnabled = false;
+                    overlay.IsLocked = true;
+                }
             });
     }
 
@@ -89,7 +91,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
             StatusTimerOverlay<StatusKey>? overlay = GetOverlayByKind(kind);
-            StatusTimerOverlayConfig currentOverlayConfig = GetOverlayByKind(kind).OverlayConfig;
+            StatusTimerOverlayConfig? currentOverlayConfig = GetOverlayByKind(kind)?.OverlayConfig;
             _tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
@@ -272,7 +274,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     statusPerLineNode.Text = $"Statuses per {(currentOverlayConfig.FillRowsFirst ? "row" : "column")}";
                 }));
 
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight * 5);
 
             _configLists[kind].AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
@@ -395,12 +397,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     #region Helper Methods
 
-    private StatusTimerOverlay<StatusKey> GetOverlayByKind(NodeKind kind) {
+    private StatusTimerOverlay<StatusKey>? GetOverlayByKind(NodeKind kind) {
         return (kind switch {
-            NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
-            NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
+            NodeKind.Combined => overlayManager?.PlayerCombinedOverlayInstance,
+            NodeKind.MultiDoT => overlayManager?.EnemyMultiDoTOverlayInstance,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported NodeKind")
-        })!;
+        });
     }
 
     #endregion

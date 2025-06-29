@@ -99,7 +99,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     public bool IsPreviewEnabled { get; set; }
 
     [JsonProperty]
-    public StatusTimerOverlayConfig OverlayConfig { get; set; } = new();
+    public StatusTimerOverlayConfig? OverlayConfig { get; set; } = new();
 
     public void Setup() {
         if (_isSetupCompleted) {

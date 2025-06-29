@@ -22,7 +22,7 @@ public static class FilterUIFactory
     public delegate void FilterChangedCallback();
 
     public static VerticalListNode<NodeBase> CreateFilterSection(
-        StatusTimerOverlayConfig config,
+        StatusTimerOverlayConfig? config,
         FilterChangedCallback? onChanged = null)
     {
         var section = new VerticalListNode<NodeBase>

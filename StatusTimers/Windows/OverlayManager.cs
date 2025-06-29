@@ -12,6 +12,7 @@ public unsafe class OverlayManager : IDisposable {
     private PlayerCombinedStatusesOverlay? playerCombinedOverlay;
 
     public OverlayManager() {
+        Services.Services.NameplateAddonController.PreEnable += PreAttach;
         Services.Services.NameplateAddonController.OnAttach += AttachNodes;
         Services.Services.NameplateAddonController.OnDetach += DetachNodes;
     }

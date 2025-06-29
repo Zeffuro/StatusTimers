@@ -19,7 +19,7 @@ public class StatusOverlayLayoutManager<TKey> {
 
     private readonly List<StatusTimerNode<TKey>> _allNodes = new();
     private readonly List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
-    private readonly StatusTimerOverlayConfig _overlayConfig;
+    private readonly StatusTimerOverlayConfig? _overlayConfig;
 
     private readonly StatusTimerOverlay<TKey> _ownerOverlay;
     private readonly List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
@@ -31,7 +31,7 @@ public class StatusOverlayLayoutManager<TKey> {
 
     public StatusOverlayLayoutManager(
         StatusTimerOverlay<TKey> ownerOverlay,
-        StatusTimerOverlayConfig overlayConfig) {
+        StatusTimerOverlayConfig? overlayConfig) {
         _ownerOverlay = ownerOverlay;
         _overlayConfig = overlayConfig;
     }
@@ -368,7 +368,7 @@ public class StatusOverlayLayoutManager<TKey> {
         Action<TInner, StatusTimerNode<TKey>> addNodeToInner,
         int outerCount,
         int itemsPerInner,
-        StatusTimerOverlayConfig initialOverlayConfig
+        StatusTimerOverlayConfig? initialOverlayConfig
     )
         where TOuter : NodeBase
         where TInner : NodeBase {

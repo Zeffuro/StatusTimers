@@ -23,7 +23,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private TextNode _actorName;
     private ResNode _containerResNode;
 
-    private StatusTimerOverlayConfig _currentOverlayConfig;
+    private StatusTimerOverlayConfig? _currentOverlayConfig;
     private StatusNodeLayoutConfig _layout;
     private IconImageNode _iconNode;
 
@@ -34,7 +34,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private Dictionary<string, NodeBase> _nodeMap = new();
 
-    public StatusTimerNode(StatusTimerOverlayConfig initialOverlayConfig) {
+    public StatusTimerNode(StatusTimerOverlayConfig? initialOverlayConfig) {
         _currentOverlayConfig = initialOverlayConfig;
         _currentOverlayConfig.StatusNodeLayout = new StatusNodeLayoutConfig();
 
@@ -129,7 +129,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
 
-    public void ApplyOverlayConfig(StatusTimerOverlayConfig config)
+    public void ApplyOverlayConfig(StatusTimerOverlayConfig? config)
     {
         if (_currentOverlayConfig.Equals(config)) {
             return;
@@ -287,7 +287,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.Y = y;
     }
 
-    private void SetRemainingNode(StatusTimerOverlayConfig config) {
+    private void SetRemainingNode(StatusTimerOverlayConfig? config) {
         bool shouldBeNineGrid = config.ShowStatusRemainingBackground;
         bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
 
@@ -334,7 +334,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusRemaining.X = Width - _statusRemaining.Width;
     }
 
-    public void UpdateValues(StatusTimerOverlayConfig config) {
+    public void UpdateValues(StatusTimerOverlayConfig? config) {
         if (_statusInfo.Id != 0) {
             _iconNode.IconId = _statusInfo.IconId;
         }

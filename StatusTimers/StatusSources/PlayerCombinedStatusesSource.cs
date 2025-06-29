@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace StatusTimers.StatusSources;
 
 public class PlayerCombinedStatusesSource : IStatusSource<StatusKey> {
-    public IReadOnlyList<StatusInfo> Fetch(StatusTimerOverlayConfig config) {
+    public IReadOnlyList<StatusInfo> Fetch(StatusTimerOverlayConfig? config) {
         return StatusManager.GetPlayerStatuses(config);
     }
 

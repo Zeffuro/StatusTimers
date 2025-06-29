@@ -35,7 +35,7 @@ public static class StatusManager {
         PopulateDictionaries();
     }
 
-    public static IReadOnlyList<StatusInfo> GetPlayerStatuses(StatusTimerOverlayConfig config) {
+    public static IReadOnlyList<StatusInfo> GetPlayerStatuses(StatusTimerOverlayConfig? config) {
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
         if (player?.StatusList == null) {
             return [];
@@ -50,7 +50,7 @@ public static class StatusManager {
         ;
     }
 
-    public static IReadOnlyList<StatusInfo> GetHostileStatuses(StatusTimerOverlayConfig config) {
+    public static IReadOnlyList<StatusInfo> GetHostileStatuses(StatusTimerOverlayConfig? config) {
         _hostileStatusBuffer.Clear();
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
@@ -86,7 +86,7 @@ public static class StatusManager {
         return _hostileStatusBuffer;
     }
 
-    private static StatusInfo? TransformStatus(Status status, ulong objectId, StatusTimerOverlayConfig config) {
+    private static StatusInfo? TransformStatus(Status status, ulong objectId, StatusTimerOverlayConfig? config) {
         LuminaStatus gameData = status.GameData.Value;
 
         uint id = status.StatusId;

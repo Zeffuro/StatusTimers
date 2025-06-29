@@ -72,7 +72,7 @@ public class StatusDataSourceManager<TKey> {
         _getTertiarySortOrder = getTertiarySortOrder;
     }
 
-    public List<StatusInfo> FetchAndProcessStatuses(StatusTimerOverlayConfig overlayConfig) {
+    public List<StatusInfo> FetchAndProcessStatuses(StatusTimerOverlayConfig? overlayConfig) {
         IReadOnlyList<StatusInfo> current;
 
         if (_getIsPreviewEnabled()) {

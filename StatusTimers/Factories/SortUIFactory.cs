@@ -13,7 +13,7 @@ namespace StatusTimers.Factories;
 public static class SortUIFactory
 {
     public static VerticalListNode<NodeBase> CreateSortPrioritySection(
-        StatusTimerOverlayConfig config,
+        StatusTimerOverlayConfig? config,
         NodeKind kind)
     {
         var section = new VerticalListNode<NodeBase>
