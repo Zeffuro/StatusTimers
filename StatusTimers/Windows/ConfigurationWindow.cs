@@ -56,24 +56,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
         //_modal = new ModalNode();
         //NativeController.AttachNode(_modal.RootNode, this);
-        foreach (var area in _configScrollingAreas.Values) {
-            NativeController.DetachNode(area);
-        }
-
         _configScrollingAreas.Clear();
-        foreach (var list in _configLists.Values) {
-            NativeController.DetachNode(list);
-        }
-
         _configLists.Clear();
-        foreach (var node in _filterSectionNodes.Values) {
-            NativeController.DetachNode(node);
-        }
-
         _filterSectionNodes.Clear();
-        if (_tabBar != null) {
-            NativeController.DetachNode(_tabBar);
-        }
+        _tabBar = null;
 
         SetupOptions();
     }
@@ -112,6 +98,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             StatusTimerOverlay<StatusKey>? overlay = GetOverlayByKind(kind);
             StatusTimerOverlayConfig? currentOverlayConfig = GetOverlayByKind(kind)?.OverlayConfig;
             _tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
+
+            if (overlay == null || currentOverlayConfig == null) {
+                continue;
+            }
 
             _configScrollingAreas[kind] = new ScrollingAreaNode {
                 X = ContentStartPosition.X,
