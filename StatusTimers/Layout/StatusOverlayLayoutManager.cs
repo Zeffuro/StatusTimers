@@ -4,7 +4,6 @@ using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
-using StatusTimers.Layout;
 using StatusTimers.Models;
 using StatusTimers.Windows;
 using System;
@@ -12,7 +11,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
-namespace StatusTimers.Services;
+namespace StatusTimers.Layout;
 
 public class StatusOverlayLayoutManager<TKey> {
     private const float StatusNodeWidth = 300;
@@ -21,8 +20,6 @@ public class StatusOverlayLayoutManager<TKey> {
     private readonly List<StatusTimerNode<TKey>> _allNodes = new();
     private readonly List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
     private readonly StatusTimerOverlayConfig _overlayConfig;
-
-    private readonly NodeKind _nodeKind;
 
     private readonly StatusTimerOverlay<TKey> _ownerOverlay;
     private readonly List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
@@ -34,10 +31,8 @@ public class StatusOverlayLayoutManager<TKey> {
 
     public StatusOverlayLayoutManager(
         StatusTimerOverlay<TKey> ownerOverlay,
-        NodeKind nodeKind,
         StatusTimerOverlayConfig overlayConfig) {
         _ownerOverlay = ownerOverlay;
-        _nodeKind = nodeKind;
         _overlayConfig = overlayConfig;
     }
 
@@ -84,8 +79,8 @@ public class StatusOverlayLayoutManager<TKey> {
     }
 
     public Vector2 CalculateOverlaySize() {
-        float totalWidth = 0;
-        float totalHeight = 0;
+        float totalWidth;
+        float totalHeight;
 
         int maxItems = _overlayConfig.MaxStatuses;
         int itemsPerLine = Math.Min(_overlayConfig.ItemsPerLine, maxItems);

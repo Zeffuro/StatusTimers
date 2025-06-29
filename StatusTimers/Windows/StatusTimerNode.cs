@@ -10,6 +10,7 @@ using StatusTimers.Enums;
 using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -23,6 +24,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private ResNode _containerResNode;
 
     private StatusTimerOverlayConfig _currentOverlayConfig;
+    private StatusNodeLayoutConfig _layout;
     private IconImageNode _iconNode;
 
     private CastBarProgressBarNode _progressNode;
@@ -30,46 +32,37 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private TextNode _statusName;
     private NodeBase _statusRemaining;
 
+    private Dictionary<string, NodeBase> _nodeMap = new();
+
     public StatusTimerNode(StatusTimerOverlayConfig initialOverlayConfig) {
         _currentOverlayConfig = initialOverlayConfig;
+        _currentOverlayConfig.StatusNodeLayout = new StatusNodeLayoutConfig();
 
-        StatusNodeLayoutConfig layout = _currentOverlayConfig.StatusNodeLayout;
+        _layout = _currentOverlayConfig.StatusNodeLayout;
 
         _containerResNode = new ResNode {
-            IsVisible = true
+            IsVisible = true,
+            Width = _layout.RowWidth,
+            Height = _layout.RowHeight,
         };
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
 
         _iconNode = new IconImageNode {
-            Size = new Vector2(48, 64),
             IsVisible = _currentOverlayConfig.ShowIcon,
+            Width = _layout.IconAnchor.Width,
+            Height = _layout.IconAnchor.Height,
+            X = _layout.IconAnchor.OffsetX,
+            Y = _layout.IconAnchor.OffsetY,
         };
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
-        _progressNode = new CastBarProgressBarNode {
-            Height = 20,
-            Progress = 1f,
-            IsVisible = _currentOverlayConfig.ShowProgress,
-            Width = 200
-        };
-        GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
-
-        _actorName = new TextNode {
-            IsVisible = _currentOverlayConfig.ShowActorName,
-            Width = 180,
-            Height = 14,
-            FontSize = 12,
-            TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(54),
-            TextFlags = TextFlags.Edge
-        };
-        GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
-
         _statusName = new TextNode {
             IsVisible = _currentOverlayConfig.ShowStatusName,
-            Width = 160,
-            Height = 22,
+            Width = _layout.NameAnchor.Width,
+            Height = _layout.NameAnchor.Height,
             FontSize = 20,
+            X = _layout.NameAnchor.OffsetX,
+            Y = _layout.NameAnchor.OffsetY,
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge,
@@ -77,7 +70,32 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         };
         GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
+        _progressNode = new CastBarProgressBarNode {
+            IsVisible = _currentOverlayConfig.ShowProgress,
+            Height = _layout.ProgressAnchor.Height,
+            Width = _layout.ProgressAnchor.Width > 0 ? _layout.ProgressAnchor.Width : 200,
+            X = _layout.ProgressAnchor.OffsetX,
+            Y = _layout.ProgressAnchor.OffsetY,
+            Progress = 1f,
+        };
+        GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
+
+        _actorName = new TextNode {
+            IsVisible = _currentOverlayConfig.ShowActorName,
+            Width = _layout.ActorNameAnchor.Width,
+            Height = _layout.ActorNameAnchor.Height,
+            FontSize = 12,
+            X = _layout.ActorNameAnchor.OffsetX,
+            Y = _layout.ActorNameAnchor.OffsetY,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(54),
+            TextFlags = TextFlags.Edge
+        };
+        GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
+
         SetRemainingNode(_currentOverlayConfig);
+
+        RegisterNodeMap();
 
         if (_currentOverlayConfig.ShowActorLetter || _currentOverlayConfig.AllowTargetActor) {
             _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
@@ -143,8 +161,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         switch (node)
         {
             case TextNode tn:
-                tn.Width = style.Width;
-                tn.Height = style.Height;
                 tn.FontSize = (uint)style.FontSize;
                 tn.FontType = style.FontType;
                 tn.TextColor = style.TextColor;
@@ -152,8 +168,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 tn.TextFlags = style.TextFlags;
                 break;
             case TextNineGridNode ngn:
-                ngn.Width = style.Width;
-                ngn.Height = style.Height;
                 ngn.FontSize = style.FontSize;
                 ngn.FontType = style.FontType;
                 ngn.TextColor = style.TextColor;
@@ -163,16 +177,114 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void UpdateLayoutOffsets() {
-        _statusName.X = _iconNode.Width + 4;
-        _actorName.X = _iconNode.Width + 4;
-        _actorName.Y = _statusName.Height;
-        _progressNode.X = _iconNode.Width;
-        _progressNode.Y = _statusName.Height + _actorName.Height;
-
+    private void RegisterNodeMap() {
+        _nodeMap["Icon"] = _iconNode;
+        _nodeMap["Name"] = _statusName;
+        _nodeMap["ActorName"] = _actorName;
+        _nodeMap["Progress"] = _progressNode;
         if (_statusRemaining != null) {
-            _statusRemaining.X = Width - _statusRemaining.Width;
+            _nodeMap["Timer"] = _statusRemaining;
         }
+
+        if (_currentOverlayConfig.ShowActorLetter || _currentOverlayConfig.AllowTargetActor) {
+            _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
+            _iconNode.EventFlagsSet = true;
+        }
+    }
+
+    private void UpdateLayoutOffsets() {
+        _nodeMap["Icon"] = _iconNode;
+        _nodeMap["Name"] = _statusName;
+        _nodeMap["ActorName"] = _actorName;
+        _nodeMap["Progress"] = _progressNode;
+        if (_statusRemaining != null) {
+            _nodeMap["Timer"] = _statusRemaining;
+        }
+
+        LayoutNode(_iconNode, _layout.IconAnchor, "Icon");
+        LayoutNode(_statusName, _layout.NameAnchor, "Name");
+        LayoutNode(_actorName, _layout.ActorNameAnchor, "ActorName");
+        LayoutNode(_progressNode, _layout.ProgressAnchor, "Progress");
+        if (_statusRemaining != null) {
+            LayoutNode(_statusRemaining, _layout.TimerAnchor, "Timer");
+        }
+    }
+
+    private (float x, float y) GetAnchorBasePosition(
+    AnchorTarget anchorTo,
+    string selfKey,
+    AnchorAlignment alignment)
+    {
+        switch (anchorTo)
+        {
+            case AnchorTarget.ContainerLeft:
+                return (0, 0);
+            case AnchorTarget.ContainerRight:
+                return (_containerResNode.Width, 0);
+            case AnchorTarget.ContainerTop:
+                return (0, 0);
+            case AnchorTarget.ContainerBottom:
+                return (0, _containerResNode.Height);
+            case AnchorTarget.ContainerCenterH:
+                return (_containerResNode.Width / 2, 0);
+            case AnchorTarget.ContainerCenterV:
+                return (0, _containerResNode.Height / 2);
+            default:
+                string anchorStr = anchorTo.ToString();
+                foreach (var key in _nodeMap.Keys)
+                {
+                    if (anchorStr.StartsWith(key) && key != selfKey)
+                    {
+                        var node = _nodeMap[key];
+                        string edge = anchorStr.Substring(key.Length);
+
+                        // Determine if the anchoring node wants vertical center
+                        bool wantsVerticalCenter = alignment.HasFlag(AnchorAlignment.VerticalCenter) || alignment.HasFlag(AnchorAlignment.Center);
+                        // Determine if the anchoring node wants horizontal center (uncommon for anchors, but possible)
+                        bool wantsHorizontalCenter = alignment.HasFlag(AnchorAlignment.HorizontalCenter) || alignment.HasFlag(AnchorAlignment.Center);
+
+                        switch (edge)
+                        {
+                            case "Left":
+                                return (node.X, node.Y + (wantsVerticalCenter ? node.Height / 2f : 0));
+                            case "Right":
+                                return (node.X + node.Width, node.Y + (wantsVerticalCenter ? node.Height / 2f : 0));
+                            case "Top":
+                                return (node.X + (wantsHorizontalCenter ? node.Width / 2f : 0), node.Y);
+                            case "Bottom":
+                                return (node.X + (wantsHorizontalCenter ? node.Width / 2f : 0), node.Y + node.Height);
+                            default:
+                                return (node.X, node.Y);
+                        }
+                    }
+                }
+                return (0, 0);
+        }
+    }
+
+    private void LayoutNode(NodeBase node, StatusNodeAnchorConfig anchorConfig, string selfKey) {
+        var (baseX, baseY) = GetAnchorBasePosition(anchorConfig.AnchorTo, selfKey, anchorConfig.Alignment);
+        float x = baseX + anchorConfig.OffsetX;
+        float y = baseY + anchorConfig.OffsetY;
+
+        var alignment = anchorConfig.Alignment;
+
+        if (alignment.HasFlag(AnchorAlignment.Right)) {
+            x -= node.Width;
+        }
+        else if (alignment.HasFlag(AnchorAlignment.HorizontalCenter) || alignment.HasFlag(AnchorAlignment.Center)) {
+            x -= node.Width / 2f;
+        }
+
+        if (alignment.HasFlag(AnchorAlignment.Bottom)) {
+            y -= node.Height;
+        }
+        else if (alignment.HasFlag(AnchorAlignment.VerticalCenter) || alignment.HasFlag(AnchorAlignment.Center)) {
+            y -= node.Height / 2f;
+        }
+
+        node.X = x;
+        node.Y = y;
     }
 
     private void SetRemainingNode(StatusTimerOverlayConfig config) {
@@ -196,8 +308,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (shouldBeNineGrid) {
             _statusRemaining = new TextNineGridNode {
                 IsVisible = config.ShowStatusRemaining,
-                Width = config.StatusRemainingTextStyle.Width,
-                Height = config.StatusRemainingTextStyle.Height,
+                Width = _layout.TimerAnchor.Width,
+                Height = _layout.TimerAnchor.Height,
                 FontSize = config.StatusRemainingTextStyle.FontSize,
                 FontType = config.StatusRemainingTextStyle.FontType,
                 TextColor = config.StatusRemainingTextStyle.TextColor,
@@ -208,8 +320,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         else {
             _statusRemaining = new TextNode {
                 IsVisible = config.ShowStatusRemaining,
-                Width = config.StatusRemainingTextStyle.Width,
-                Height = config.StatusRemainingTextStyle.Height,
+                Width = _layout.TimerAnchor.Width,
+                Height = _layout.TimerAnchor.Height,
                 FontSize = (uint)config.StatusRemainingTextStyle.FontSize,
                 FontType = config.StatusRemainingTextStyle.FontType,
                 TextColor = config.StatusRemainingTextStyle.TextColor,
@@ -331,8 +443,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         {
             TextNode text => new TextStyle
             {
-                Width = text.Width,
-                Height = text.Height,
                 FontSize = (int)text.FontSize,
                 FontType = text.FontType,
                 TextColor = text.TextColor,
@@ -341,8 +451,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             },
             TextNineGridNode nine => new TextStyle
             {
-                Width = nine.Width,
-                Height = nine.Height,
                 FontSize = nine.FontSize,
                 FontType = nine.FontType,
                 TextColor = nine.TextColor,

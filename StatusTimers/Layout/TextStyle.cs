@@ -8,26 +8,6 @@ namespace StatusTimers.Layout
     {
         public event Action? Changed;
 
-        public float Width {
-            get;
-            set {
-                if (field != value) {
-                    field = value;
-                    Changed?.Invoke();
-                }
-            }
-        }
-
-        public float Height {
-            get;
-            set {
-                if (field != value) {
-                    field = value;
-                    Changed?.Invoke();
-                }
-            }
-        }
-
         public int FontSize {
             get;
             set {
@@ -90,9 +70,7 @@ namespace StatusTimers.Layout
                 return true;
             }
 
-            return Width == other.Width
-                   && Height == other.Height
-                   && FontSize == other.FontSize
+            return FontSize == other.FontSize
                    && FontType == other.FontType
                    && TextColor.Equals(other.TextColor)
                    && TextOutlineColor.Equals(other.TextOutlineColor)
@@ -101,10 +79,7 @@ namespace StatusTimers.Layout
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(
-                Width, Height, FontSize, FontType,
-                TextColor, TextOutlineColor, TextFlags
-            );
+            return HashCode.Combine(FontSize, FontType, TextColor, TextOutlineColor, TextFlags);
         }
     }
 }

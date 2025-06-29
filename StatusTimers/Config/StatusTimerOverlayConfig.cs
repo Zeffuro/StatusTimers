@@ -216,6 +216,27 @@ public class StatusTimerOverlayConfig
     } = true;
 
     [JsonProperty]
+    public TextStyle StatusNameTextStyle
+    {
+        get => field;
+        set
+        {
+            if (!Equals(StatusNameTextStyle, value))
+            {
+                field = value;
+                Notify(nameof(StatusNameTextStyle));
+            }
+        }
+    } = new()
+    {
+        FontSize = 20,
+        FontType = FontType.Axis,
+        TextColor = ColorHelper.GetColor(50),
+        TextOutlineColor = ColorHelper.GetColor(53),
+        TextFlags = TextFlags.Edge
+    };
+
+    [JsonProperty]
     public bool ShowStatusRemaining
     {
         get => field;
@@ -299,10 +320,8 @@ public class StatusTimerOverlayConfig
         }
     } = new()
     {
-        Width = 120,
-        Height = 22,
         FontSize = 20,
-        FontType = FontType.Axis,
+        FontType = FontType.TrumpGothic,
         TextColor = ColorHelper.GetColor(50),
         TextOutlineColor = ColorHelper.GetColor(53),
         TextFlags = TextFlags.Edge
@@ -419,6 +438,27 @@ public class StatusTimerOverlayConfig
             }
         }
     } = true;
+
+    [JsonProperty]
+    public TextStyle ActorNameTextStyle
+    {
+        get => field;
+        set
+        {
+            if (!Equals(ActorNameTextStyle, value))
+            {
+                field = value;
+                Notify(nameof(ActorNameTextStyle));
+            }
+        }
+    } = new()
+    {
+        FontSize = 20,
+        FontType = FontType.Axis,
+        TextColor = ColorHelper.GetColor(50),
+        TextOutlineColor = ColorHelper.GetColor(54),
+        TextFlags = TextFlags.Edge
+    };
 
     [JsonProperty]
     public bool ShowPermaIcons

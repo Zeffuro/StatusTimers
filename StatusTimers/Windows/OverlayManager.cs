@@ -31,7 +31,6 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
-        // Always recreate overlays and config window after login or reattach
         DetachAndDisposeAll();
 
         playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
@@ -69,6 +68,10 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     private void DetachAndDisposeAll() {
+        if (configurationWindow != null) {
+            configurationWindow.Dispose();
+            configurationWindow = null;
+        }
         if (playerCombinedOverlay != null) {
             Services.Services.NativeController.DetachNode(playerCombinedOverlay);
             playerCombinedOverlay.OnDispose();
@@ -80,10 +83,6 @@ public unsafe class OverlayManager : IDisposable {
             enemyMultiDoTOverlay.OnDispose();
             enemyMultiDoTOverlay.Dispose();
             enemyMultiDoTOverlay = null;
-        }
-        if (configurationWindow != null) {
-            configurationWindow.Dispose();
-            configurationWindow = null;
         }
     }
 

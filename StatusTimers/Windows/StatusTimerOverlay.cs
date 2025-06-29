@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Interfaces;
+using StatusTimers.Layout;
 using StatusTimers.Models;
 using StatusTimers.Services;
 using System;
@@ -49,7 +50,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
         _layoutManager = new StatusOverlayLayoutManager<TKey>(
             this,
-            _nodeKind,
             OverlayConfig
         );
 
@@ -71,7 +71,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         );
 
         OverlayConfig.OnPropertyChanged += (property, updateNodes, needsRebuild) => {
-            OnPropertyChanged(needsRebuild, updateNodes);
+            OnPropertyChanged(property, needsRebuild, updateNodes);
         };
     }
 
@@ -202,8 +202,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         }
     }
 
-    private void OnPropertyChanged(bool needsRebuild = false, bool updateNodes = false) {
+    private void OnPropertyChanged(string property, bool needsRebuild = false, bool updateNodes = false) {
         if (!_isConfigLoading) {
+            if (property == "ScaleInt") {
+                Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
+            }
             if (needsRebuild) {
                 MarkNeedsRebuild();
             }
@@ -221,7 +224,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     private void SubscribeToEvents() {
-        OverlayConfig.StatusRemainingTextStyle.Changed += () => OnPropertyChanged(needsRebuild: true);
+        OverlayConfig.StatusRemainingTextStyle.Changed += () => OnPropertyChanged(nameof(OverlayConfig.StatusRemainingTextStyle), needsRebuild: true);
     }
 
     private void SetSortDefaults(NodeKind nodeKind)
