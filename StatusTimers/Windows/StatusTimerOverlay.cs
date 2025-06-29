@@ -72,6 +72,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         );
 
         OverlayConfig.OnPropertyChanged += (property, updateNodes, needsRebuild) => {
+            GlobalServices.Logger.Info($"Property changed: {property}");
             OnPropertyChanged(property, needsRebuild, updateNodes);
         };
     }

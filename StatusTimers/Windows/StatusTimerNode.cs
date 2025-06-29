@@ -36,7 +36,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public StatusTimerNode(StatusTimerOverlayConfig? initialOverlayConfig) {
         _currentOverlayConfig = initialOverlayConfig;
-        _currentOverlayConfig.StatusNodeLayout = new StatusNodeLayoutConfig();
+        //_currentOverlayConfig.StatusNodeLayout = new StatusNodeLayoutConfig();
 
         _layout = _currentOverlayConfig.StatusNodeLayout;
 

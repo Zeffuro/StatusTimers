@@ -40,8 +40,8 @@ public class StatusNodeLayoutConfig
     public StatusNodeAnchorConfig ProgressAnchor { get; set; } = new()
     {
         AnchorTo = AnchorTarget.ActorNameBottom,
-        OffsetX = 0,
-        OffsetY = 2,
+        OffsetX = -7,
+        OffsetY = 20,
         Alignment = AnchorAlignment.Bottom,
         Height = 20,
         Width = 200
@@ -51,7 +51,7 @@ public class StatusNodeLayoutConfig
     {
         AnchorTo = AnchorTarget.NameBottom,
         OffsetX = 0,
-        OffsetY = 1,
+        OffsetY = -6,
         Alignment = AnchorAlignment.Left,
         Width = 120,
         Height = 12

@@ -33,6 +33,9 @@ public static class NodeLayoutUIFactory
             IsVisible = true
         };
 
+        CheckboxNode enabledCheckbox = null;
+        VerticalListNode<NodeBase> settingsGroup = null;
+
         if (getEnabled != null && setEnabled != null)
         {
             section.AddNode(new CheckboxNode
@@ -42,16 +45,34 @@ public static class NodeLayoutUIFactory
                 Height = 22,
                 IsVisible = true,
                 IsChecked = getEnabled(),
-                OnClick = isChecked => { setEnabled(isChecked); onChanged?.Invoke(); }
+                OnClick = isChecked => {
+                    setEnabled(isChecked);
+                    if (settingsGroup != null) {
+                        settingsGroup.IsVisible = isChecked;
+                        settingsGroup.Height = isChecked ? -1 : 0;
+                        settingsGroup.RecalculateLayout();
+                        section.RecalculateLayout();
+                    }
+
+                    onChanged?.Invoke();
+                }
             });
         }
+
+        settingsGroup = new VerticalListNode<NodeBase>
+        {
+            X = OptionOffset,
+            Height = 200,
+            Width = 600,
+            ItemVerticalSpacing = 0,
+            IsVisible = getEnabled?.Invoke() ?? true
+        };
 
         if (getStyle != null && setStyle != null)
         {
             var style = getStyle();
             var styleRow = new HorizontalFlexNode<NodeBase>
             {
-                X = OptionOffset,
                 IsVisible = true,
                 Width = 562,
                 Height = 32,
@@ -70,12 +91,11 @@ public static class NodeLayoutUIFactory
                 () => (int)style.FontSize,
                 v => { var s = getStyle(); s.FontSize = v; setStyle(s); onChanged?.Invoke(); }
             ));
-            section.AddNode(styleRow);
+            settingsGroup.AddNode(styleRow);
         }
 
         var offsetRow = new HorizontalFlexNode<NodeBase>
         {
-            X = OptionOffset,
             IsVisible = true,
             Width = 562,
             Height = 32,
@@ -87,11 +107,10 @@ public static class NodeLayoutUIFactory
         offsetRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Offset Y",
             () => (int)anchorConfig.OffsetY,
             v => { anchorConfig.OffsetY = v; onChanged?.Invoke(); }));
-        section.AddNode(offsetRow);
+        settingsGroup.AddNode(offsetRow);
 
         var sizeRow = new HorizontalFlexNode<NodeBase>
         {
-            X = OptionOffset,
             IsVisible = true,
             Width = 562,
             Height = 32,
@@ -103,13 +122,12 @@ public static class NodeLayoutUIFactory
         sizeRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Height",
             () => (int)anchorConfig.Height,
             v => { anchorConfig.Height = v; onChanged?.Invoke(); }));
-        section.AddNode(sizeRow);
+        settingsGroup.AddNode(sizeRow);
 
         var anchorTargetDict = ((AnchorTarget[])Enum.GetValues(typeof(AnchorTarget)))
             .ToDictionary(a => a, a => a.ToString());
         var anchorToRow = new HorizontalFlexNode<NodeBase>
         {
-            X = OptionOffset,
             IsVisible = true,
             Width = 562,
             Height = 32,
@@ -119,91 +137,192 @@ public static class NodeLayoutUIFactory
             () => anchorConfig.AnchorTo,
             v => { anchorConfig.AnchorTo = v; onChanged?.Invoke(); },
             anchorTargetDict));
-        section.AddNode(anchorToRow);
+        settingsGroup.AddNode(anchorToRow);
 
-        section.AddNode(CreateEnumFlagCheckboxGrid(
-            "Alignment",
+        settingsGroup.AddNode(CreateAlignmentFlagSection(
             () => anchorConfig.Alignment,
             v => { anchorConfig.Alignment = v; onChanged?.Invoke(); },
-            columns: 4,
-            onChanged: onChanged
+            onChanged
         ));
+
+        section.AddNode(settingsGroup);
 
         return section;
     }
 
-    private static VerticalListNode<NodeBase> CreateEnumFlagCheckboxGrid<TEnum>(
-        string label,
-        Func<TEnum> get,
-        Action<TEnum> set,
-        int columns = 4,
+    public static VerticalListNode<NodeBase> CreateAlignmentFlagSection(
+        Func<AnchorAlignment> getAlignment,
+        Action<AnchorAlignment> setAlignment,
         Action onChanged = null
-    ) where TEnum : Enum
+    )
     {
-        var allFlags = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().Where(v => Convert.ToInt32(v) != 0).ToArray();
-        int numRows = (int)Math.Ceiling((double)allFlags.Length / columns);
-        float height = numRows * CheckBoxHeight;
-
-        var node = new VerticalListNode<NodeBase>
+        var alignmentSection = new VerticalListNode<NodeBase>
         {
             X = OptionOffset,
-            Height = height,
+            ItemVerticalSpacing = 0,
             IsVisible = true,
-            ItemVerticalSpacing = 2
+            Width = 600,
         };
-        if (!string.IsNullOrEmpty(label))
+
+        alignmentSection.AddNode(new TextNode
         {
-            node.AddNode(new TextNode
-            {
-                Text = label,
-                IsVisible = true,
-                Height = 18,
-                Width = 120,
-                FontSize = 14,
-                TextColor = TextStyles.OptionLabel.TextColor
-            });
-        }
+            Text = "Alignment",
+            IsVisible = true,
+            Height = 20,
+            Width = 120,
+            FontSize = 14,
+            TextColor = TextStyles.OptionLabel.TextColor
+        });
 
-        for (int i = 0; i < allFlags.Length; i += columns)
+        var horizontalRow = new HorizontalListNode<NodeBase>
         {
-            var row = new HorizontalFlexNode<NodeBase>
-            {
-                X = OptionOffset,
-                Height = 28,
-                Width = 600,
-                IsVisible = true,
-                FitPadding = 8
-            };
+            X = OptionOffset,
+            Width = 600,
+            Height = 28,
+            ItemHorizontalSpacing = 8,
+            IsVisible = true
+        };
 
-            for (int j = 0; j < columns && i + j < allFlags.Length; j++)
-            {
-                var flag = allFlags[i + j];
-                row.AddNode(new CheckboxNode
-                {
-                    LabelText = flag.ToString(),
-                    Width = 110,
-                    Height = 24,
-                    IsVisible = true,
-                    IsChecked = get().HasFlag(flag),
-                    OnClick = isChecked =>
-                    {
-                        var val = get();
-                        var num = Convert.ToInt32(val);
-                        var fnum = Convert.ToInt32(flag);
-                        if (isChecked) {
-                            num |= fnum;
-                        }
-                        else {
-                            num &= ~fnum;
-                        }
+        horizontalRow.AddNode(new TextNode
+        {
+            Text = "Horizontal:",
+            IsVisible = true,
+            Height = 18,
+            Width = 114,
+            FontSize = 14,
+            TextColor = TextStyles.OptionLabel.TextColor
+        });
 
-                        set((TEnum)Enum.ToObject(typeof(TEnum), num));
-                        onChanged?.Invoke();
-                    }
-                });
+        horizontalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "Left",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.Left),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.Left, getAlignment, setAlignment, onChanged);
             }
-            node.AddNode(row);
+        });
+        horizontalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "Right",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.Right),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.Right, getAlignment, setAlignment, onChanged);
+            }
+        });
+        horizontalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "HCenter",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.HorizontalCenter),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.HorizontalCenter, getAlignment, setAlignment, onChanged);
+            }
+        });
+        horizontalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "Center",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.Center),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.Center, getAlignment, setAlignment, onChanged);
+            }
+        });
+
+        alignmentSection.AddNode(horizontalRow);
+
+        var verticalRow = new HorizontalListNode<NodeBase>
+        {
+            X = OptionOffset,
+            Width = 600,
+            Height = 28,
+            ItemHorizontalSpacing = 8,
+            IsVisible = true
+        };
+
+        verticalRow.AddNode(new TextNode
+        {
+            Text = "Vertical:",
+            IsVisible = true,
+            Height = 18,
+            Width = 114,
+            FontSize = 14,
+            TextColor = TextStyles.OptionLabel.TextColor
+        });
+
+        verticalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "Top",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.Top),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.Top, getAlignment, setAlignment, onChanged);
+            }
+        });
+        verticalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "Bottom",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.Bottom),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.Bottom, getAlignment, setAlignment, onChanged);
+            }
+        });
+        verticalRow.AddNode(new CheckboxNode
+        {
+            LabelText = "VCenter",
+            Width = 100,
+            Height = 18,
+            IsVisible = true,
+            IsChecked = getAlignment().HasFlag(AnchorAlignment.VerticalCenter),
+            OnClick = isChecked =>
+            {
+                ToggleFlag(isChecked, AnchorAlignment.VerticalCenter, getAlignment, setAlignment, onChanged);
+            }
+        });
+
+        alignmentSection.AddNode(verticalRow);
+
+        return alignmentSection;
+    }
+
+    private static void ToggleFlag(
+        bool isChecked,
+        AnchorAlignment flag,
+        Func<AnchorAlignment> getAlignment,
+        Action<AnchorAlignment> setAlignment,
+        Action onChanged)
+    {
+        var val = getAlignment();
+        var num = (int)val;
+        var fnum = (int)flag;
+        if (isChecked) {
+            num |= fnum;
         }
-        return node;
+        else {
+            num &= ~fnum;
+        }
+
+        setAlignment((AnchorAlignment)num);
+        onChanged?.Invoke();
     }
 }

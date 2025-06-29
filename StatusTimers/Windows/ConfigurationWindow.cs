@@ -108,15 +108,16 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Y = ContentStartPosition.Y + _tabBar.Height,
                 Width = ContentSize.X,
                 Height = ContentSize.Y - _tabBar.Height,
-                ContentHeight = 2000.0f,
+                ContentHeight = 1500.0f,
                 IsVisible = false
             };
             NativeController.AttachNode(_configScrollingAreas[kind], this);
 
             _configLists[kind] = new VerticalListNode<NodeBase> {
-                Height = 500,
+                Height = 0,
                 Width = _configScrollingAreas[kind].ContentNode.Width,
                 IsVisible = true,
+                FitContents = true,
                 ItemVerticalSpacing = 3
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
@@ -291,7 +292,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     currentOverlayConfig.StatusNodeLayout.IconAnchor,
                     getEnabled: () => currentOverlayConfig.ShowIcon,
                     setEnabled: v => currentOverlayConfig.ShowIcon = v,
-                    onChanged: () => { }
+                    onChanged: () => {
+                        currentOverlayConfig.Notify(
+                            nameof(currentOverlayConfig.StatusNodeLayout),
+                            needsRebuild: true
+                        );
+                    }
                 )
             );
             _configLists[kind].AddNode(
@@ -302,7 +308,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     setEnabled: v => currentOverlayConfig.ShowStatusName = v,
                     getStyle: () => currentOverlayConfig.StatusNameTextStyle,
                     setStyle: s => currentOverlayConfig.StatusNameTextStyle = s,
-                    onChanged: () => { }
+                    onChanged: () => {
+                        currentOverlayConfig.Notify(
+                            nameof(currentOverlayConfig.StatusNodeLayout),
+                            needsRebuild: true
+                        );
+                    }
                 )
             );
             _configLists[kind].AddNode(
@@ -313,7 +324,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     setEnabled: v => currentOverlayConfig.ShowStatusRemaining = v,
                     getStyle: () => currentOverlayConfig.StatusRemainingTextStyle,
                     setStyle: s => currentOverlayConfig.StatusRemainingTextStyle = s,
-                    onChanged: () => { }
+                    onChanged: () => {
+                        currentOverlayConfig.Notify(
+                            nameof(currentOverlayConfig.StatusNodeLayout),
+                            needsRebuild: true
+                        );
+                    }
                 )
             );
             _configLists[kind].AddNode(
@@ -322,7 +338,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     currentOverlayConfig.StatusNodeLayout.ProgressAnchor,
                     getEnabled: () => currentOverlayConfig.ShowProgress,
                     setEnabled: v => currentOverlayConfig.ShowProgress = v,
-                    onChanged: () => { }
+                    onChanged: () => {
+                        currentOverlayConfig.Notify(
+                            nameof(currentOverlayConfig.StatusNodeLayout),
+                            needsRebuild: true
+                        );
+                    }
                 )
             );
 
@@ -332,10 +353,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         "enemy name",
                         currentOverlayConfig.StatusNodeLayout.ActorNameAnchor,
                         getEnabled: () => currentOverlayConfig.ShowActorName,
-                        setEnabled: v => currentOverlayConfig.ShowStatusRemaining = v,
-                        getStyle: () => currentOverlayConfig.StatusRemainingTextStyle,
-                        setStyle: s => currentOverlayConfig.StatusRemainingTextStyle = s,
-                        onChanged: () => { }
+                        setEnabled: v => currentOverlayConfig.ShowActorName = v,
+                        getStyle: () => currentOverlayConfig.ActorNameTextStyle,
+                        setStyle: s => currentOverlayConfig.ActorNameTextStyle = s,
+                        onChanged: () => {
+                            currentOverlayConfig.Notify(
+                                nameof(currentOverlayConfig.StatusNodeLayout),
+                                needsRebuild: true
+                            );
+                        }
                     )
                 );
                 _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Show enemy letter",
@@ -397,7 +423,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 _configLists[kind].AddNode(newNode);
             }
             UpdateFilterSection();
-
+            _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+            _configLists[kind].RecalculateLayout();
         }
 
         NativeController.AttachNode(_tabBar, this);

@@ -16,7 +16,7 @@ public class StatusTimerOverlayConfig
 {
     public event Action<string, bool, bool>? OnPropertyChanged;
 
-    private void Notify(string property, bool updateNodes = false, bool needsRebuild = false)
+    public void Notify(string property, bool updateNodes = false, bool needsRebuild = false)
         => OnPropertyChanged?.Invoke(property, updateNodes, needsRebuild);
 
     [JsonProperty]
