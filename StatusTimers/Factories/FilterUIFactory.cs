@@ -1,4 +1,7 @@
+using Dalamud.Game.ClientState.Keys;
+using Dalamud.Interface.ImGuiNotification;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +13,7 @@ using StatusTimers.Models;
 using StatusTimers.Windows;
 using Lumina.Excel.Sheets;
 using StatusTimers.Helpers;
+using System.Numerics;
 using Action = System.Action;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 using GlobalServices = StatusTimers.Services.Services;
@@ -56,13 +60,18 @@ public static class FilterUIFactory
 
         section.AddDummy(new ResNode(), ConfigurationUIFactory.CheckBoxHeight);
 
-        if (config.FilterEnabled)
-        {
+        if (config.FilterEnabled) {
+            HorizontalListNode<NodeBase> horizontalListNode = new() {
+                X = ConfigurationUIFactory.OptionOffset,
+                IsVisible = true,
+                Width = 600,
+                Height = 60,
+            };
+
             var radioButtonGroup = new RadioButtonGroupNode
             {
-                X = ConfigurationUIFactory.OptionOffset,
-                Width = 200,
-                Height = TextStyles.Header.Height,
+                Width = 100,
+                Height = 60,
                 IsVisible = true,
             };
 
@@ -77,8 +86,68 @@ public static class FilterUIFactory
                 onChanged?.Invoke();
             });
 
-            section.AddNode(radioButtonGroup);
             radioButtonGroup.SelectedOption = config.FilterIsBlacklist ? "Blacklist" : "Whitelist";
+            horizontalListNode.AddNode(radioButtonGroup);
+
+            horizontalListNode.AddNode(
+                new CircleButtonNode {
+                    Height = 32,
+                    Width = 32,
+                    IsVisible = true,
+                    Tooltip = "Export Filter List",
+                    Icon = ButtonIcon.Document,
+                    AddColor = new Vector3(150, 0, 150),
+                    OnClick = () => {
+                        var exportString = Util.SerializeFilterList(config.FilterList);
+                        ImGui.SetClipboardText(exportString);
+                        Notification notification = new() {
+                            Content = "Filter list exported to clipboard.",
+                            Type = NotificationType.Success,
+                        };
+                        GlobalServices.NotificationManager.AddNotification(notification);
+                        GlobalServices.Logger.Info("Filter list exported to clipboard.");
+                    }
+                }
+            );
+            horizontalListNode.AddNode(
+                new CircleButtonNode {
+                    X = 52,
+                    Height = 32,
+                    Width = 32,
+                    IsVisible = true,
+                    TooltipString = "     Import Filter List \n(hold shift to confirm)",
+                    Icon = ButtonIcon.Document,
+                    AddColor = new Vector3(0, 150, 150),
+                    OnClick = () => {
+                        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
+                            return;
+                        }
+                        Notification notification = new() {
+                            Content = "Filter list imported from clipboard.",
+                            Type = NotificationType.Success,
+                        };
+                        var clipboard = ImGui.GetClipboardText();
+                        if (!string.IsNullOrWhiteSpace(clipboard)) {
+                            var imported = Util.DeserializeFilterList(clipboard);
+                            config.FilterList.Clear();
+                            foreach (var id in imported) {
+                                config.FilterList.Add(id);
+                            }
+
+                            onChanged?.Invoke();
+                            notification.Content = $"Imported {imported.Count} filter IDs from clipboard.";
+                            GlobalServices.Logger.Info($"Imported {imported.Count} filter IDs from clipboard.");
+                        } else {
+                            notification.Content = "Clipboard data was invalid or could not be imported.";
+                            notification.Type = NotificationType.Error;
+                            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
+                        }
+                        GlobalServices.NotificationManager.AddNotification(notification);
+                    }
+                }
+            );
+
+            section.AddNode(horizontalListNode);
 
             var filteredDropdownNode = CreateFilteredDropdown(
                 () => allStatuses,

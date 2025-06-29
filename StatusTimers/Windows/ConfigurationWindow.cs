@@ -1,7 +1,10 @@
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.ClientState.Statuses;
+using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
@@ -23,6 +26,7 @@ using System.Numerics;
 using Action = System.Action;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 using GlobalServices = StatusTimers.Services.Services;
+using Util = StatusTimers.Helpers.Util;
 
 namespace StatusTimers.Windows;
 
@@ -123,36 +127,77 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
+            HorizontalListNode<NodeBase> importExportNode = new() {
+                Height = CheckBoxHeight,
+                Width = 300,
+                IsVisible = true,
+            };
+            importExportNode.AddNode(new ResNode{IsVisible = true, Width = 220});
+            importExportNode.AddNode(
                 new CircleButtonNode {
-                    Height = ButtonHeight,
-                    Width = ButtonHeight,
+                    Height = 30,
+                    Width = 30,
                     IsVisible = true,
                     Tooltip = "Export Configuration",
                     Icon = ButtonIcon.Document,
                     AddColor = new Vector3(150, 0, 150),
-                    OnClick = () => {/*
-                        _modal.Show("Yessss", (chosen) => {
-                            GlobalServices.Logger.Info($"Chosen {chosen}");
-                        });
-                        GlobalServices.Logger.Info("Export");*/
+                    OnClick = () => {
+                        var exportString = Util.SerializeConfig(currentOverlayConfig);
+                        ImGui.SetClipboardText(exportString);
+                        Notification notification = new() {
+                            Content = "Configuration exported to clipboard.",
+                            Type = NotificationType.Success,
+                        };
+                        GlobalServices.NotificationManager.AddNotification(notification);
+                        GlobalServices.Logger.Info("Configuration exported to clipboard.");
                     }
-                },
+                }
+            );
+
+            importExportNode.AddNode(
                 new CircleButtonNode {
-                    X = 52,
-                    Height = ButtonHeight,
-                    Width = ButtonHeight,
+                    Height = 30,
+                    Width = 30,
                     IsVisible = true,
-                    Tooltip = "Import Configuration",
+                    Tooltip = " Import Configuration\n(hold shift to confirm)",
                     Icon = ButtonIcon.Document,
                     AddColor = new Vector3(0, 150, 150),
                     OnClick = () => {
-                        GlobalServices.Logger.Info("Import");
+                        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
+                            return;
+                        }
+                        Notification notification = new() {
+                            Content = "Configuration imported from clipboard.",
+                            Type = NotificationType.Success,
+                        };
+                        var clipboard = ImGui.GetClipboardText();
+                        if (!string.IsNullOrWhiteSpace(clipboard)) {
+                            var imported = Util.DeserializeConfig(clipboard);
+                            if (imported != null) {
+                                foreach (var prop in typeof(StatusTimerOverlayConfig).GetProperties().Where(p => p.CanRead && p.CanWrite)) {
+                                    prop.SetValue(currentOverlayConfig, prop.GetValue(imported));
+                                }
+                                GlobalServices.Logger.Info("Configuration imported from clipboard.");
+                                currentOverlayConfig.Notify(
+                                    "Config",
+                                    needsRebuild: true,
+                                    updateNodes: true
+                                );
+                                Close();
+                            } else {
+                                notification.Content = "Clipboard data was invalid or could not be imported.";
+                                notification.Type = NotificationType.Error;
+                                GlobalServices.Logger.Warning("Clipboard data was invalid or could not be imported.");
+                            }
+                        } else {
+                            notification.Content = "Clipboard is empty or invalid for import.";
+                            notification.Type = NotificationType.Warning;
+                            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
+                        }
+                        GlobalServices.NotificationManager.AddNotification(notification);
                     }
-                },
-                ButtonHeight
-                ));
+                }
+            );
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
@@ -167,18 +212,25 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Text = "Visual Settings"
             });
 
+            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(ConfigurationUIFactory.CreateCheckboxOption("Enabled",
+                () => overlay.IsVisible,
+                isChecked => overlay.IsVisible = isChecked),
+                    importExportNode,
+                CheckBoxHeight
+                )
+            );
+
             _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
-                ConfigurationUIFactory.CreateCheckboxOption("Enabled",
-                    () => overlay.IsVisible,
-                    isChecked => overlay.IsVisible = isChecked),
+                ConfigurationUIFactory.CreateCheckboxOption("Locked",
+                    () => overlay.IsLocked,
+                    isChecked => overlay.IsLocked = isChecked),
                 ConfigurationUIFactory.CreateCheckboxOption("Preview Mode",
                     () => overlay.IsPreviewEnabled,
                     isChecked => overlay.IsPreviewEnabled = isChecked),
                 CheckBoxHeight)
             );
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Locked",
-                () => overlay.IsLocked,
-                isChecked => overlay.IsLocked = isChecked));
+
+            _configLists[kind].AddNode();
 
             _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
 
