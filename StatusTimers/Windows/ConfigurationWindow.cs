@@ -56,6 +56,25 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
         //_modal = new ModalNode();
         //NativeController.AttachNode(_modal.RootNode, this);
+        foreach (var area in _configScrollingAreas.Values) {
+            NativeController.DetachNode(area);
+        }
+
+        _configScrollingAreas.Clear();
+        foreach (var list in _configLists.Values) {
+            NativeController.DetachNode(list);
+        }
+
+        _configLists.Clear();
+        foreach (var node in _filterSectionNodes.Values) {
+            NativeController.DetachNode(node);
+        }
+
+        _filterSectionNodes.Clear();
+        if (_tabBar != null) {
+            NativeController.DetachNode(_tabBar);
+        }
+
         SetupOptions();
     }
 
