@@ -28,7 +28,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     private const float StatusNodeWidth = 300;
     private const float StatusNodeHeight = 60;
 
-    private readonly NodeKind _nodeKind;
+    private static NodeKind _nodeKind;
 
     private readonly IStatusSource<TKey> _source;
 
@@ -45,7 +45,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     protected StatusTimerOverlay(NodeKind nodeKind, IStatusSource<TKey> source) {
         _nodeKind = nodeKind;
-        SetSortDefaults(_nodeKind);
 
         _source = source;
 
@@ -101,7 +100,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     public bool IsPreviewEnabled { get; set; }
 
     [JsonProperty]
-    public StatusTimerOverlayConfig? OverlayConfig { get; set; } = new();
+    public StatusTimerOverlayConfig? OverlayConfig { get; set; } = new(_nodeKind);
 
     public void Setup() {
         if (_isSetupCompleted) {

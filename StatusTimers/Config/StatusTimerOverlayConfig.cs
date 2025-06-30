@@ -19,6 +19,22 @@ public class StatusTimerOverlayConfig
     public void Notify(string property, bool updateNodes = false, bool needsRebuild = false)
         => OnPropertyChanged?.Invoke(property, updateNodes, needsRebuild);
 
+    public StatusTimerOverlayConfig(NodeKind kind) {
+        switch (kind) {
+            case NodeKind.MultiDoT:
+                PrimarySort = SortCriterion.EnemyLetter;
+                SecondarySort = SortCriterion.TimeRemaining;
+                TertiarySort = SortCriterion.None;
+                break;
+            case NodeKind.Combined:
+            default:
+                PrimarySort = SortCriterion.StatusType;
+                SecondarySort = SortCriterion.OwnStatusFirst;
+                TertiarySort = SortCriterion.PartyPriority;
+                break;
+        }
+    }
+
     [JsonProperty]
     public bool FilterStatuses
     {

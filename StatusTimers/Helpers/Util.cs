@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using StatusTimers.Config;
+using StatusTimers.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,9 +68,9 @@ public class Util
         }
     }
 
-    public static void ResetConfig(StatusTimerOverlayConfig config)
+    public static void ResetConfig(StatusTimerOverlayConfig config, NodeKind nodeKind)
     {
-        var defaults = new StatusTimerOverlayConfig();
+        var defaults = new StatusTimerOverlayConfig(nodeKind);
         foreach (var prop in typeof(StatusTimerOverlayConfig).GetProperties().Where(p => p.CanRead && p.CanWrite)) {
             prop.SetValue(config, prop.GetValue(defaults));
         }

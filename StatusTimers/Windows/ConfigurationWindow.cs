@@ -213,7 +213,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         Content = "Configuration reset to default.",
                         Type = NotificationType.Success,
                     };
-                    Util.ResetConfig(currentOverlayConfig);
+                    Util.ResetConfig(currentOverlayConfig, kind);
                     GlobalServices.NotificationManager.AddNotification(notification);
                     GlobalServices.Logger.Info("Configuration reset to default.");
                     Close();
