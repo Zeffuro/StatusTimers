@@ -24,17 +24,21 @@ public static class FilterUIFactory
 {
     // Delegate for when something in the filter section changes
     public delegate void FilterChangedCallback();
+    private const float CheckBoxHeight = 16;
+    private const float SectionHeight = 400;
 
     public static VerticalListNode<NodeBase> CreateFilterSection(
         StatusTimerOverlayConfig? config,
-        FilterChangedCallback? onChanged = null)
+        FilterChangedCallback? onChanged = null,
+        Action? onToggled = null)
     {
         var section = new VerticalListNode<NodeBase>
         {
             IsVisible = true,
             Width = 600,
-            Height = 420,
-            ItemVerticalSpacing = 4
+            Height = SectionHeight,
+            ItemVerticalSpacing = 4,
+            FitContents = true,
         };
 
         section.AddNode(new TextNode
@@ -52,128 +56,145 @@ public static class FilterUIFactory
         var allStatuses = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
             .Where(status => status.RowId != 0).ToList();
 
+        var filterContentGroup = new VerticalListNode<NodeBase>
+        {
+            IsVisible = config.FilterEnabled,
+            FitContents = true,
+            ItemVerticalSpacing = 4,
+        };
+
         section.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
             "Enabled",
             () => config.FilterEnabled,
-            isChecked => { config.FilterEnabled = isChecked; onChanged?.Invoke(); }
+            isChecked => {
+                config.FilterEnabled = isChecked;
+                if (filterContentGroup != null) {
+                    filterContentGroup.IsVisible = isChecked;
+                    section.Height = isChecked ? SectionHeight : CheckBoxHeight;
+                    section.FitContents = isChecked;
+                    section.RecalculateLayout();
+                }
+
+                onChanged?.Invoke();
+                onToggled?.Invoke();
+            }
         ));
 
         section.AddDummy(new ResNode(), ConfigurationUIFactory.CheckBoxHeight);
 
-        if (config.FilterEnabled) {
-            HorizontalListNode<NodeBase> horizontalListNode = new() {
-                X = ConfigurationUIFactory.OptionOffset,
+        HorizontalListNode<NodeBase> horizontalListNode = new() {
+            X = ConfigurationUIFactory.OptionOffset,
+            IsVisible = true,
+            Width = 600,
+            Height = 60,
+        };
+
+        var radioButtonGroup = new RadioButtonGroupNode
+        {
+            Width = 100,
+            Height = 60,
+            IsVisible = true,
+        };
+
+        radioButtonGroup.AddButton("Blacklist", () =>
+        {
+            config.FilterIsBlacklist = true;
+            onChanged?.Invoke();
+        });
+        radioButtonGroup.AddButton("Whitelist", () =>
+        {
+            config.FilterIsBlacklist = false;
+            onChanged?.Invoke();
+        });
+
+        radioButtonGroup.SelectedOption = config.FilterIsBlacklist ? "Blacklist" : "Whitelist";
+        horizontalListNode.AddNode(radioButtonGroup);
+
+        horizontalListNode.AddNode(
+            new CircleButtonNode {
+                Height = 32,
+                Width = 32,
                 IsVisible = true,
-                Width = 600,
-                Height = 60,
-            };
-
-            var radioButtonGroup = new RadioButtonGroupNode
-            {
-                Width = 100,
-                Height = 60,
+                Tooltip = "Export Filter List",
+                Icon = ButtonIcon.Document,
+                AddColor = new Vector3(150, 0, 150),
+                OnClick = () => {
+                    var exportString = Util.SerializeFilterList(config.FilterList);
+                    ImGui.SetClipboardText(exportString);
+                    Notification notification = new() {
+                        Content = "Filter list exported to clipboard.",
+                        Type = NotificationType.Success,
+                    };
+                    GlobalServices.NotificationManager.AddNotification(notification);
+                    GlobalServices.Logger.Info("Filter list exported to clipboard.");
+                }
+            }
+        );
+        horizontalListNode.AddNode(
+            new CircleButtonNode {
+                X = 52,
+                Height = 32,
+                Width = 32,
                 IsVisible = true,
-            };
-
-            radioButtonGroup.AddButton("Blacklist", () =>
-            {
-                config.FilterIsBlacklist = true;
-                onChanged?.Invoke();
-            });
-            radioButtonGroup.AddButton("Whitelist", () =>
-            {
-                config.FilterIsBlacklist = false;
-                onChanged?.Invoke();
-            });
-
-            radioButtonGroup.SelectedOption = config.FilterIsBlacklist ? "Blacklist" : "Whitelist";
-            horizontalListNode.AddNode(radioButtonGroup);
-
-            horizontalListNode.AddNode(
-                new CircleButtonNode {
-                    Height = 32,
-                    Width = 32,
-                    IsVisible = true,
-                    Tooltip = "Export Filter List",
-                    Icon = ButtonIcon.Document,
-                    AddColor = new Vector3(150, 0, 150),
-                    OnClick = () => {
-                        var exportString = Util.SerializeFilterList(config.FilterList);
-                        ImGui.SetClipboardText(exportString);
-                        Notification notification = new() {
-                            Content = "Filter list exported to clipboard.",
-                            Type = NotificationType.Success,
-                        };
-                        GlobalServices.NotificationManager.AddNotification(notification);
-                        GlobalServices.Logger.Info("Filter list exported to clipboard.");
+                TooltipString = "     Import Filter List \n(hold shift to confirm)",
+                Icon = ButtonIcon.Document,
+                AddColor = new Vector3(0, 150, 150),
+                OnClick = () => {
+                    if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
+                        return;
                     }
-                }
-            );
-            horizontalListNode.AddNode(
-                new CircleButtonNode {
-                    X = 52,
-                    Height = 32,
-                    Width = 32,
-                    IsVisible = true,
-                    TooltipString = "     Import Filter List \n(hold shift to confirm)",
-                    Icon = ButtonIcon.Document,
-                    AddColor = new Vector3(0, 150, 150),
-                    OnClick = () => {
-                        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
-                            return;
+                    Notification notification = new() {
+                        Content = "Filter list imported from clipboard.",
+                        Type = NotificationType.Success,
+                    };
+                    var clipboard = ImGui.GetClipboardText();
+                    if (!string.IsNullOrWhiteSpace(clipboard)) {
+                        var imported = Util.DeserializeFilterList(clipboard);
+                        config.FilterList.Clear();
+                        foreach (var id in imported) {
+                            config.FilterList.Add(id);
                         }
-                        Notification notification = new() {
-                            Content = "Filter list imported from clipboard.",
-                            Type = NotificationType.Success,
-                        };
-                        var clipboard = ImGui.GetClipboardText();
-                        if (!string.IsNullOrWhiteSpace(clipboard)) {
-                            var imported = Util.DeserializeFilterList(clipboard);
-                            config.FilterList.Clear();
-                            foreach (var id in imported) {
-                                config.FilterList.Add(id);
-                            }
 
-                            onChanged?.Invoke();
-                            notification.Content = $"Imported {imported.Count} filter IDs from clipboard.";
-                            GlobalServices.Logger.Info($"Imported {imported.Count} filter IDs from clipboard.");
-                        } else {
-                            notification.Content = "Clipboard data was invalid or could not be imported.";
-                            notification.Type = NotificationType.Error;
-                            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
-                        }
-                        GlobalServices.NotificationManager.AddNotification(notification);
-                    }
-                }
-            );
-
-            section.AddNode(horizontalListNode);
-
-            var filteredDropdownNode = CreateFilteredDropdown(
-                () => allStatuses,
-                status => $"{status.RowId} {status.Name.ExtractText()}",
-                status => status.Icon,
-                status =>
-                {
-                    if (config.FilterList.Add(status.RowId)) {
                         onChanged?.Invoke();
+                        notification.Content = $"Imported {imported.Count} filter IDs from clipboard.";
+                        GlobalServices.Logger.Info($"Imported {imported.Count} filter IDs from clipboard.");
+                    } else {
+                        notification.Content = "Clipboard data was invalid or could not be imported.";
+                        notification.Type = NotificationType.Error;
+                        GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
                     }
-                });
-
-            section.AddNode(filteredDropdownNode);
-
-            var statusListNode = CreateStatusListNode(
-                config.FilterList,
-                allStatuses,
-                rowId =>
-                {
-                    if (config.FilterList.Remove(rowId)) {
-                        onChanged?.Invoke();
-                    }
+                    GlobalServices.NotificationManager.AddNotification(notification);
                 }
-            );
-            section.AddNode(statusListNode);
-        }
+            }
+        );
+
+        filterContentGroup.AddNode(horizontalListNode);
+
+        var filteredDropdownNode = CreateFilteredDropdown(
+            () => allStatuses,
+            status => $"{status.RowId} {status.Name.ExtractText()}",
+            status => status.Icon,
+            status =>
+            {
+                if (config.FilterList.Add(status.RowId)) {
+                    onChanged?.Invoke();
+                }
+            });
+
+        filterContentGroup.AddNode(filteredDropdownNode);
+
+        var statusListNode = CreateStatusListNode(
+            config.FilterList,
+            allStatuses,
+            rowId =>
+            {
+                if (config.FilterList.Remove(rowId)) {
+                    onChanged?.Invoke();
+                }
+            }
+        );
+        filterContentGroup.AddNode(statusListNode);
+        section.AddNode(filterContentGroup);
 
         return section;
     }
@@ -315,10 +336,10 @@ public static class FilterUIFactory
     {
         var statusListNode = new VerticalListNode<NodeBase>
         {
-            Height = 200,
             Width = 300,
             IsVisible = true,
-            ItemVerticalSpacing = 4
+            ItemVerticalSpacing = 4,
+            FitContents = true,
         };
 
         foreach (var rowId in filterList.ToList().Order())

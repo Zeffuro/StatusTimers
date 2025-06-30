@@ -15,6 +15,7 @@ public static class NodeLayoutUIFactory
 {
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
+    private const float SectionHeight = 200;
     public static VerticalListNode<NodeBase> CreateNodeLayoutSection(
         string label,
         StatusNodeAnchorConfig anchorConfig,
@@ -22,15 +23,16 @@ public static class NodeLayoutUIFactory
         Action<bool> setEnabled = null,
         Func<TextStyle> getStyle = null,
         Action<TextStyle> setStyle = null,
-        Action onChanged = null)
+        Action onChanged = null,
+        Action onToggled = null)
     {
         var section = new VerticalListNode<NodeBase>
         {
             X = OptionOffset,
-            Height = 200,
             Width = 600,
             ItemVerticalSpacing = 0,
-            IsVisible = true
+            IsVisible = true,
+            FitContents = true,
         };
 
         CheckboxNode enabledCheckbox = null;
@@ -49,12 +51,13 @@ public static class NodeLayoutUIFactory
                     setEnabled(isChecked);
                     if (settingsGroup != null) {
                         settingsGroup.IsVisible = isChecked;
-                        settingsGroup.Height = isChecked ? -1 : 0;
-                        settingsGroup.RecalculateLayout();
+                        section.Height = isChecked ? SectionHeight : CheckBoxHeight;
+                        section.FitContents = isChecked;
                         section.RecalculateLayout();
                     }
 
                     onChanged?.Invoke();
+                    onToggled?.Invoke();
                 }
             });
         }
@@ -62,7 +65,7 @@ public static class NodeLayoutUIFactory
         settingsGroup = new VerticalListNode<NodeBase>
         {
             X = OptionOffset,
-            Height = 200,
+            Height = SectionHeight,
             Width = 600,
             ItemVerticalSpacing = 0,
             IsVisible = getEnabled?.Invoke() ?? true

@@ -24,6 +24,7 @@ public static class SortUIFactory
             ItemVerticalSpacing = 5
         };
 
+        // Header
         section.AddNode(new TextNode
         {
             IsVisible = true,
@@ -48,6 +49,7 @@ public static class SortUIFactory
             sortCriteriaMap.Add(SortCriterion.EnemyLetter, "Enemy Letter");
         }
 
+        // Primary Sort
         section.AddNode(CreateSortRow(
             "Primary:",
             () => config.PrimarySort,
@@ -59,6 +61,7 @@ public static class SortUIFactory
 
         section.AddDummy(new ResNode(), 24);
 
+        // Secondary Sort
         section.AddNode(CreateSortRow(
             "Secondary:",
             () => config.SecondarySort,
@@ -70,6 +73,7 @@ public static class SortUIFactory
 
         section.AddDummy(new ResNode(), 24);
 
+        // Tertiary Sort
         section.AddNode(CreateSortRow(
             "Tertiary:",
             () => config.TertiarySort,

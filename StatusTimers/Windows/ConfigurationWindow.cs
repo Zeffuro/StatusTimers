@@ -1,55 +1,22 @@
-using Dalamud.Game.ClientState.Keys;
-using Dalamud.Game.ClientState.Statuses;
-using Dalamud.Interface.ImGuiNotification;
-using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
 using KamiToolKit.Addon;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Nodes.Slider;
 using KamiToolKit.Nodes.TabBar;
 using KamiToolKit.System;
-using Lumina.Excel.Sheets;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Factories;
-using StatusTimers.Helpers;
-using StatusTimers.Interfaces;
-using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using Action = System.Action;
-using LuminaStatus = Lumina.Excel.Sheets.Status;
 using GlobalServices = StatusTimers.Services.Services;
-using Util = StatusTimers.Helpers.Util;
 
 namespace StatusTimers.Windows;
 
 public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
-    private const float CheckBoxWidth = 300;
-    private const float ButtonHeight = 30;
-
-    private static readonly Dictionary<GrowDirection, string> GrowDirectionMap = new() {
-        { GrowDirection.DownRight, "Down and Right" },
-        { GrowDirection.DownLeft, "Down and Left" },
-        { GrowDirection.UpRight, "Up and Right" },
-        { GrowDirection.UpLeft, "Up and Left" }
-    };
-
-    private static readonly Dictionary<FontType, string> FontMap = new() {
-        { FontType.Axis, "Axis" },
-        { FontType.Miedinger, "Miedinger" },
-        { FontType.TrumpGothic, "Trump Gothic" },
-        { FontType.Jupiter, "Jupiter" },
-        { FontType.JupiterLarge, "Jupiter Large" }
-    };
 
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _filterSectionNodes = new();
@@ -126,237 +93,43 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
-            HorizontalListNode<NodeBase> importExportNode = new() {
-                Height = 0,
-                Width = 600,
-                Alignment = HorizontalListAnchor.Left,
-                FirstItemSpacing = 440,
-                ItemHorizontalSpacing = 0,
-                IsVisible = true,
+            var mainSettingsGroup = new VerticalListNode<NodeBase> {
+                IsVisible = overlay.IsVisible,
+                FitContents = true,
+                ItemVerticalSpacing = 3
             };
-
-            importExportNode.AddNode(
-                new CircleButtonNode {
-                    Height = 30,
-                    Width = 30,
-                    IsVisible = true,
-                    Tooltip = "Export Configuration",
-                    Icon = ButtonIcon.Document,
-                    AddColor = new Vector3(150, 0, 150),
-                    OnClick = () => {
-                        var exportString = Util.SerializeConfig(currentOverlayConfig);
-                        ImGui.SetClipboardText(exportString);
-                        Notification notification = new() {
-                            Content = "Configuration exported to clipboard.",
-                            Type = NotificationType.Success,
-                        };
-                        GlobalServices.NotificationManager.AddNotification(notification);
-                        GlobalServices.Logger.Info("Configuration exported to clipboard.");
-                    }
-                }
-            );
-
-            importExportNode.AddNode(
-                new CircleButtonNode {
-                    Height = 30,
-                    Width = 30,
-                    IsVisible = true,
-                    Tooltip = " Import Configuration\n(hold shift to confirm)",
-                    Icon = ButtonIcon.Document,
-                    AddColor = new Vector3(0, 150, 150),
-                    OnClick = () => {
-                        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
-                            return;
-                        }
-                        Notification notification = new() {
-                            Content = "Configuration imported from clipboard.",
-                            Type = NotificationType.Success,
-                        };
-                        var clipboard = ImGui.GetClipboardText();
-                        if (!string.IsNullOrWhiteSpace(clipboard)) {
-                            var imported = Util.DeserializeConfig(clipboard);
-                            if (imported != null) {
-                                foreach (var prop in typeof(StatusTimerOverlayConfig).GetProperties().Where(p => p.CanRead && p.CanWrite)) {
-                                    prop.SetValue(currentOverlayConfig, prop.GetValue(imported));
-                                }
-                                GlobalServices.Logger.Info("Configuration imported from clipboard.");
-                                currentOverlayConfig.Notify(
-                                    "Config",
-                                    needsRebuild: true,
-                                    updateNodes: true
-                                );
-                                Close();
-                            } else {
-                                notification.Content = "Clipboard data was invalid or could not be imported.";
-                                notification.Type = NotificationType.Error;
-                                GlobalServices.Logger.Warning("Clipboard data was invalid or could not be imported.");
-                            }
-                        } else {
-                            notification.Content = "Clipboard is empty or invalid for import.";
-                            notification.Type = NotificationType.Warning;
-                            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
-                        }
-                        GlobalServices.NotificationManager.AddNotification(notification);
-                    }
-                }
-            );
-
-            importExportNode.AddNode(new HoldButtonNode() {
-                IsVisible = true,
-                Y = -3,
-                Height = 32,
-                Width = 100,
-                Label = "Reset",
-                Tooltip = "   Reset configuration\n(hold button to confirm)",
-                OnClick = () => {
-                    Notification notification = new() {
-                        Content = "Configuration reset to default.",
-                        Type = NotificationType.Success,
-                    };
-                    Util.ResetConfig(currentOverlayConfig, kind);
-                    GlobalServices.NotificationManager.AddNotification(notification);
-                    GlobalServices.Logger.Info("Configuration reset to default.");
-                    Close();
-                }
-            });
-
-            _configLists[kind].AddNode(importExportNode);
-
-            _configLists[kind].AddNode(new TextNode {
-                IsVisible = true,
-                Width = 120,
-                Height = TextStyles.Header.Height,
-                FontSize = TextStyles.Defaults.FontSize,
-                TextColor = TextStyles.Header.TextColor,
-                TextOutlineColor = TextStyles.Defaults.OutlineColor,
-                TextFlags = TextStyles.Defaults.Flags,
-                Text = "Visual Settings"
-            });
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Enabled",
-                () => overlay.IsVisible,
-                isChecked => overlay.IsVisible = isChecked)
-            );
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
-                ConfigurationUIFactory.CreateCheckboxOption("Locked",
-                    () => overlay.IsLocked,
-                    isChecked => overlay.IsLocked = isChecked),
-                ConfigurationUIFactory.CreateCheckboxOption("Preview Mode",
-                    () => overlay.IsPreviewEnabled,
-                    isChecked => overlay.IsPreviewEnabled = isChecked),
-                CheckBoxHeight)
-            );
-
-            _configLists[kind].AddNode();
-
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(new TextNode {
-                        IsVisible = true,
-                        X = OptionOffset,
-                        Width = 120,
-                        Height = TextStyles.OptionLabel.Height,
-                        FontSize = TextStyles.Defaults.FontSize,
-                        TextColor = TextStyles.OptionLabel.TextColor,
-                        TextOutlineColor = TextStyles.Defaults.OutlineColor,
-                        TextFlags = TextStyles.Defaults.Flags,
-                        Text = "Scale"
-                    },
-                    ConfigurationUIFactory.CreateLabeledNumericOption("Horizontal Padding",
-                        () => currentOverlayConfig.StatusHorizontalPadding,
-                        value => currentOverlayConfig.StatusHorizontalPadding = value),
-                    CheckBoxHeight
-                )
-            );
-
-            _configLists[kind].AddNode();
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
-                ConfigurationUIFactory.CreateSliderOption(
-                    5,
-                    200,
-                    5,
-                    () => currentOverlayConfig.ScaleInt,
-                    value => currentOverlayConfig.ScaleInt = value
-                ),
-                ConfigurationUIFactory.CreateLabeledNumericOption("Vertical Padding",
-                    () => currentOverlayConfig.StatusVerticalPadding,
-                    value => currentOverlayConfig.StatusVerticalPadding = value),
-                30)
-            );
-
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
-
-            TextNode statusPerLineNode = new() {
-                X = OptionOffset,
-                IsVisible = true,
-                Width = 300,
-                Height = TextStyles.OptionLabel.Height,
-                FontSize = TextStyles.Defaults.FontSize,
-                TextColor = TextStyles.OptionLabel.TextColor,
-                TextOutlineColor = TextStyles.Defaults.OutlineColor,
-                TextFlags = TextStyles.Defaults.Flags,
-                Text = $"Statuses per {(currentOverlayConfig.FillRowsFirst ? "row" : "column")}"
-            };
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
-                    statusPerLineNode,
-                    new TextNode {
-                        X = OptionOffset,
-                        IsVisible = true,
-                        Width = 300,
-                        Height = TextStyles.OptionLabel.Height,
-                        FontSize = TextStyles.Defaults.FontSize,
-                        TextColor = TextStyles.OptionLabel.TextColor,
-                        TextOutlineColor = TextStyles.Defaults.OutlineColor,
-                        TextFlags = TextStyles.Defaults.Flags,
-                        Text = "Max statuses displayed"
-                    },
-                    TextStyles.OptionLabel.Height
-                )
-            );
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
-                    ConfigurationUIFactory.CreateSliderOption(
-                        1,
-                        30,
-                        1,
-                        () => currentOverlayConfig.ItemsPerLine,
-                        value => currentOverlayConfig.ItemsPerLine = value
-                    ),
-                    ConfigurationUIFactory.CreateSliderOption(
-                        1,
-                        30,
-                        1,
-                        () => currentOverlayConfig.MaxStatuses,
-                        value => currentOverlayConfig.MaxStatuses = value
-                    ),
-                    30
-                )
-            );
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
-                new ResNode(),
-                ConfigurationUIFactory.CreateLabeledDropdown(
-                    "Grow direction",
-                    () => currentOverlayConfig.GrowDirection,
-                    value => currentOverlayConfig.GrowDirection = value,
-                    GrowDirectionMap
-                ),
-                CheckBoxHeight
-            ));
-
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Fill columns first",
-                () => !currentOverlayConfig.FillRowsFirst,
-                isChecked => {
-                    currentOverlayConfig.FillRowsFirst = !isChecked;
-                    statusPerLineNode.Text = $"Statuses per {(currentOverlayConfig.FillRowsFirst ? "row" : "column")}";
-                }));
-
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight * 5);
 
             _configLists[kind].AddNode(
+                ImportExportResetUIFactory.Create(currentOverlayConfig, kind,
+                    onConfigChanged: () => { },
+                    closeWindow: Close)
+            );
+
+            var enabledCheckbox = ConfigurationUIFactory.CreateCheckboxOption(
+                "Enabled",
+                () => overlay.IsVisible,
+                isChecked => {
+                    ToggleEnabled(overlay, mainSettingsGroup, kind, isChecked);
+                }
+            );
+
+            _configLists[kind].AddNode(enabledCheckbox);
+
+            mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
+
+            // Visual Settings
+            mainSettingsGroup.AddNode(
+                VisualSettingsUIFactory.Create(
+                    overlay,
+                    currentOverlayConfig,
+                    onChanged: () => { },
+                    optionOffset: OptionOffset,
+                    checkBoxHeight: CheckBoxHeight
+                )
+            );
+
+            // Icon Settings
+            mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "icon",
                     currentOverlayConfig.StatusNodeLayout.IconAnchor,
@@ -367,10 +140,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                             nameof(currentOverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
-                    }
+                    },
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
-            _configLists[kind].AddNode(
+
+            // Status Name Settings
+            mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "status name",
                     currentOverlayConfig.StatusNodeLayout.NameAnchor,
@@ -383,10 +159,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                             nameof(currentOverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
-                    }
+                    },
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
-            _configLists[kind].AddNode(
+
+            // Status Time Remaining Settings
+            mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "time remaining",
                     currentOverlayConfig.StatusNodeLayout.TimerAnchor,
@@ -399,10 +178,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                             nameof(currentOverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
-                    }
+                    },
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
-            _configLists[kind].AddNode(
+
+            // Progress Bar Settings
+            mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "progressbar",
                     currentOverlayConfig.StatusNodeLayout.ProgressAnchor,
@@ -413,12 +195,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                             nameof(currentOverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
-                    }
+                    },
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
 
+            // Actor Name Settings
             if (kind == NodeKind.MultiDoT) {
-                _configLists[kind].AddNode(
+                mainSettingsGroup.AddNode(
                     NodeLayoutUIFactory.CreateNodeLayoutSection(
                         "enemy name",
                         currentOverlayConfig.StatusNodeLayout.ActorNameAnchor,
@@ -431,70 +215,58 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                                 nameof(currentOverlayConfig.StatusNodeLayout),
                                 needsRebuild: true
                             );
-                        }
+                        },
+                        onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                     )
                 );
-                _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Show enemy letter",
+                mainSettingsGroup.AddNode(ConfigurationUIFactory.CreateCheckboxOption("Show enemy letter",
                     () => currentOverlayConfig.ShowActorLetter,
                     isChecked => currentOverlayConfig.ShowActorLetter = isChecked));
             }
 
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Animations Enabled",
-                () => currentOverlayConfig.AnimationsEnabled,
-                isChecked => currentOverlayConfig.AnimationsEnabled = isChecked));
+            mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
 
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+            // Functional Settings
+            mainSettingsGroup.AddNode(
+                FunctionalSettingsUIFactory.Create(
+                    currentOverlayConfig,
+                    kind,
+                    onChanged: () => { },
+                    checkBoxHeight: CheckBoxHeight
+                )
+            );
 
-            _configLists[kind].AddNode(new TextNode {
-                IsVisible = true,
-                Width = 120,
-                Height = TextStyles.Header.Height,
-                FontSize = TextStyles.Defaults.FontSize,
-                TextColor = TextStyles.Header.TextColor,
-                TextOutlineColor = TextStyles.Defaults.OutlineColor,
-                TextFlags = TextStyles.Defaults.Flags,
-                Text = "Functional Settings"
-            });
-
-            if (kind == NodeKind.Combined) {
-                _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Hide permanent statuses",
-                    () => !currentOverlayConfig.ShowPermaIcons,
-                    isChecked => currentOverlayConfig.ShowPermaIcons = !isChecked));
-
-                _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption(
-                    "Allow dismissing status by right-clicking the status icon.",
-                    () => currentOverlayConfig.AllowDismissStatus,
-                    isChecked => currentOverlayConfig.AllowDismissStatus = isChecked));
-            }
-
-            if (kind == NodeKind.MultiDoT) {
-                _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption(
-                    "Allow targeting the enemy by clicking the status icon.",
-                    () => currentOverlayConfig.AllowTargetActor,
-                    isChecked => currentOverlayConfig.AllowTargetActor = isChecked));
-            }
-
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
-
-            // Sorting Priority
-            _configLists[kind].AddNode(
+            // Sorting Priority Settings
+            mainSettingsGroup.AddNode(
                 SortUIFactory.CreateSortPrioritySection(currentOverlayConfig, kind)
             );
 
-            // Filtering
+            // Filtering Settings
             void UpdateFilterSection() {
                 var oldNode = _filterSectionNodes.ContainsKey(kind) ? _filterSectionNodes[kind] : null;
-                var newNode = FilterUIFactory.CreateFilterSection(currentOverlayConfig, UpdateFilterSection);
+                var newNode = FilterUIFactory.CreateFilterSection(currentOverlayConfig,
+                    () => {
+                        GlobalServices.Logger.Info("Filter section changed");
+                        UpdateFilterSection();
+                        RecalculateAllLayouts(mainSettingsGroup, kind);
+                    },
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                );
                 _filterSectionNodes[kind] = newNode;
                 if (oldNode != null) {
-                    _configLists[kind].RemoveNode(oldNode);
+                    mainSettingsGroup.RemoveNode(oldNode);
                 }
 
-                _configLists[kind].AddNode(newNode);
+                mainSettingsGroup.AddNode(newNode);
             }
             UpdateFilterSection();
+
             _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+            _configLists[kind].AddNode(mainSettingsGroup);
+
+            mainSettingsGroup.RecalculateLayout();
             _configLists[kind].RecalculateLayout();
+            _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
         }
 
         NativeController.AttachNode(_tabBar, this);
@@ -509,6 +281,23 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             NodeKind.MultiDoT => overlayManager?.EnemyMultiDoTOverlayInstance,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported NodeKind")
         });
+    }
+
+    private void RecalculateAllLayouts(VerticalListNode<NodeBase> group, NodeKind kind) {
+        group.RecalculateLayout();
+        _configLists[kind].RecalculateLayout();
+        _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+    }
+
+    private void ToggleEnabled(StatusTimerOverlay<StatusKey>? overlay, VerticalListNode<NodeBase> group, NodeKind kind, bool isChecked) {
+        if (overlay != null) {
+            overlay.IsVisible = isChecked;
+            group.IsVisible = isChecked;
+            group.Height = isChecked ? -1 : 0;
+            group.RecalculateLayout();
+            _configLists[kind].RecalculateLayout();
+            _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+        }
     }
 
     #endregion
