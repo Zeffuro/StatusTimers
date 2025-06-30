@@ -283,10 +283,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         });
     }
 
-    private void RecalculateAllLayouts(VerticalListNode<NodeBase> group, NodeKind kind) {
+    private void RecalculateAllLayouts(VerticalListNode<NodeBase> group, NodeKind kind, bool scrollToBottom = false) {
         group.RecalculateLayout();
         _configLists[kind].RecalculateLayout();
         _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+        if (scrollToBottom) {
+            _configScrollingAreas[kind].ScrollPosition = (int)_configScrollingAreas[kind].Height;
+        }
     }
 
     private void ToggleEnabled(StatusTimerOverlay<StatusKey>? overlay, VerticalListNode<NodeBase> group, NodeKind kind, bool isChecked) {

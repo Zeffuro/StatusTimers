@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Keys;
+using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -13,6 +14,8 @@ using StatusTimers.Models;
 using StatusTimers.Windows;
 using Lumina.Excel.Sheets;
 using StatusTimers.Helpers;
+using System.Drawing;
+using System.IO;
 using System.Numerics;
 using Action = System.Action;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
@@ -111,60 +114,24 @@ public static class FilterUIFactory
         horizontalListNode.AddNode(radioButtonGroup);
 
         horizontalListNode.AddNode(
-            new CircleButtonNode {
+            new ImGuiIconButtonNode {
                 Height = 32,
                 Width = 32,
                 IsVisible = true,
                 Tooltip = "Export Filter List",
-                Icon = ButtonIcon.Document,
-                AddColor = new Vector3(150, 0, 150),
-                OnClick = () => {
-                    var exportString = Util.SerializeFilterList(config.FilterList);
-                    ImGui.SetClipboardText(exportString);
-                    Notification notification = new() {
-                        Content = "Filter list exported to clipboard.",
-                        Type = NotificationType.Success,
-                    };
-                    GlobalServices.NotificationManager.AddNotification(notification);
-                    GlobalServices.Logger.Info("Filter list exported to clipboard.");
-                }
+                TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
+                OnClick = () => TryExportFilterListToClipboard(config.FilterList)
             }
         );
         horizontalListNode.AddNode(
-            new CircleButtonNode {
+            new ImGuiIconButtonNode {
                 X = 52,
                 Height = 32,
                 Width = 32,
                 IsVisible = true,
                 TooltipString = "     Import Filter List \n(hold shift to confirm)",
-                Icon = ButtonIcon.Document,
-                AddColor = new Vector3(0, 150, 150),
-                OnClick = () => {
-                    if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
-                        return;
-                    }
-                    Notification notification = new() {
-                        Content = "Filter list imported from clipboard.",
-                        Type = NotificationType.Success,
-                    };
-                    var clipboard = ImGui.GetClipboardText();
-                    if (!string.IsNullOrWhiteSpace(clipboard)) {
-                        var imported = Util.DeserializeFilterList(clipboard);
-                        config.FilterList.Clear();
-                        foreach (var id in imported) {
-                            config.FilterList.Add(id);
-                        }
-
-                        onChanged?.Invoke();
-                        notification.Content = $"Imported {imported.Count} filter IDs from clipboard.";
-                        GlobalServices.Logger.Info($"Imported {imported.Count} filter IDs from clipboard.");
-                    } else {
-                        notification.Content = "Clipboard data was invalid or could not be imported.";
-                        notification.Type = NotificationType.Error;
-                        GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
-                    }
-                    GlobalServices.NotificationManager.AddNotification(notification);
-                }
+                TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
+                OnClick = () => TryImportFilterListFromClipboard(config, onChanged)
             }
         );
 
@@ -394,5 +361,45 @@ public static class FilterUIFactory
         }
 
         return statusListNode;
+    }
+
+    private static void TryExportFilterListToClipboard(HashSet<uint> filterList)
+    {
+        var exportString = Util.SerializeFilterList(filterList);
+        ImGui.SetClipboardText(exportString);
+        Notification notification = new() {
+            Content = "Filter list exported to clipboard.",
+            Type = NotificationType.Success,
+        };
+        GlobalServices.NotificationManager.AddNotification(notification);
+        GlobalServices.Logger.Info("Filter list exported to clipboard.");
+    }
+
+    private static void TryImportFilterListFromClipboard(StatusTimerOverlayConfig config, FilterChangedCallback? onChanged)
+    {
+        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
+            return;
+        }
+        Notification notification = new() {
+            Content = "Filter list imported from clipboard.",
+            Type = NotificationType.Success,
+        };
+        var clipboard = ImGui.GetClipboardText();
+        if (!string.IsNullOrWhiteSpace(clipboard)) {
+            var imported = Util.DeserializeFilterList(clipboard);
+            config.FilterList.Clear();
+            foreach (var id in imported) {
+                config.FilterList.Add(id);
+            }
+
+            onChanged?.Invoke();
+            notification.Content = $"Imported {imported.Count} filter IDs from clipboard.";
+            GlobalServices.Logger.Info($"Imported {imported.Count} filter IDs from clipboard.");
+        } else {
+            notification.Content = "Clipboard data was invalid or could not be imported.";
+            notification.Type = NotificationType.Error;
+            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
+        }
+        GlobalServices.NotificationManager.AddNotification(notification);
     }
 }

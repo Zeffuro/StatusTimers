@@ -10,11 +10,21 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="Media\icon.png" />
-        <Content Include="SUGGESTIONS"/>
+        <Content Include="Media\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </Content>
+        <Content Include="Media\Icons\*.*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
         <EditorConfigFiles Remove="..\.editorconfig"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Media\Icons\" />
     </ItemGroup>
 </Project>
