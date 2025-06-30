@@ -126,13 +126,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
             HorizontalListNode<NodeBase> importExportNode = new() {
-                Height = CheckBoxHeight,
-                Width = 300,
+                Height = 0,
+                Width = 600,
+                Alignment = HorizontalListAnchor.Left,
+                FirstItemSpacing = 440,
+                ItemHorizontalSpacing = 0,
                 IsVisible = true,
             };
-            importExportNode.AddNode(new ResNode{IsVisible = true, Width = 220});
+
             importExportNode.AddNode(
                 new CircleButtonNode {
                     Height = 30,
@@ -199,7 +201,26 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 }
             );
 
-            _configLists[kind].AddDummy(new ResNode(), CheckBoxHeight);
+            importExportNode.AddNode(new HoldButtonNode() {
+                IsVisible = true,
+                Y = -3,
+                Height = 32,
+                Width = 100,
+                Label = "Reset",
+                Tooltip = "   Reset configuration\n(hold button to confirm)",
+                OnClick = () => {
+                    Notification notification = new() {
+                        Content = "Configuration reset to default.",
+                        Type = NotificationType.Success,
+                    };
+                    Util.ResetConfig(currentOverlayConfig);
+                    GlobalServices.NotificationManager.AddNotification(notification);
+                    GlobalServices.Logger.Info("Configuration reset to default.");
+                    Close();
+                }
+            });
+
+            _configLists[kind].AddNode(importExportNode);
 
             _configLists[kind].AddNode(new TextNode {
                 IsVisible = true,
@@ -212,12 +233,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Text = "Visual Settings"
             });
 
-            _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(ConfigurationUIFactory.CreateCheckboxOption("Enabled",
+            _configLists[kind].AddNode(ConfigurationUIFactory.CreateCheckboxOption("Enabled",
                 () => overlay.IsVisible,
-                isChecked => overlay.IsVisible = isChecked),
-                    importExportNode,
-                CheckBoxHeight
-                )
+                isChecked => overlay.IsVisible = isChecked)
             );
 
             _configLists[kind].AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(

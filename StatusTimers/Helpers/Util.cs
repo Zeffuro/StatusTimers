@@ -66,4 +66,12 @@ public class Util
             return null;
         }
     }
+
+    public static void ResetConfig(StatusTimerOverlayConfig config)
+    {
+        var defaults = new StatusTimerOverlayConfig();
+        foreach (var prop in typeof(StatusTimerOverlayConfig).GetProperties().Where(p => p.CanRead && p.CanWrite)) {
+            prop.SetValue(config, prop.GetValue(defaults));
+        }
+    }
 }
