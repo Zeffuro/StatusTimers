@@ -53,6 +53,7 @@ public static class FilterUIFactory
             TextColor = TextStyles.Header.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = "Filter Settings"
         });
 

@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
@@ -34,6 +35,7 @@ public static class SortUIFactory
             TextColor = TextStyles.Header.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = "Sorting Priority"
         });
 
@@ -113,6 +115,7 @@ public static class SortUIFactory
             TextColor = TextStyles.OptionLabel.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = labelText
         });
 

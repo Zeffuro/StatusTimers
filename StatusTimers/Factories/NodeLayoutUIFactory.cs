@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -174,6 +175,7 @@ public static class NodeLayoutUIFactory
             Height = 20,
             Width = 120,
             FontSize = 14,
+            AlignmentType = AlignmentType.Left,
             TextColor = TextStyles.OptionLabel.TextColor
         });
 
@@ -193,6 +195,7 @@ public static class NodeLayoutUIFactory
             Height = 18,
             Width = 114,
             FontSize = 14,
+            AlignmentType = AlignmentType.Left,
             TextColor = TextStyles.OptionLabel.TextColor
         });
 
@@ -263,6 +266,7 @@ public static class NodeLayoutUIFactory
             Height = 18,
             Width = 114,
             FontSize = 14,
+            AlignmentType = AlignmentType.Left,
             TextColor = TextStyles.OptionLabel.TextColor
         });
 

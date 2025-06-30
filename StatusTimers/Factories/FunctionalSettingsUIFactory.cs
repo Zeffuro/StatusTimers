@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
@@ -34,6 +35,7 @@ public static class FunctionalSettingsUIFactory
             TextColor = TextStyles.Header.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = "Functional Settings"
         });
 

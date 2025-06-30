@@ -88,6 +88,7 @@ public static class ConfigurationUIFactory
             TextColor = TextStyles.OptionLabel.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = labelText
         });
 
@@ -133,6 +134,7 @@ public static class ConfigurationUIFactory
             TextColor = TextStyles.OptionLabel.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = labelText
         });
 

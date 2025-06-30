@@ -1,3 +1,4 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Numerics;
 using KamiToolKit.Nodes;
@@ -68,6 +69,7 @@ public static class VisualSettingsUIFactory
                 TextColor = TextStyles.OptionLabel.TextColor,
                 TextOutlineColor = TextStyles.Defaults.OutlineColor,
                 TextFlags = TextStyles.Defaults.Flags,
+                AlignmentType = AlignmentType.Left,
                 Text = "Scale"
             },
             ConfigurationUIFactory.CreateLabeledNumericOption("Horizontal Padding",
@@ -108,6 +110,7 @@ public static class VisualSettingsUIFactory
             TextColor = TextStyles.OptionLabel.TextColor,
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
             Text = $"Statuses per {(config.FillRowsFirst ? "row" : "column")}"
         };
 
@@ -123,6 +126,7 @@ public static class VisualSettingsUIFactory
                 TextColor = TextStyles.OptionLabel.TextColor,
                 TextOutlineColor = TextStyles.Defaults.OutlineColor,
                 TextFlags = TextStyles.Defaults.Flags,
+                AlignmentType = AlignmentType.Left,
                 Text = "Max statuses displayed"
             },
             TextStyles.OptionLabel.Height
