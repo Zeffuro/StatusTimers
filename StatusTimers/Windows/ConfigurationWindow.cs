@@ -248,9 +248,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     () => {
                         GlobalServices.Logger.Info("Filter section changed");
                         UpdateFilterSection();
-                        RecalculateAllLayouts(mainSettingsGroup, kind);
+                        RecalculateAllLayouts(mainSettingsGroup, kind, true);
                     },
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind, true)
                 );
                 _filterSectionNodes[kind] = newNode;
                 if (oldNode != null) {
@@ -288,7 +288,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         _configLists[kind].RecalculateLayout();
         _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
         if (scrollToBottom) {
-            _configScrollingAreas[kind].ScrollPosition = (int)_configScrollingAreas[kind].Height;
+            _configScrollingAreas[kind].ScrollPosition = (int)_configScrollingAreas[kind].ContentHeight;
         }
     }
 

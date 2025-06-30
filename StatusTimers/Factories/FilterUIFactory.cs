@@ -116,8 +116,8 @@ public static class FilterUIFactory
 
         horizontalListNode.AddNode(
             new ImGuiIconButtonNode {
-                Height = 32,
-                Width = 32,
+                Height = 30,
+                Width = 30,
                 IsVisible = true,
                 Tooltip = "Export Filter List",
                 TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
@@ -127,8 +127,8 @@ public static class FilterUIFactory
         horizontalListNode.AddNode(
             new ImGuiIconButtonNode {
                 X = 52,
-                Height = 32,
-                Width = 32,
+                Height = 30,
+                Width = 30,
                 IsVisible = true,
                 TooltipString = "     Import Filter List \n(hold shift to confirm)",
                 TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),

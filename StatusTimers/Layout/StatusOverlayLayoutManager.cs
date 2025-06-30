@@ -305,16 +305,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
         SetVerticalAlignment(verticalAnchor);
         SetHorizontalAlignment(horizontalAnchor);
-
-
+        
         float rootContainerOffsetX = 0, rootContainerOffsetY = 0;
-        if (verticalAnchor == VerticalListAnchor.Bottom) {
-            rootContainerOffsetY = -StatusNodeHeight;
-        }
-
-        if (horizontalAnchor == HorizontalListAnchor.Right) {
-            rootContainerOffsetX = -StatusNodeWidth;
-        }
 
         if (_rootContainer != null)
         {
