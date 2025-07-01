@@ -22,7 +22,8 @@ public static class SortUIFactory
             IsVisible = true,
             Width = 600,
             Height = 200,
-            ItemVerticalSpacing = 5
+            ItemVerticalSpacing = 2,
+            FitContents = true
         };
 
         // Header

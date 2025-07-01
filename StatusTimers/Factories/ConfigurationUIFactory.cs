@@ -144,6 +144,8 @@ public static class ConfigurationUIFactory
             Width = 140,
             Height = CheckBoxHeight,
             IsVisible = true,
+            Min = -99999,
+            Max = 99999,
             Value = getter(),
             OnValueUpdate = setter
         };

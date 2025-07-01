@@ -7,6 +7,7 @@ using StatusTimers.Windows;
 using System;
 using System.Drawing;
 using System.Numerics;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Factories;
 
@@ -25,7 +26,6 @@ public class ColorPickerTemp {
 
         var currentColor = ColorHelper.GetColor(53);
         var test = KnownColor.DarkRed.Vector().AsVector3();
-        Services.Services.Logger.Info($"W: {currentColor.W} X: {test.X} Y: {test.Y} Z: {test.Z}");
 
         var colorPreview = new SimpleImageNode {
             TexturePath = "ui/icon/090000/090449.tex",
@@ -43,9 +43,11 @@ public class ColorPickerTemp {
             Height = 28,
             Width = 32,
             OnClick = () => {
-                overlayManager?.ColorPickerInstance?.Show(currentColor, newColor => {
-                    colorPreview.Color = newColor;
-                });
+                GlobalServices.Framework.RunOnTick(() => {
+                    overlayManager?.ColorPickerInstance?.Show(currentColor, newColor => {
+                        colorPreview.Color = newColor;
+                    });
+                }, delayTicks: 3);
             }
         });
         /*

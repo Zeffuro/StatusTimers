@@ -185,7 +185,7 @@ public static class VisualSettingsUIFactory
             }
         ));
 
-        node.AddDummy(new ResNode(), checkBoxHeight * 5);
+        node.AddDummy(new ResNode(), checkBoxHeight);
 
         return node;
     }
