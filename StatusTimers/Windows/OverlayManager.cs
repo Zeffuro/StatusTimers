@@ -1,16 +1,18 @@
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit.Classes;
+using StatusTimers.Factories;
 using System;
 using System.Numerics;
 
 namespace StatusTimers.Windows;
 
 public unsafe class OverlayManager : IDisposable {
-    private bool isDisposed = false;
-    private ConfigurationWindow? configurationWindow;
-    private EnemyMultiDoTOverlay? enemyMultiDoTOverlay;
-    private PlayerCombinedStatusesOverlay? playerCombinedOverlay;
+    private bool _isDisposed = false;
+    private ConfigurationWindow? _configurationWindow;
+    private EnemyMultiDoTOverlay? _enemyMultiDoTOverlay;
+    private PlayerCombinedStatusesOverlay? _playerCombinedOverlay;
+    private ColorPickerAddon? _colorPickerAddon;
 
     public OverlayManager() {
         Services.Services.NameplateAddonController.PreEnable += PreAttach;
@@ -18,14 +20,15 @@ public unsafe class OverlayManager : IDisposable {
         Services.Services.NameplateAddonController.OnDetach += DetachNodes;
     }
 
-    public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => playerCombinedOverlay;
-    public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => enemyMultiDoTOverlay;
+    public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
+    public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
+    public ColorPickerAddon? ColorPickerInstance => _colorPickerAddon;
 
     public void Dispose() {
-        if (isDisposed) {
+        if (_isDisposed) {
             return;
         }
-        isDisposed = true;
+        _isDisposed = true;
 
         DetachAndDisposeAll();
         Services.Services.NameplateAddonController.PreEnable -= PreAttach;
@@ -39,16 +42,23 @@ public unsafe class OverlayManager : IDisposable {
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
         DetachAndDisposeAll();
 
-        playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
+        _playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
             Position = new Vector2(100, 100),
             Size = new Vector2(400, 400)
         };
-        enemyMultiDoTOverlay = new EnemyMultiDoTOverlay {
+        _enemyMultiDoTOverlay = new EnemyMultiDoTOverlay {
             Position = new Vector2(600, 100),
             Size = new Vector2(400, 400)
         };
 
-        configurationWindow = new ConfigurationWindow(this) {
+        _colorPickerAddon = new ColorPickerAddon(this) {
+            InternalName = "StatusTimerColorPicker",
+            Title = "Pick a color",
+            Size = new Vector2(400, 400),
+            NativeController = Services.Services.NativeController
+        };
+
+        _configurationWindow = new ConfigurationWindow(this) {
             InternalName = "StatusTimersConfiguration",
             Title = "StatusTimers Configuration",
             Size = new Vector2(640, 512),
@@ -56,17 +66,17 @@ public unsafe class OverlayManager : IDisposable {
         };
 
         if (addonNamePlate != null) {
-            if (playerCombinedOverlay != null) {
-                Services.Services.NativeController.AttachNode(playerCombinedOverlay, addonNamePlate->RootNode);
+            if (_playerCombinedOverlay != null) {
+                Services.Services.NativeController.AttachNode(_playerCombinedOverlay, addonNamePlate->RootNode);
             }
 
-            if (enemyMultiDoTOverlay != null) {
-                Services.Services.NativeController.AttachNode(enemyMultiDoTOverlay, addonNamePlate->RootNode);
+            if (_enemyMultiDoTOverlay != null) {
+                Services.Services.NativeController.AttachNode(_enemyMultiDoTOverlay, addonNamePlate->RootNode);
             }
         }
 
-        enemyMultiDoTOverlay?.Setup();
-        playerCombinedOverlay?.Setup();
+        _enemyMultiDoTOverlay?.Setup();
+        _playerCombinedOverlay?.Setup();
     }
 
     private void DetachNodes(AddonNamePlate* addonNamePlate) {
@@ -74,46 +84,50 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     private void DetachAndDisposeAll() {
-        if (configurationWindow != null) {
-            configurationWindow.Dispose();
-            configurationWindow = null;
+        if (_colorPickerAddon != null) {
+            _colorPickerAddon.Dispose();
+            _colorPickerAddon = null;
         }
-        if (playerCombinedOverlay != null) {
-            Services.Services.NativeController.DetachNode(playerCombinedOverlay);
-            playerCombinedOverlay.OnDispose();
-            playerCombinedOverlay.Dispose();
-            playerCombinedOverlay = null;
+        if (_configurationWindow != null) {
+            _configurationWindow.Dispose();
+            _configurationWindow = null;
         }
-        if (enemyMultiDoTOverlay != null) {
-            Services.Services.NativeController.DetachNode(enemyMultiDoTOverlay);
-            enemyMultiDoTOverlay.OnDispose();
-            enemyMultiDoTOverlay.Dispose();
-            enemyMultiDoTOverlay = null;
+        if (_playerCombinedOverlay != null) {
+            Services.Services.NativeController.DetachNode(_playerCombinedOverlay);
+            _playerCombinedOverlay.OnDispose();
+            _playerCombinedOverlay.Dispose();
+            _playerCombinedOverlay = null;
+        }
+        if (_enemyMultiDoTOverlay != null) {
+            Services.Services.NativeController.DetachNode(_enemyMultiDoTOverlay);
+            _enemyMultiDoTOverlay.OnDispose();
+            _enemyMultiDoTOverlay.Dispose();
+            _enemyMultiDoTOverlay = null;
         }
     }
 
     public void OnUpdate() {
-        if (isDisposed) {
+        if (_isDisposed) {
             return;
         }
 
-        playerCombinedOverlay?.OnUpdate();
-        enemyMultiDoTOverlay?.OnUpdate();
+        _playerCombinedOverlay?.OnUpdate();
+        _enemyMultiDoTOverlay?.OnUpdate();
     }
 
     public void ToggleConfig() {
-        if (isDisposed) {
+        if (_isDisposed) {
             return;
         }
 
-        configurationWindow?.Toggle();
+        _configurationWindow?.Toggle();
     }
 
     public void OpenConfig() {
-        if (isDisposed) {
+        if (_isDisposed) {
             return;
         }
 
-        configurationWindow?.Open();
+        _configurationWindow?.Open();
     }
 }

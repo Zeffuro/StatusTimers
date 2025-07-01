@@ -117,6 +117,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
 
+            mainSettingsGroup.AddNode(
+                ColorPickerTemp.CreateColorPickerSection(
+                    currentOverlayConfig,
+                    overlayManager,
+                    onChanged: () => { }
+                )
+            );
+
             // Visual Settings
             mainSettingsGroup.AddNode(
                 VisualSettingsUIFactory.Create(

@@ -16,6 +16,8 @@ public class Plugin : IDalamudPlugin {
     public unsafe Plugin(IDalamudPluginInterface pluginInterface) {
         pluginInterface.Create<Services.Services>();
 
+        BackupHelper.DoConfigBackup(pluginInterface);
+
         Configuration = Services.Services.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         Services.Services.NativeController = new NativeController(pluginInterface);

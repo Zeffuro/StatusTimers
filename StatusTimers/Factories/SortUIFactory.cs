@@ -61,8 +61,6 @@ public static class SortUIFactory
             sortCriteriaMap
         ));
 
-        section.AddDummy(new ResNode(), 24);
-
         // Secondary Sort
         section.AddNode(CreateSortRow(
             "Secondary:",
@@ -72,8 +70,6 @@ public static class SortUIFactory
             v => config.SecondarySortOrder = v,
             sortCriteriaMap
         ));
-
-        section.AddDummy(new ResNode(), 24);
 
         // Tertiary Sort
         section.AddNode(CreateSortRow(
