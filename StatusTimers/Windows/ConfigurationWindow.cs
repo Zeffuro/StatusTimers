@@ -95,6 +95,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             var mainSettingsGroup = new VerticalListNode<NodeBase> {
                 IsVisible = overlay.IsVisible,
+                Width = _configScrollingAreas[kind].ContentNode.Width,
                 FitContents = true,
                 ItemVerticalSpacing = 3
             };
@@ -117,14 +118,6 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
 
-            mainSettingsGroup.AddNode(
-                ColorPickerTemp.CreateColorPickerSection(
-                    currentOverlayConfig,
-                    overlayManager,
-                    onChanged: () => { }
-                )
-            );
-
             // Visual Settings
             mainSettingsGroup.AddNode(
                 VisualSettingsUIFactory.Create(
@@ -141,6 +134,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "icon",
                     currentOverlayConfig.StatusNodeLayout.IconAnchor,
+                    overlayManager,
                     getEnabled: () => currentOverlayConfig.ShowIcon,
                     setEnabled: v => currentOverlayConfig.ShowIcon = v,
                     onChanged: () => {
@@ -158,6 +152,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "status name",
                     currentOverlayConfig.StatusNodeLayout.NameAnchor,
+                    overlayManager,
                     getEnabled: () => currentOverlayConfig.ShowStatusName,
                     setEnabled: v => currentOverlayConfig.ShowStatusName = v,
                     getStyle: () => currentOverlayConfig.StatusNameTextStyle,
@@ -177,6 +172,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "time remaining",
                     currentOverlayConfig.StatusNodeLayout.TimerAnchor,
+                    overlayManager,
                     getEnabled: () => currentOverlayConfig.ShowStatusRemaining,
                     setEnabled: v => currentOverlayConfig.ShowStatusRemaining = v,
                     getStyle: () => currentOverlayConfig.StatusRemainingTextStyle,
@@ -196,6 +192,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "progressbar",
                     currentOverlayConfig.StatusNodeLayout.ProgressAnchor,
+                    overlayManager,
                     getEnabled: () => currentOverlayConfig.ShowProgress,
                     setEnabled: v => currentOverlayConfig.ShowProgress = v,
                     onChanged: () => {
@@ -214,6 +211,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     NodeLayoutUIFactory.CreateNodeLayoutSection(
                         "enemy name",
                         currentOverlayConfig.StatusNodeLayout.ActorNameAnchor,
+                        overlayManager,
                         getEnabled: () => currentOverlayConfig.ShowActorName,
                         setEnabled: v => currentOverlayConfig.ShowActorName = v,
                         getStyle: () => currentOverlayConfig.ActorNameTextStyle,

@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,10 @@ using StatusTimers.Enums;
 using StatusTimers.Helpers;
 using StatusTimers.Layout;
 using StatusTimers.Models;
+using StatusTimers.Nodes;
+using StatusTimers.Windows;
+using System.Numerics;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Factories;
 
@@ -20,6 +25,7 @@ public static class NodeLayoutUIFactory
     public static VerticalListNode<NodeBase> CreateNodeLayoutSection(
         string label,
         StatusNodeAnchorConfig anchorConfig,
+        OverlayManager? overlayManager,
         Func<bool> getEnabled = null,
         Action<bool> setEnabled = null,
         Func<TextStyle> getStyle = null,
@@ -72,7 +78,7 @@ public static class NodeLayoutUIFactory
             IsVisible = getEnabled?.Invoke() ?? true
         };
 
-        if (getStyle != null && setStyle != null)
+        if (getStyle != null && setStyle != null && overlayManager != null)
         {
             var style = getStyle();
             var styleRow = new HorizontalFlexNode<NodeBase>
@@ -82,6 +88,8 @@ public static class NodeLayoutUIFactory
                 Height = 32,
                 FitPadding = 4
             };
+
+            settingsGroup.AddNode(styleRow);
 
             styleRow.AddNode(ConfigurationUIFactory.CreateLabeledDropdown(
                 "Font",
@@ -95,7 +103,33 @@ public static class NodeLayoutUIFactory
                 () => (int)style.FontSize,
                 v => { var s = getStyle(); s.FontSize = v; setStyle(s); onChanged?.Invoke(); }
             ));
-            settingsGroup.AddNode(styleRow);
+
+            var styleRow2 = new HorizontalFlexNode<NodeBase>
+            {
+                IsVisible = true,
+                Width = 562,
+                Height = 32,
+                FitPadding = 4
+            };
+
+            settingsGroup.AddNode(styleRow2);
+
+            styleRow2.AddNode(CreateColorPreviewButton(
+                "Text Color",
+                () => style.TextColor,
+                c => { var s = getStyle(); s.TextColor = c; setStyle(s); onChanged?.Invoke(); },
+                overlayManager, // or pass overlayManager as parameter
+                onChanged,
+                32
+            ));
+            styleRow2.AddNode(CreateColorPreviewButton(
+                "Text Outline Color",
+                () => style.TextOutlineColor,
+                c => { var s = getStyle(); s.TextOutlineColor = c; setStyle(s); onChanged?.Invoke(); },
+                overlayManager,
+                onChanged,
+                32
+            ));
         }
 
         var offsetRow = new HorizontalFlexNode<NodeBase>
@@ -312,6 +346,7 @@ public static class NodeLayoutUIFactory
         return alignmentSection;
     }
 
+
     private static void ToggleFlag(
         bool isChecked,
         AnchorAlignment flag,
@@ -331,5 +366,63 @@ public static class NodeLayoutUIFactory
 
         setAlignment((AnchorAlignment)num);
         onChanged?.Invoke();
+    }
+
+    public static HorizontalFlexNode<NodeBase> CreateColorPreviewButton(
+        string labelText,
+        Func<Vector4> getColor,
+        Action<Vector4> setColor,
+        OverlayManager overlayManager,
+        Action onChanged = null,
+        float size = 32f
+    )
+    {
+        var flexNode = new HorizontalFlexNode<NodeBase>
+        {
+            IsVisible = true,
+            X = OptionOffset,
+            Width = 272,
+            Height = 24,
+            AlignmentFlags = FlexFlags.FitHeight,
+            FitPadding = 4
+        };
+
+        flexNode.AddNode(new TextNode
+        {
+            X = 0,
+            Y = 0,
+            IsVisible = true,
+            Width = 20,
+            Height = TextStyles.OptionLabel.Height,
+            FontSize = TextStyles.Defaults.FontSize,
+            TextColor = TextStyles.OptionLabel.TextColor,
+            TextOutlineColor = TextStyles.Defaults.OutlineColor,
+            TextFlags = TextStyles.Defaults.Flags,
+            AlignmentType = AlignmentType.Left,
+            Text = labelText
+        });
+
+        var colorPreviewButton = new ColorPreviewButtonNode(GlobalServices.NativeController)
+        {
+            Y = -2,
+            IsVisible = true,
+            Size = new Vector2(size),
+            Color = getColor(),
+        };
+        colorPreviewButton.OnClick = () =>
+        {
+            var startColor = getColor();
+            GlobalServices.Framework.RunOnTick(() =>
+            {
+                overlayManager?.ColorPickerInstance?.Show(startColor, newColor =>
+                {
+                    setColor(newColor);
+                    colorPreviewButton.Color = newColor;
+                    onChanged?.Invoke();
+                });
+            }, delayTicks: 3);
+        };
+        flexNode.AddNode(colorPreviewButton);
+        return flexNode;
     }
 }

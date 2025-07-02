@@ -60,11 +60,11 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             IsVisible = _currentOverlayConfig.ShowStatusName,
             Width = _layout.NameAnchor.Width,
             Height = _layout.NameAnchor.Height,
-            FontSize = 20,
+            FontSize = (uint)_currentOverlayConfig.StatusNameTextStyle.FontSize,
             X = _layout.NameAnchor.OffsetX,
             Y = _layout.NameAnchor.OffsetY,
-            TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(53),
+            TextColor = _currentOverlayConfig.StatusNameTextStyle.TextColor,
+            TextOutlineColor = _currentOverlayConfig.StatusNameTextStyle.TextOutlineColor,
             TextFlags = TextFlags.Edge,
             NodeFlags = NodeFlags.Clip
         };
@@ -84,11 +84,11 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             IsVisible = _currentOverlayConfig.ShowActorName,
             Width = _layout.ActorNameAnchor.Width,
             Height = _layout.ActorNameAnchor.Height,
-            FontSize = 12,
+            FontSize = (uint)_currentOverlayConfig.ActorNameTextStyle.FontSize,
             X = _layout.ActorNameAnchor.OffsetX,
             Y = _layout.ActorNameAnchor.OffsetY,
-            TextColor = ColorHelper.GetColor(50),
-            TextOutlineColor = ColorHelper.GetColor(54),
+            TextColor = _currentOverlayConfig.ActorNameTextStyle.TextColor,
+            TextOutlineColor = _currentOverlayConfig.ActorNameTextStyle.TextOutlineColor,
             TextFlags = TextFlags.Edge
         };
         GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);

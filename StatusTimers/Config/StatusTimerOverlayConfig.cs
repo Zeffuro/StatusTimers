@@ -469,7 +469,7 @@ public class StatusTimerOverlayConfig
         }
     } = new()
     {
-        FontSize = 20,
+        FontSize = 14,
         FontType = FontType.Axis,
         TextColor = ColorHelper.GetColor(50),
         TextOutlineColor = ColorHelper.GetColor(54),

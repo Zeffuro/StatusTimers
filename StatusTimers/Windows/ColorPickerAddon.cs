@@ -8,12 +8,16 @@ using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.Slider;
 using KamiToolKit.System;
+using StatusTimers.Enums;
 using StatusTimers.Helpers;
+using StatusTimers.Nodes;
 using System;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -22,29 +26,30 @@ namespace StatusTimers.Windows;
 public class ColorPickerAddon : NativeAddon
 {
     private Action<Vector4>? _onPicked;
+    private Vector4 _initialColor;
     private Vector4 _workingColor;
     private float _hue, _saturation, _value; // HSV representation
-    private BackgroundImageNode? _colorPreviewBackground;
-    private BackgroundImageNode? _colorPreview;
+    private ColorPreviewNode? _colorPreview;
     private TextInputNode? _hexInput;
     private NumericInputNode? _redInput, _greenInput, _blueInput, _alphaInput, _hueInput, _saturationInput, _valueInput;
     private ImGuiImageNode? _svSquareNode, _svSquareNode2, _svSquareNode3, _hueBarNode, _alphaBarNode;
     private IDalamudTextureWrap? _svTexture, _svTexture2, _svTexture3, _hueTexture, _alphaTexture;
     private SimpleComponentNode? _svContainer, _hueContainer, _alphaContainer;
+    private NodeBase? _svCrosshair, _hueCrosshair, _alphaCrosshair;
     private bool _isDraggingSV, _isDraggingHue, _isDraggingAlpha;
     private bool _isUpdating = false;
 
     private const int OptionOffset = 18;
 
     public ColorPickerAddon(OverlayManager overlayManager) {
-        Task.Run(() => {
-            LoadTexturesBlocking();
-        });
+        Task.Run(LoadTexturesBlocking);
     }
 
     public void Show(Vector4 initialColor, Action<Vector4> onPicked)
     {
+        _initialColor = initialColor;
         _workingColor = initialColor;
+        ColorToHSV(_workingColor, out _hue, out _saturation, out _value);
         _onPicked = onPicked;
         Open();
     }
@@ -53,12 +58,6 @@ public class ColorPickerAddon : NativeAddon
     {
         GlobalServices.Framework.RunOnFrameworkThread(LoadTexturesBlocking);
         CreateAdvancedColorPicker();
-    }
-
-    private void SetWorkingColor(Vector4 color)
-    {
-        _workingColor = color;
-        ColorToHSV(color, out _hue, out _saturation, out _value);
     }
 
     private void CreateAdvancedColorPicker()
@@ -74,7 +73,6 @@ public class ColorPickerAddon : NativeAddon
         };
         NativeController.AttachNode(mainList, this);
 
-        // Picker Row: [SV Square][Spacing][Hue Bar][Spacing][Alpha Bar][Preview]
         var pickerRow = new HorizontalListNode<NodeBase>
         {
             IsVisible = true,
@@ -149,6 +147,17 @@ public class ColorPickerAddon : NativeAddon
         });
         NativeController.AttachNode(_svSquareNode3, _svContainer);
 
+        _svCrosshair = new SimpleImageNode() {
+            IsVisible = true,
+            Size = new Vector2(32, 32),
+            TexturePath = "ui/uld/AreaMap.tex",
+            TextureSize = new Vector2(32, 32),
+            TextureCoordinates = new Vector2(252, 0),
+            WrapMode = 2,
+            ImageNodeFlags = 0,
+        };
+        NativeController.AttachNode(_svCrosshair, _svContainer);
+
         _hueContainer = new SimpleComponentNode() {
             IsVisible = true,
             Size = new Vector2(20, 256),
@@ -176,11 +185,30 @@ public class ColorPickerAddon : NativeAddon
         });
         NativeController.AttachNode(_hueBarNode, _hueContainer);
 
+        _hueCrosshair = new ResNode() {
+            IsVisible = true,
+            Size = new Vector2(20, 2),
+        };
+        NativeController.AttachNode(_hueCrosshair, _hueContainer);
+
+        NativeController.AttachNode(new BackgroundImageNode() {
+            IsVisible = true,
+            Color = KnownColor.White.Vector(),
+            Size = new Vector2(20, 1),
+        }, _hueCrosshair);
+        NativeController.AttachNode(new BackgroundImageNode {
+            IsVisible = true,
+            Y = 1,
+            Color = KnownColor.Gray.Vector(),
+            Size = new Vector2(20, 1),
+        }, _hueCrosshair);
+
         pickerRow.AddNode(_hueContainer);
 
         _alphaContainer = new SimpleComponentNode() {
             IsVisible = true,
             Size = new Vector2(20, 256),
+            EnableEventFlags = true
         };
 
         _alphaContainer.AddEvent(AddonEventType.MouseDown, OnAlphaMouse);
@@ -205,37 +233,67 @@ public class ColorPickerAddon : NativeAddon
         });
         NativeController.AttachNode(_alphaBarNode, _alphaContainer);
 
+        _alphaCrosshair = new ResNode() {
+            IsVisible = true,
+            Size = new Vector2(20, 2),
+        };
+        NativeController.AttachNode(_alphaCrosshair, _alphaContainer);
+
+        NativeController.AttachNode(new BackgroundImageNode() {
+            IsVisible = true,
+            Color = KnownColor.White.Vector(),
+            Size = new Vector2(20, 1),
+        }, _alphaCrosshair);
+        NativeController.AttachNode(new BackgroundImageNode {
+            IsVisible = true,
+            Y = 1,
+            Color = KnownColor.Gray.Vector(),
+            Size = new Vector2(20, 1),
+        }, _alphaCrosshair);
+
         pickerRow.AddNode(_alphaContainer);
 
-        // Color Preview
-        var previewContainer = new ResNode
-        {
+        VerticalListNode listNode = new() {
             IsVisible = true,
-            X = 0,
             Width = 64,
-            Height = 64,
+            Height = 128,
         };
-        pickerRow.AddNode(previewContainer);
 
-        _colorPreviewBackground = new BackgroundImageNode
-        {
-            IsVisible = true,
-            Color = KnownColor.Black.Vector(),
-            Width = 52,
-            Height = 52,
-            Position = new Vector2(6, 6),
-        };
-        NativeController.AttachNode(_colorPreviewBackground, previewContainer);
+        pickerRow.AddNode(listNode);
 
-        _colorPreview = new BackgroundImageNode
-        {
+        listNode.AddNode(new TextNode {
             IsVisible = true,
-            Color = _workingColor,
-            Width = 48,
-            Height = 48,
-            Position = new Vector2(8, 8),
+            Width = 64,
+            Height = TextStyles.OptionLabel.Height,
+            Text = "Current",
+            TextColor = TextStyles.OptionLabel.TextColor,
+            FontSize = TextStyles.Defaults.FontSize,
+            AlignmentType = AlignmentType.Center
+        });
+
+        _colorPreview = new ColorPreviewNode(GlobalServices.NativeController) {
+            IsVisible = true,
+            Size = new Vector2(100),
+            Color = _workingColor
         };
-        NativeController.AttachNode(_colorPreview, previewContainer);
+
+        listNode.AddNode(_colorPreview);
+
+        listNode.AddNode(new TextNode {
+            IsVisible = true,
+            Width = 64,
+            Height = TextStyles.OptionLabel.Height,
+            Text = "Original",
+            TextColor = TextStyles.OptionLabel.TextColor,
+            FontSize = TextStyles.Defaults.FontSize,
+            AlignmentType = AlignmentType.Center
+        });
+
+        listNode.AddNode(new ColorPreviewNode(GlobalServices.NativeController) {
+            IsVisible = true,
+            Size = new Vector2(100),
+            Color = _initialColor
+        });
 
         // RGBA
         var rgbaInputRow = new HorizontalFlexNode<NodeBase>
@@ -274,6 +332,8 @@ public class ColorPickerAddon : NativeAddon
             AlignmentFlags = FlexFlags.CenterVertically
         };
 
+        mainList.AddNode(hsvInputRow);
+
         _hueInput = AddColorInput(hsvInputRow, "H", (int)(_hue * 360), val => {
             if (_isUpdating) {
                 return;
@@ -282,9 +342,7 @@ public class ColorPickerAddon : NativeAddon
             _hue = ClampMin(val / 360f);
             _workingColor = HSVToColor(_hue, _saturation, _value, _workingColor.W);
             UpdateAllFields();
-        });
-        _hueInput.Min = 0;
-        _hueInput.Max = 360;
+        }, 0, 360);
 
         _saturationInput = AddColorInput(hsvInputRow, "S", (int)(_saturation * 100), val => {
             if (_isUpdating) {
@@ -294,9 +352,7 @@ public class ColorPickerAddon : NativeAddon
             _saturation = ClampMin(val / 100f);
             _workingColor = HSVToColor(_hue, _saturation, _value, _workingColor.W);
             UpdateAllFields();
-        });
-        _saturationInput.Min = 0;
-        _saturationInput.Max = 100;
+        }, 0, 100);
 
         _valueInput = AddColorInput(hsvInputRow, "V", (int)(_value * 100), val => {
             if (_isUpdating) {
@@ -306,16 +362,24 @@ public class ColorPickerAddon : NativeAddon
             _value = ClampMin(val / 100f);
             _workingColor = HSVToColor(_hue, _saturation, _value, _workingColor.W);
             UpdateAllFields();
-        });
+        }, 0, 100);
 
-        mainList.AddNode(hsvInputRow);
+        var thirdRow = new HorizontalFlexNode<NodeBase>
+        {
+            IsVisible = true,
+            Width = 300,
+            Height = 28,
+            FitPadding =  2,
+            AlignmentFlags = FlexFlags.CenterVertically
+        };
+        mainList.AddNode(thirdRow);
 
         // Hex Input
         _hexInput = new TextInputNode
         {
             IsVisible = true,
             X = 12,
-            Width = 210,
+            Width = 100,
             Height = 28,
             MaxCharacters = 0,
             ShowLimitText = false,
@@ -325,9 +389,26 @@ public class ColorPickerAddon : NativeAddon
                 }
             }
         };
-        mainList.AddNode(_hexInput);
 
-        // Button row (OK | Cancel)
+        thirdRow.AddNode(_hexInput);
+
+        thirdRow.AddNode(new TextDropDownNode
+        {
+            X = 0,
+            Y = 0,
+            IsVisible = true,
+            Width = 220,
+            Height = 28,
+            MaxListOptions = 3,
+            Options = CommonUIColor.CommonColors.Keys.ToList(),
+            OnOptionSelected = selectedDisplayName => {
+                var color = CommonUIColor.CommonColors[selectedDisplayName];
+                SetWorkingColorAndUpdate(color);
+            }
+        });
+
+        mainList.AddDummy(new ResNode(), 28);
+
         var buttonRow = new HorizontalFlexNode<NodeBase>
         {
             IsVisible = true,
@@ -361,18 +442,16 @@ public class ColorPickerAddon : NativeAddon
     }
 
     private void LoadTexturesBlocking() {
-        //var svPath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-        //    @"Media\Textures\sv_greyscale.png");
         var svPath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
             @"Media\Textures\sv_overlay_1_white.png");
-        var huePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\hue_bar.png");
-        var alphaPath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\alpha_bar.png");
         var svPath2 = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
             @"Media\Textures\sv_overlay_2_horizontal_gradient.png");
         var svPath3 = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
             @"Media\Textures\sv_overlay_3_vertical_black.png");
+        var huePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+            @"Media\Textures\hue_bar.png");
+        var alphaPath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+            @"Media\Textures\alpha_bar.png");
 
         _svTexture = GlobalServices.TextureProvider.GetFromFile(svPath).RentAsync().Result;
         _svTexture2 = GlobalServices.TextureProvider.GetFromFile(svPath2).RentAsync().Result;
@@ -383,7 +462,7 @@ public class ColorPickerAddon : NativeAddon
 
     // --- Input/Update helpers ---
 
-    private NumericInputNode AddColorInput(HorizontalFlexNode<NodeBase> row, string label, int value, Action<int> onChanged)
+    private NumericInputNode AddColorInput(HorizontalFlexNode<NodeBase> row, string label, int value, Action<int> onChanged, int min = 0, int max = 255)
     {
         ResNode resNode = new ResNode {
             IsVisible = true,
@@ -409,8 +488,8 @@ public class ColorPickerAddon : NativeAddon
             X = 14,
             Width = 80,
             Height = 28,
-            Min = 0,
-            Max = 255,
+            Min = min,
+            Max = max,
             Value = value,
             OnValueUpdate = onChanged
         };
@@ -461,27 +540,36 @@ public class ColorPickerAddon : NativeAddon
             return;
         }
 
-        float x = (mouseData.PosX - node.ScreenX) / node.Width;
-        float y = (mouseData.PosY - node.ScreenY) / node.Height;
-
         switch (eventData.AtkEventType)
         {
             case AddonEventType.MouseDown:
                 if (containerNode != null && containerNode.CheckCollision((AtkEventData*)eventData.AtkEventDataPointer))
                 {
+                    GlobalServices.EventManager.SetCursor(AddonCursorType.Hidden);
                     isDragging = true;
                     UpdateFromMouse(mouseData, node, updateAction, verticalOnly);
                 }
                 break;
             case AddonEventType.MouseMove:
-                if (isDragging)
-                {
-                    // Optionally clamp x, y here to [0, 1] if you don't want values outside the picker
+                if (isDragging) {
                     UpdateFromMouse(mouseData, node, updateAction, verticalOnly);
                 }
                 break;
             case AddonEventType.MouseUp:
+                GlobalServices.EventManager.ResetCursor();
                 isDragging = false;
+                UpdateFromMouse(mouseData, node, updateAction, verticalOnly);
+                UpdateAllFields();
+                break;
+            case AddonEventType.MouseOut:
+                if (isDragging) {
+                    GlobalServices.EventManager.ResetCursor();
+                    isDragging = false;
+                }
+                else
+                {
+                    GlobalServices.EventManager.ResetCursor();
+                }
                 break;
         }
     }
@@ -502,7 +590,6 @@ public class ColorPickerAddon : NativeAddon
         }
     }
 
-    // Attach these handlers to your nodes:
     private void OnSVMouse(AddonEventData eventData)
     {
         OnColorPickerMouse(
@@ -551,6 +638,24 @@ public class ColorPickerAddon : NativeAddon
         );
     }
 
+    private void SetCrosshairPosition(NodeBase? crosshairNode, float targetX, float targetY)
+    {
+        if (crosshairNode == null) {
+            return;
+        }
+
+        float offsetX = -16f;
+        float offsetY = -16f;
+
+        if (crosshairNode is ResNode lineCrosshair)
+        {
+            offsetX = -lineCrosshair.Size.X / 2f;
+            offsetY = -lineCrosshair.Size.Y / 2f;
+        }
+
+        crosshairNode.Position = new Vector2(targetX + offsetX, targetY + offsetY);
+    }
+
     // --- Field Update ---
 
     private void UpdateAllFields()
@@ -595,6 +700,29 @@ public class ColorPickerAddon : NativeAddon
 
         if (_svSquareNode != null) {
             UpdateSVSquareAppearance();
+        }
+
+        if (_svCrosshair != null && _svSquareNode != null)
+        {
+            float crossX = _saturation * _svSquareNode.Width;
+            float crossY = (1f - _value) * _svSquareNode.Height;
+
+            crossX = Math.Max(0, Math.Min(_svSquareNode.Width, crossX));
+            crossY = Math.Max(0, Math.Min(_svSquareNode.Height, crossY));
+
+            SetCrosshairPosition(_svCrosshair, crossX, crossY);;
+        }
+
+        if (_hueCrosshair != null && _hueBarNode != null)
+        {
+            float crossY = _hue * _hueBarNode.Height;
+            SetCrosshairPosition(_hueCrosshair, _hueBarNode.Width / 2f, crossY);
+        }
+
+        if (_alphaCrosshair != null && _alphaBarNode != null)
+        {
+            float crossY = (1f - _workingColor.W) * _alphaBarNode.Height;
+            SetCrosshairPosition(_alphaCrosshair, _alphaBarNode.Width / 2f, crossY);
         }
 
         _isUpdating = false;
