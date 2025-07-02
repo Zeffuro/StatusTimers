@@ -80,7 +80,6 @@ public static class NodeLayoutUIFactory
 
         if (getStyle != null && setStyle != null && overlayManager != null)
         {
-            var style = getStyle();
             var styleRow = new HorizontalFlexNode<NodeBase>
             {
                 IsVisible = true,
@@ -93,14 +92,14 @@ public static class NodeLayoutUIFactory
 
             styleRow.AddNode(ConfigurationUIFactory.CreateLabeledDropdown(
                 "Font",
-                () => style.FontType,
+                () => getStyle().FontType,
                 v => { var s = getStyle(); s.FontType = v; setStyle(s); onChanged?.Invoke(); },
                 ConfigurationUIFactory.FontMap
             ));
 
             styleRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption(
                 "Font Size",
-                () => (int)style.FontSize,
+                () => (int)getStyle().FontSize,
                 v => { var s = getStyle(); s.FontSize = v; setStyle(s); onChanged?.Invoke(); }
             ));
 
@@ -116,7 +115,7 @@ public static class NodeLayoutUIFactory
 
             styleRow2.AddNode(CreateColorPreviewButton(
                 "Text Color",
-                () => style.TextColor,
+                () => getStyle().TextColor,
                 c => { var s = getStyle(); s.TextColor = c; setStyle(s); onChanged?.Invoke(); },
                 overlayManager, // or pass overlayManager as parameter
                 onChanged,
@@ -124,7 +123,7 @@ public static class NodeLayoutUIFactory
             ));
             styleRow2.AddNode(CreateColorPreviewButton(
                 "Text Outline Color",
-                () => style.TextOutlineColor,
+                () => getStyle().TextOutlineColor,
                 c => { var s = getStyle(); s.TextOutlineColor = c; setStyle(s); onChanged?.Invoke(); },
                 overlayManager,
                 onChanged,

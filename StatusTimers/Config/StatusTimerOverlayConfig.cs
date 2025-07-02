@@ -231,17 +231,20 @@ public class StatusTimerOverlayConfig
         }
     } = true;
 
+    private void OnStatusNameTextStyleChanged() => Notify(nameof(StatusNameTextStyle), updateNodes: true);
     [JsonProperty]
     public TextStyle StatusNameTextStyle
     {
         get => field;
-        set
-        {
-            if (!Equals(StatusNameTextStyle, value))
-            {
-                field = value;
-                Notify(nameof(StatusNameTextStyle));
+        set {
+            if (Equals(field, value)) {
+                return;
             }
+
+            field.Changed -= OnStatusNameTextStyleChanged;
+            field = value;
+            field.Changed += OnStatusNameTextStyleChanged;
+            Notify(nameof(StatusNameTextStyle));
         }
     } = new()
     {
@@ -322,17 +325,21 @@ public class StatusTimerOverlayConfig
         }
     } = 4;
 
+    private void OnStatusRemainingTextStyleChanged() => Notify(nameof(StatusRemainingTextStyle), updateNodes: true);
     [JsonProperty]
     public TextStyle StatusRemainingTextStyle
     {
         get => field;
         set
         {
-            if (!Equals(StatusRemainingTextStyle, value))
-            {
-                field = value;
-                Notify(nameof(StatusRemainingTextStyle));
+            if (Equals(field, value)) {
+                return;
             }
+
+            field.Changed -= OnStatusRemainingTextStyleChanged;
+            field = value;
+            field.Changed += OnStatusRemainingTextStyleChanged;
+            Notify(nameof(StatusRemainingTextStyle));
         }
     } = new()
     {
@@ -455,17 +462,21 @@ public class StatusTimerOverlayConfig
         }
     } = true;
 
+    private void OnActorNameTextStyleChanged() => Notify(nameof(ActorNameTextStyle), updateNodes: true);
     [JsonProperty]
     public TextStyle ActorNameTextStyle
     {
         get => field;
         set
         {
-            if (!Equals(ActorNameTextStyle, value))
-            {
-                field = value;
-                Notify(nameof(ActorNameTextStyle));
+            if (Equals(field, value)) {
+                return;
             }
+
+            field.Changed -= OnActorNameTextStyleChanged;
+            field = value;
+            field.Changed += OnActorNameTextStyleChanged;
+            Notify(nameof(ActorNameTextStyle));
         }
     } = new()
     {

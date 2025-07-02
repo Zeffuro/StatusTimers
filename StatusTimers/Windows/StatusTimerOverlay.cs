@@ -71,7 +71,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         );
 
         OverlayConfig.OnPropertyChanged += (property, updateNodes, needsRebuild) => {
-            GlobalServices.Logger.Info($"Property changed: {property}");
+            GlobalServices.Logger.Verbose($"Property changed: {property}");
             OnPropertyChanged(property, needsRebuild, updateNodes);
         };
     }
@@ -225,7 +225,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     private void SubscribeToEvents() {
-        OverlayConfig.StatusRemainingTextStyle.Changed += () => OnPropertyChanged(nameof(OverlayConfig.StatusRemainingTextStyle), needsRebuild: true);
+        OverlayConfig.StatusRemainingTextStyle.Changed += () => OnPropertyChanged(nameof(OverlayConfig.StatusRemainingTextStyle), updateNodes: true);
     }
 
     private void SetSortDefaults(NodeKind nodeKind)

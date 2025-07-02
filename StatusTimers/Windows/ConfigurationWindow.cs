@@ -137,7 +137,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () => {
                         overlay.OverlayConfig.Notify(
                             nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            needsRebuild: true
+                            updateNodes: true
                         );
                     },
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -157,7 +157,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () => {
                         overlay.OverlayConfig.Notify(
                             nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            updateNodes: false
+                            updateNodes: true
                         );
                     },
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -177,7 +177,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () => {
                         overlay.OverlayConfig.Notify(
                             nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            needsRebuild: true
+                            updateNodes: true
                         );
                     },
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -195,7 +195,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () => {
                         overlay.OverlayConfig.Notify(
                             nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            needsRebuild: true
+                            updateNodes: true
                         );
                     },
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -216,7 +216,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         onChanged: () => {
                             overlay.OverlayConfig.Notify(
                                 nameof(overlay.OverlayConfig.StatusNodeLayout),
-                                needsRebuild: true
+                                updateNodes: true
                             );
                         },
                         onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)

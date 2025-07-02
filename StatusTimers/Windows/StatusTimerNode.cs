@@ -36,7 +36,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
         _getOverlayConfig = getOverlayConfig;
-        //_currentOverlayConfig.StatusNodeLayout = new StatusNodeLayoutConfig();
 
         var config = _getOverlayConfig();
         _layout = config.StatusNodeLayout;
@@ -69,6 +68,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             TextFlags = TextFlags.Edge,
             NodeFlags = NodeFlags.Clip
         };
+        config.StatusNameTextStyle.Changed += OnStatusNameTextStyleChanged;
         GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
         _progressNode = new CastBarProgressBarNode {
@@ -92,6 +92,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             TextOutlineColor = config.ActorNameTextStyle.TextOutlineColor,
             TextFlags = TextFlags.Edge
         };
+        config.ActorNameTextStyle.Changed += OnActorNameTextStyleChanged;
         GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
 
         SetRemainingNode();
@@ -141,12 +142,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             SetRemainingNode();
         }
 
-        ApplyStyle(_statusRemaining, config.StatusRemainingTextStyle);
+        ApplyNodeSettings(_iconNode, config.StatusNodeLayout.IconAnchor, config.ShowIcon);
+        ApplyNodeSettings(_statusName, config.StatusNodeLayout.NameAnchor, config.ShowStatusName);
+        ApplyNodeSettings(_progressNode, config.StatusNodeLayout.ProgressAnchor, config.ShowProgress);
+        ApplyNodeSettings(_actorName, config.StatusNodeLayout.ActorNameAnchor, config.ShowActorName);
 
-        _iconNode.IsVisible = config.ShowIcon;
+        UpdateLayoutOffsets();
 
-        _statusName.IsVisible = config.ShowStatusName;
-        _progressNode.IsVisible = config.ShowProgress;
         _actorName.IsVisible = config.ShowActorName && _statusInfo.ActorName != null;
 
         UpdateValues();
@@ -171,6 +173,15 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 ngn.TextFlags = style.TextFlags;
                 break;
         }
+    }
+
+    private void ApplyNodeSettings(NodeBase node, StatusNodeAnchorConfig anchor, bool isVisible)
+    {
+        node.IsVisible = isVisible;
+        node.Width = anchor.Width;
+        node.Height = anchor.Height;
+        node.X = anchor.OffsetX;
+        node.Y = anchor.OffsetY;
     }
 
     private void RegisterNodeMap() {
@@ -327,7 +338,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 TextFlags = config.StatusRemainingTextStyle.TextFlags
             };
         }
-
+        config.StatusRemainingTextStyle.Changed += OnStatusRemainingTextStyleChanged;
         GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
         _statusRemaining.X = Width - _statusRemaining.Width;
     }
@@ -387,6 +398,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             }
         }
     }
+
+    private void OnStatusNameTextStyleChanged() => ApplyStyle(_statusName, _getOverlayConfig().StatusNameTextStyle);
+    private void OnActorNameTextStyleChanged() => ApplyStyle(_actorName, _getOverlayConfig().ActorNameTextStyle);
+    private void OnStatusRemainingTextStyleChanged() => ApplyStyle(_statusRemaining, _getOverlayConfig().StatusRemainingTextStyle);
 
     private unsafe void OnIconClicked(AddonEventData eventData) {
         var config = _getOverlayConfig();
@@ -465,6 +480,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     protected override void Dispose(bool disposing) {
         if (disposing) {
+            _getOverlayConfig().StatusNameTextStyle.Changed -= OnStatusNameTextStyleChanged;
+            _getOverlayConfig().StatusRemainingTextStyle.Changed -= OnStatusRemainingTextStyleChanged;
+            _getOverlayConfig().ActorNameTextStyle.Changed -= OnActorNameTextStyleChanged;
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();
