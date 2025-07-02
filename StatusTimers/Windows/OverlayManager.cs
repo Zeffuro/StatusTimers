@@ -54,7 +54,7 @@ public unsafe class OverlayManager : IDisposable {
         _colorPickerAddon = new ColorPickerAddon(this) {
             InternalName = "StatusTimerColorPicker",
             Title = "Pick a color",
-            Size = new Vector2(600, 400),
+            Size = new Vector2(540, 460),
             NativeController = Services.Services.NativeController
         };
 
