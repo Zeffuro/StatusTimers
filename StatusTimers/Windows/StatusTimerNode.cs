@@ -416,6 +416,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         if (atkEventData->MouseData.ButtonId == 1 && Kind == NodeKind.Combined &&
             config.AllowDismissStatus) {
+        }
+
+        if (atkEventData->MouseData.ButtonId == 0 && Kind == NodeKind.MultiDoT) {
             gameObjectToTargetId = _statusInfo.GameObjectId;
         }
 

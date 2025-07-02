@@ -170,7 +170,7 @@ public class StatusTimerOverlayConfig
             if (GrowDirection != value)
             {
                 field = value;
-                Notify(nameof(GrowDirection), needsRebuild: true);
+                Notify(nameof(GrowDirection));
             }
         }
     } = GrowDirection.DownRight;
