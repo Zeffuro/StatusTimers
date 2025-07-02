@@ -14,7 +14,7 @@ namespace StatusTimers.Factories;
 public static class SortUIFactory
 {
     public static VerticalListNode<NodeBase> CreateSortPrioritySection(
-        StatusTimerOverlayConfig? config,
+        Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind)
     {
         var section = new VerticalListNode<NodeBase>
@@ -55,30 +55,30 @@ public static class SortUIFactory
         // Primary Sort
         section.AddNode(CreateSortRow(
             "Primary:",
-            () => config.PrimarySort,
-            v => config.PrimarySort = v,
-            () => config.PrimarySortOrder,
-            v => config.PrimarySortOrder = v,
+            () => getConfig().PrimarySort,
+            v => getConfig().PrimarySort = v,
+            () => getConfig().PrimarySortOrder,
+            v => getConfig().PrimarySortOrder = v,
             sortCriteriaMap
         ));
 
         // Secondary Sort
         section.AddNode(CreateSortRow(
             "Secondary:",
-            () => config.SecondarySort,
-            v => config.SecondarySort = v,
-            () => config.SecondarySortOrder,
-            v => config.SecondarySortOrder = v,
+            () => getConfig().SecondarySort,
+            v => getConfig().SecondarySort = v,
+            () => getConfig().SecondarySortOrder,
+            v => getConfig().SecondarySortOrder = v,
             sortCriteriaMap
         ));
 
         // Tertiary Sort
         section.AddNode(CreateSortRow(
             "Tertiary:",
-            () => config.TertiarySort,
-            v => config.TertiarySort = v,
-            () => config.TertiarySortOrder,
-            v => config.TertiarySortOrder = v,
+            () => getConfig().TertiarySort,
+            v => getConfig().TertiarySort = v,
+            () => getConfig().TertiarySortOrder,
+            v => getConfig().TertiarySortOrder = v,
             sortCriteriaMap
         ));
 

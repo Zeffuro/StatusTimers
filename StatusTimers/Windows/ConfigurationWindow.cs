@@ -22,11 +22,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _filterSectionNodes = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
     private TabBarNode _tabBar;
-    //private ModalNode _modal;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
-        //_modal = new ModalNode();
-        //NativeController.AttachNode(_modal.RootNode, this);
         _configScrollingAreas.Clear();
         _configLists.Clear();
         _filterSectionNodes.Clear();
@@ -67,10 +64,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
         foreach ((NodeKind kind, int _) in nodeKinds.Select((kind, index) => (kind, index))) {
             StatusTimerOverlay<StatusKey>? overlay = GetOverlayByKind(kind);
-            StatusTimerOverlayConfig? currentOverlayConfig = GetOverlayByKind(kind)?.OverlayConfig;
+
             _tabBar.AddTab(kind.ToString(), () => OnTabButtonClick(kind));
 
-            if (overlay == null || currentOverlayConfig == null) {
+            if (overlay == null || overlay.OverlayConfig == null) {
                 continue;
             }
 
@@ -101,7 +98,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
 
             _configLists[kind].AddNode(
-                ImportExportResetUIFactory.Create(currentOverlayConfig, kind,
+                ImportExportResetUIFactory.Create(() => overlay.OverlayConfig, kind,
                     onConfigChanged: () => { },
                     closeWindow: Close)
             );
@@ -122,7 +119,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 VisualSettingsUIFactory.Create(
                     overlay,
-                    currentOverlayConfig,
+                    () => overlay.OverlayConfig,
                     onChanged: () => { },
                     optionOffset: OptionOffset,
                     checkBoxHeight: CheckBoxHeight
@@ -133,13 +130,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "icon",
-                    currentOverlayConfig.StatusNodeLayout.IconAnchor,
+                    overlay.OverlayConfig.StatusNodeLayout.IconAnchor,
                     overlayManager,
-                    getEnabled: () => currentOverlayConfig.ShowIcon,
-                    setEnabled: v => currentOverlayConfig.ShowIcon = v,
+                    getEnabled: () => overlay.OverlayConfig.ShowIcon,
+                    setEnabled: v => overlay.OverlayConfig.ShowIcon = v,
                     onChanged: () => {
-                        currentOverlayConfig.Notify(
-                            nameof(currentOverlayConfig.StatusNodeLayout),
+                        overlay.OverlayConfig.Notify(
+                            nameof(overlay.OverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
                     },
@@ -151,16 +148,16 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "status name",
-                    currentOverlayConfig.StatusNodeLayout.NameAnchor,
+                    overlay.OverlayConfig.StatusNodeLayout.NameAnchor,
                     overlayManager,
-                    getEnabled: () => currentOverlayConfig.ShowStatusName,
-                    setEnabled: v => currentOverlayConfig.ShowStatusName = v,
-                    getStyle: () => currentOverlayConfig.StatusNameTextStyle,
-                    setStyle: s => currentOverlayConfig.StatusNameTextStyle = s,
+                    getEnabled: () => overlay.OverlayConfig.ShowStatusName,
+                    setEnabled: v => overlay.OverlayConfig.ShowStatusName = v,
+                    getStyle: () => overlay.OverlayConfig.StatusNameTextStyle,
+                    setStyle: s => overlay.OverlayConfig.StatusNameTextStyle = s,
                     onChanged: () => {
-                        currentOverlayConfig.Notify(
-                            nameof(currentOverlayConfig.StatusNodeLayout),
-                            needsRebuild: true
+                        overlay.OverlayConfig.Notify(
+                            nameof(overlay.OverlayConfig.StatusNodeLayout),
+                            updateNodes: false
                         );
                     },
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -171,15 +168,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "time remaining",
-                    currentOverlayConfig.StatusNodeLayout.TimerAnchor,
+                    overlay.OverlayConfig.StatusNodeLayout.TimerAnchor,
                     overlayManager,
-                    getEnabled: () => currentOverlayConfig.ShowStatusRemaining,
-                    setEnabled: v => currentOverlayConfig.ShowStatusRemaining = v,
-                    getStyle: () => currentOverlayConfig.StatusRemainingTextStyle,
-                    setStyle: s => currentOverlayConfig.StatusRemainingTextStyle = s,
+                    getEnabled: () => overlay.OverlayConfig.ShowStatusRemaining,
+                    setEnabled: v => overlay.OverlayConfig.ShowStatusRemaining = v,
+                    getStyle: () => overlay.OverlayConfig.StatusRemainingTextStyle,
+                    setStyle: s => overlay.OverlayConfig.StatusRemainingTextStyle = s,
                     onChanged: () => {
-                        currentOverlayConfig.Notify(
-                            nameof(currentOverlayConfig.StatusNodeLayout),
+                        overlay.OverlayConfig.Notify(
+                            nameof(overlay.OverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
                     },
@@ -191,13 +188,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "progressbar",
-                    currentOverlayConfig.StatusNodeLayout.ProgressAnchor,
+                    overlay.OverlayConfig.StatusNodeLayout.ProgressAnchor,
                     overlayManager,
-                    getEnabled: () => currentOverlayConfig.ShowProgress,
-                    setEnabled: v => currentOverlayConfig.ShowProgress = v,
+                    getEnabled: () => overlay.OverlayConfig.ShowProgress,
+                    setEnabled: v => overlay.OverlayConfig.ShowProgress = v,
                     onChanged: () => {
-                        currentOverlayConfig.Notify(
-                            nameof(currentOverlayConfig.StatusNodeLayout),
+                        overlay.OverlayConfig.Notify(
+                            nameof(overlay.OverlayConfig.StatusNodeLayout),
                             needsRebuild: true
                         );
                     },
@@ -210,15 +207,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 mainSettingsGroup.AddNode(
                     NodeLayoutUIFactory.CreateNodeLayoutSection(
                         "enemy name",
-                        currentOverlayConfig.StatusNodeLayout.ActorNameAnchor,
+                        overlay.OverlayConfig.StatusNodeLayout.ActorNameAnchor,
                         overlayManager,
-                        getEnabled: () => currentOverlayConfig.ShowActorName,
-                        setEnabled: v => currentOverlayConfig.ShowActorName = v,
-                        getStyle: () => currentOverlayConfig.ActorNameTextStyle,
-                        setStyle: s => currentOverlayConfig.ActorNameTextStyle = s,
+                        getEnabled: () => overlay.OverlayConfig.ShowActorName,
+                        setEnabled: v => overlay.OverlayConfig.ShowActorName = v,
+                        getStyle: () => overlay.OverlayConfig.ActorNameTextStyle,
+                        setStyle: s => overlay.OverlayConfig.ActorNameTextStyle = s,
                         onChanged: () => {
-                            currentOverlayConfig.Notify(
-                                nameof(currentOverlayConfig.StatusNodeLayout),
+                            overlay.OverlayConfig.Notify(
+                                nameof(overlay.OverlayConfig.StatusNodeLayout),
                                 needsRebuild: true
                             );
                         },
@@ -226,8 +223,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     )
                 );
                 mainSettingsGroup.AddNode(ConfigurationUIFactory.CreateCheckboxOption("Show enemy letter",
-                    () => currentOverlayConfig.ShowActorLetter,
-                    isChecked => currentOverlayConfig.ShowActorLetter = isChecked));
+                    () => overlay.OverlayConfig.ShowActorLetter,
+                    isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked));
             }
 
             mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
@@ -235,7 +232,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             // Functional Settings
             mainSettingsGroup.AddNode(
                 FunctionalSettingsUIFactory.Create(
-                    currentOverlayConfig,
+                    () => overlay.OverlayConfig,
                     kind,
                     onChanged: () => { },
                     checkBoxHeight: CheckBoxHeight
@@ -244,13 +241,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Sorting Priority Settings
             mainSettingsGroup.AddNode(
-                SortUIFactory.CreateSortPrioritySection(currentOverlayConfig, kind)
+                SortUIFactory.CreateSortPrioritySection(() => overlay.OverlayConfig, kind)
             );
 
             // Filtering Settings
             void UpdateFilterSection() {
                 var oldNode = _filterSectionNodes.ContainsKey(kind) ? _filterSectionNodes[kind] : null;
-                var newNode = FilterUIFactory.CreateFilterSection(currentOverlayConfig,
+                var newNode = FilterUIFactory.CreateFilterSection(() => overlay.OverlayConfig,
                     () => {
                         GlobalServices.Logger.Info("Filter section changed");
                         UpdateFilterSection();

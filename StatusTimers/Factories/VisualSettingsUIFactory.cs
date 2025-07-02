@@ -16,7 +16,7 @@ public static class VisualSettingsUIFactory
 {
     public static VerticalListNode<NodeBase> Create(
         StatusTimerOverlay<StatusKey> overlay,
-        StatusTimerOverlayConfig config,
+        Func<StatusTimerOverlayConfig> getConfig,
         Action? onChanged = null,
         float optionOffset = 18,
         float checkBoxHeight = 16)
@@ -73,8 +73,8 @@ public static class VisualSettingsUIFactory
                 Text = "Scale"
             },
             ConfigurationUIFactory.CreateLabeledNumericOption("Horizontal Padding",
-                () => config.StatusHorizontalPadding,
-                value => { config.StatusHorizontalPadding = value; onChanged?.Invoke(); }
+                () => getConfig().StatusHorizontalPadding,
+                value => { getConfig().StatusHorizontalPadding = value; onChanged?.Invoke(); }
             ),
             checkBoxHeight
         ));
@@ -87,12 +87,12 @@ public static class VisualSettingsUIFactory
                 5,
                 200,
                 5,
-                () => config.ScaleInt,
-                value => { config.ScaleInt = value; onChanged?.Invoke(); }
+                () => getConfig().ScaleInt,
+                value => { getConfig().ScaleInt = value; onChanged?.Invoke(); }
             ),
             ConfigurationUIFactory.CreateLabeledNumericOption("Vertical Padding",
-                () => config.StatusVerticalPadding,
-                value => { config.StatusVerticalPadding = value; onChanged?.Invoke(); }
+                () => getConfig().StatusVerticalPadding,
+                value => { getConfig().StatusVerticalPadding = value; onChanged?.Invoke(); }
             ),
             30
         ));
@@ -111,7 +111,7 @@ public static class VisualSettingsUIFactory
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
             AlignmentType = AlignmentType.Left,
-            Text = $"Statuses per {(config.FillRowsFirst ? "row" : "column")}"
+            Text = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}"
         };
 
         node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
@@ -138,15 +138,15 @@ public static class VisualSettingsUIFactory
                 1,
                 30,
                 1,
-                () => config.ItemsPerLine,
-                value => { config.ItemsPerLine = value; onChanged?.Invoke(); }
+                () => getConfig().ItemsPerLine,
+                value => { getConfig().ItemsPerLine = value; onChanged?.Invoke(); }
             ),
             ConfigurationUIFactory.CreateSliderOption(
                 1,
                 30,
                 1,
-                () => config.MaxStatuses,
-                value => { config.MaxStatuses = value; onChanged?.Invoke(); }
+                () => getConfig().MaxStatuses,
+                value => { getConfig().MaxStatuses = value; onChanged?.Invoke(); }
             ),
             30
         ));
@@ -154,17 +154,17 @@ public static class VisualSettingsUIFactory
         // Fill columns first + Grow direction dropdown
         node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
             ConfigurationUIFactory.CreateCheckboxOption("Fill columns first",
-                () => !config.FillRowsFirst,
+                () => !getConfig().FillRowsFirst,
                 isChecked =>
                 {
-                    config.FillRowsFirst = !isChecked;
-                    statusPerLineNode.Text = $"Statuses per {(config.FillRowsFirst ? "row" : "column")}";
+                    getConfig().FillRowsFirst = !isChecked;
+                    statusPerLineNode.Text = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}";
                     onChanged?.Invoke();
                 }),
             ConfigurationUIFactory.CreateLabeledDropdown(
                 "Grow direction",
-                () => config.GrowDirection,
-                value => { config.GrowDirection = value; onChanged?.Invoke(); },
+                () => getConfig().GrowDirection,
+                value => { getConfig().GrowDirection = value; onChanged?.Invoke(); },
                 new System.Collections.Generic.Dictionary<GrowDirection, string>
                 {
                     { GrowDirection.DownRight, "Down and Right" },
@@ -178,9 +178,9 @@ public static class VisualSettingsUIFactory
 
         // Animations
         node.AddNode(ConfigurationUIFactory.CreateCheckboxOption("Animations enabled",
-            () => config.AnimationsEnabled,
+            () => getConfig().AnimationsEnabled,
             value => {
-                config.AnimationsEnabled = value;
+                getConfig().AnimationsEnabled = value;
                 onChanged?.Invoke();
             }
         ));

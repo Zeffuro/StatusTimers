@@ -20,7 +20,7 @@ namespace StatusTimers.Factories;
 public static class ImportExportResetUIFactory
 {
     public static HorizontalListNode<NodeBase> Create(
-        StatusTimerOverlayConfig currentOverlayConfig,
+        Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind,
         Action onConfigChanged,
         Action closeWindow)
@@ -41,7 +41,7 @@ public static class ImportExportResetUIFactory
             IsVisible = true,
             Tooltip = " Import Configuration\n(hold shift to confirm)",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
-            OnClick = () => TryImportConfigFromClipboard(currentOverlayConfig, onConfigChanged, closeWindow)
+            OnClick = () => TryImportConfigFromClipboard(getConfig(), onConfigChanged, closeWindow)
         });
 
         // Export Button
@@ -51,7 +51,7 @@ public static class ImportExportResetUIFactory
             IsVisible = true,
             Tooltip = "Export Configuration",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
-            OnClick = () => TryExportConfigToClipboard(currentOverlayConfig)
+            OnClick = () => TryExportConfigToClipboard(getConfig())
         });
 
         // Reset Configuration Hold Button
@@ -62,7 +62,7 @@ public static class ImportExportResetUIFactory
             Width = 100,
             Label = "Reset",
             Tooltip = "   Reset configuration\n(hold button to confirm)",
-            OnClick = () => TryResetConfig(currentOverlayConfig, kind, onConfigChanged, closeWindow)
+            OnClick = () => TryResetConfig(getConfig(), kind, onConfigChanged, closeWindow)
         });
 
         return node;

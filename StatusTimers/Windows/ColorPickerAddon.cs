@@ -725,6 +725,8 @@ public class ColorPickerAddon : NativeAddon
             SetCrosshairPosition(_alphaCrosshair, _alphaBarNode.Width / 2f, crossY);
         }
 
+        _onPicked?.Invoke(_workingColor);
+
         _isUpdating = false;
     }
 

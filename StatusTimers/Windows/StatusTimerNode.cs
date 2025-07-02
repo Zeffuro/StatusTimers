@@ -23,7 +23,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private TextNode _actorName;
     private ResNode _containerResNode;
 
-    private StatusTimerOverlayConfig? _currentOverlayConfig;
+    private readonly Func<StatusTimerOverlayConfig> _getOverlayConfig;
     private StatusNodeLayoutConfig _layout;
     private IconImageNode _iconNode;
 
@@ -34,11 +34,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private Dictionary<string, NodeBase> _nodeMap = new();
 
-    public StatusTimerNode(StatusTimerOverlayConfig? initialOverlayConfig) {
-        _currentOverlayConfig = initialOverlayConfig;
+    public StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
+        _getOverlayConfig = getOverlayConfig;
         //_currentOverlayConfig.StatusNodeLayout = new StatusNodeLayoutConfig();
 
-        _layout = _currentOverlayConfig.StatusNodeLayout;
+        var config = _getOverlayConfig();
+        _layout = config.StatusNodeLayout;
 
         _containerResNode = new ResNode {
             IsVisible = true,
@@ -48,7 +49,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
 
         _iconNode = new IconImageNode {
-            IsVisible = _currentOverlayConfig.ShowIcon,
+            IsVisible = config.ShowIcon,
             Width = _layout.IconAnchor.Width,
             Height = _layout.IconAnchor.Height,
             X = _layout.IconAnchor.OffsetX,
@@ -57,21 +58,21 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
         _statusName = new TextNode {
-            IsVisible = _currentOverlayConfig.ShowStatusName,
+            IsVisible = config.ShowStatusName,
             Width = _layout.NameAnchor.Width,
             Height = _layout.NameAnchor.Height,
-            FontSize = (uint)_currentOverlayConfig.StatusNameTextStyle.FontSize,
+            FontSize = (uint)config.StatusNameTextStyle.FontSize,
             X = _layout.NameAnchor.OffsetX,
             Y = _layout.NameAnchor.OffsetY,
-            TextColor = _currentOverlayConfig.StatusNameTextStyle.TextColor,
-            TextOutlineColor = _currentOverlayConfig.StatusNameTextStyle.TextOutlineColor,
+            TextColor = config.StatusNameTextStyle.TextColor,
+            TextOutlineColor = config.StatusNameTextStyle.TextOutlineColor,
             TextFlags = TextFlags.Edge,
             NodeFlags = NodeFlags.Clip
         };
         GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
         _progressNode = new CastBarProgressBarNode {
-            IsVisible = _currentOverlayConfig.ShowProgress,
+            IsVisible = config.ShowProgress,
             Height = _layout.ProgressAnchor.Height,
             Width = _layout.ProgressAnchor.Width > 0 ? _layout.ProgressAnchor.Width : 200,
             X = _layout.ProgressAnchor.OffsetX,
@@ -81,23 +82,23 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
 
         _actorName = new TextNode {
-            IsVisible = _currentOverlayConfig.ShowActorName,
+            IsVisible = config.ShowActorName,
             Width = _layout.ActorNameAnchor.Width,
             Height = _layout.ActorNameAnchor.Height,
-            FontSize = (uint)_currentOverlayConfig.ActorNameTextStyle.FontSize,
+            FontSize = (uint)config.ActorNameTextStyle.FontSize,
             X = _layout.ActorNameAnchor.OffsetX,
             Y = _layout.ActorNameAnchor.OffsetY,
-            TextColor = _currentOverlayConfig.ActorNameTextStyle.TextColor,
-            TextOutlineColor = _currentOverlayConfig.ActorNameTextStyle.TextOutlineColor,
+            TextColor = config.ActorNameTextStyle.TextColor,
+            TextOutlineColor = config.ActorNameTextStyle.TextOutlineColor,
             TextFlags = TextFlags.Edge
         };
         GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
 
-        SetRemainingNode(_currentOverlayConfig);
+        SetRemainingNode();
 
         RegisterNodeMap();
 
-        if (_currentOverlayConfig.ShowActorLetter || _currentOverlayConfig.AllowTargetActor) {
+        if (config.ShowActorLetter || config.AllowTargetActor) {
             _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
             _iconNode.EventFlagsSet = true;
         }
@@ -115,7 +116,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         get => _statusInfo;
         set {
             _statusInfo = value;
-            UpdateValues(_currentOverlayConfig);
+            UpdateValues();
         }
     }
 
@@ -129,20 +130,15 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
 
-    public void ApplyOverlayConfig(StatusTimerOverlayConfig? config)
-    {
-        if (_currentOverlayConfig.Equals(config)) {
-            return;
-        }
-
-        _currentOverlayConfig = config;
+    public void ApplyOverlayConfig() {
+        var config = _getOverlayConfig();
 
         bool needsRebuild =
             (_statusRemaining is TextNineGridNode) != config.ShowStatusRemainingBackground
             || !GetCurrentTextStyle(_statusRemaining)!.Equals(config.StatusRemainingTextStyle);
 
         if (needsRebuild) {
-            SetRemainingNode(config);
+            SetRemainingNode();
         }
 
         ApplyStyle(_statusRemaining, config.StatusRemainingTextStyle);
@@ -153,7 +149,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _progressNode.IsVisible = config.ShowProgress;
         _actorName.IsVisible = config.ShowActorName && _statusInfo.ActorName != null;
 
-        UpdateValues(config);
+        UpdateValues();
     }
 
     private void ApplyStyle(NodeBase node, TextStyle style)
@@ -186,7 +182,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _nodeMap["Timer"] = _statusRemaining;
         }
 
-        if (_currentOverlayConfig.ShowActorLetter || _currentOverlayConfig.AllowTargetActor) {
+        var config = _getOverlayConfig();
+        if (config.ShowActorLetter || config.AllowTargetActor) {
             _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
             _iconNode.EventFlagsSet = true;
         }
@@ -287,7 +284,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.Y = y;
     }
 
-    private void SetRemainingNode(StatusTimerOverlayConfig? config) {
+    private void SetRemainingNode() {
+        var config = _getOverlayConfig();
         bool shouldBeNineGrid = config.ShowStatusRemainingBackground;
         bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
 
@@ -334,7 +332,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _statusRemaining.X = Width - _statusRemaining.Width;
     }
 
-    public void UpdateValues(StatusTimerOverlayConfig? config) {
+    public void UpdateValues() {
+        var config = _getOverlayConfig();
+
         if (_statusInfo.Id != 0) {
             _iconNode.IconId = _statusInfo.IconId;
         }
@@ -389,6 +389,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     private unsafe void OnIconClicked(AddonEventData eventData) {
+        var config = _getOverlayConfig();
+
         if (_statusInfo.Id == 0) {
             return;
         }
@@ -398,7 +400,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         ulong? gameObjectToTargetId = null;
 
         if (atkEventData->MouseData.ButtonId == 1 && Kind == NodeKind.Combined &&
-            _currentOverlayConfig.AllowDismissStatus) {
+            config.AllowDismissStatus) {
             gameObjectToTargetId = _statusInfo.GameObjectId;
         }
 
@@ -406,8 +408,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _statusInfo.Id,
             gameObjectToTargetId,
             Kind,
-            _currentOverlayConfig.AllowDismissStatus,
-            _currentOverlayConfig.AllowTargetActor
+            config.AllowDismissStatus,
+            config.AllowTargetActor
         );
     }
 

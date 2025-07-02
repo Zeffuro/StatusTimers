@@ -21,7 +21,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
     private readonly List<StatusTimerNode<TKey>> _allNodes = new();
     private readonly List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
-    private readonly StatusTimerOverlayConfig? _overlayConfig;
+    private readonly Func<StatusTimerOverlayConfig?> _getOverlayConfig;
 
     private readonly StatusTimerOverlay<TKey> _ownerOverlay;
     private readonly List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
@@ -33,9 +33,9 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
     public StatusOverlayLayoutManager(
         StatusTimerOverlay<TKey> ownerOverlay,
-        StatusTimerOverlayConfig? overlayConfig) {
+        Func<StatusTimerOverlayConfig?> getOverlayConfig) {
         _ownerOverlay = ownerOverlay;
-        _overlayConfig = overlayConfig;
+        _getOverlayConfig = getOverlayConfig;
     }
 
     public Vector2 CalculatedOverlaySize { get; private set; }
@@ -81,13 +81,15 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
     }
 
     public Vector2 CalculateOverlaySize() {
+        var config = _getOverlayConfig();
+
         float totalWidth;
         float totalHeight;
 
-        int maxItems = _overlayConfig.MaxStatuses;
-        int itemsPerLine = Math.Min(_overlayConfig.ItemsPerLine, maxItems);
+        int maxItems = config.MaxStatuses;
+        int itemsPerLine = Math.Min(config.ItemsPerLine, maxItems);
 
-        if (_overlayConfig.FillRowsFirst) {
+        if (config.FillRowsFirst) {
             int numRows = (int)Math.Ceiling(maxItems / (double)itemsPerLine);
 
             int itemsInLastRow = maxItems % itemsPerLine;
@@ -96,12 +98,12 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
             }
 
             float widestRowWidth = Math.Max(
-                itemsPerLine * StatusNodeWidth + (itemsPerLine - 1) * _overlayConfig.StatusHorizontalPadding,
-                itemsInLastRow * StatusNodeWidth + Math.Max(0, (itemsInLastRow - 1)) * _overlayConfig.StatusHorizontalPadding
+                itemsPerLine * StatusNodeWidth + (itemsPerLine - 1) * config.StatusHorizontalPadding,
+                itemsInLastRow * StatusNodeWidth + Math.Max(0, (itemsInLastRow - 1)) * config.StatusHorizontalPadding
             );
 
             float allRowsHeight = numRows * StatusNodeHeight +
-                                  (numRows - 1) * _overlayConfig.StatusVerticalPadding;
+                                  (numRows - 1) * config.StatusVerticalPadding;
 
             totalWidth = widestRowWidth;
             totalHeight = allRowsHeight;
@@ -115,12 +117,12 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
             }
 
             float tallestColHeight = Math.Max(
-                itemsPerLine * StatusNodeHeight + (itemsPerLine - 1) * _overlayConfig.StatusVerticalPadding,
-                itemsInLastCol * StatusNodeHeight + Math.Max(0, (itemsInLastCol - 1)) * _overlayConfig.StatusVerticalPadding
+                itemsPerLine * StatusNodeHeight + (itemsPerLine - 1) * config.StatusVerticalPadding,
+                itemsInLastCol * StatusNodeHeight + Math.Max(0, (itemsInLastCol - 1)) * config.StatusVerticalPadding
             );
 
             float allColsWidth = numCols * StatusNodeWidth +
-                                 (numCols - 1) * _overlayConfig.StatusHorizontalPadding;
+                                 (numCols - 1) * config.StatusHorizontalPadding;
 
             totalWidth = allColsWidth;
             totalHeight = tallestColHeight;
@@ -165,29 +167,31 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         _rows.Clear();
         _columns.Clear();
 
-        CalculatedOverlaySize = CalculateOverlaySize();
-        int outerCount = (int)Math.Ceiling(_overlayConfig.MaxStatuses / (double)_overlayConfig.ItemsPerLine);
+        var config = _getOverlayConfig();
 
-        if (_overlayConfig.FillRowsFirst) {
+        CalculatedOverlaySize = CalculateOverlaySize();
+        int outerCount = (int)Math.Ceiling(config.MaxStatuses / (double)config.ItemsPerLine);
+
+        if (config.FillRowsFirst) {
             SetupContainers(
                 () => new VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> {
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
-                    ItemVerticalSpacing = _overlayConfig.StatusVerticalPadding
+                    ItemVerticalSpacing = config.StatusVerticalPadding
                 },
                 outer => GlobalServices.NativeController.AttachNode(outer, _ownerOverlay),
                 () => {
-                    float innerWidth = Math.Min(_overlayConfig.ItemsPerLine, _overlayConfig.MaxStatuses) * StatusNodeWidth +
-                                       (Math.Min(_overlayConfig.ItemsPerLine, _overlayConfig.MaxStatuses) - 1) *
-                                       _overlayConfig.StatusHorizontalPadding;
+                    float innerWidth = Math.Min(config.ItemsPerLine, config.MaxStatuses) * StatusNodeWidth +
+                                       (Math.Min(config.ItemsPerLine, config.MaxStatuses) - 1) *
+                                       config.StatusHorizontalPadding;
                     float innerHeight = StatusNodeHeight;
 
                     HorizontalListNode<StatusTimerNode<TKey>> list = new() {
                         Width = innerWidth,
                         Height = innerHeight,
                         IsVisible = true,
-                        ItemHorizontalSpacing = _overlayConfig.StatusHorizontalPadding
+                        ItemHorizontalSpacing = config.StatusHorizontalPadding
                     };
                     _rows.Add(list);
                     return list;
@@ -199,8 +203,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                     node.OuterContainer = inner;
                 },
                 outerCount,
-                _overlayConfig.ItemsPerLine,
-                _overlayConfig
+                config.ItemsPerLine
             );
         }
         else {
@@ -209,19 +212,19 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
-                    ItemHorizontalSpacing = _overlayConfig.StatusHorizontalPadding
+                    ItemHorizontalSpacing = config.StatusHorizontalPadding
                 },
                 outer => GlobalServices.NativeController.AttachNode(outer, _ownerOverlay),
                 () => {
                     float innerWidth = StatusNodeWidth;
-                    float innerHeight = Math.Min(_overlayConfig.ItemsPerLine, _overlayConfig.MaxStatuses) * StatusNodeHeight +
-                                        (Math.Min(_overlayConfig.ItemsPerLine, _overlayConfig.MaxStatuses) - 1) *
-                                        _overlayConfig.StatusVerticalPadding;
+                    float innerHeight = Math.Min(config.ItemsPerLine, config.MaxStatuses) * StatusNodeHeight +
+                                        (Math.Min(config.ItemsPerLine, config.MaxStatuses) - 1) *
+                                        config.StatusVerticalPadding;
                     VerticalListNode<StatusTimerNode<TKey>> list = new() {
                         Height = innerHeight,
                         Width = innerWidth,
                         IsVisible = true,
-                        ItemVerticalSpacing = _overlayConfig.StatusVerticalPadding,
+                        ItemVerticalSpacing = config.StatusVerticalPadding,
                         Alignment = VerticalListAnchor.Top
                     };
                     _columns.Add(list);
@@ -234,8 +237,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                     node.OuterContainer = inner;
                 },
                 outerCount,
-                _overlayConfig.ItemsPerLine,
-                _overlayConfig
+                config.ItemsPerLine
             );
         }
 
@@ -277,7 +279,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
     public void RecalculateLayout()
     {
-        var grow = _overlayConfig.GrowDirection;
+        var config = _getOverlayConfig();
+        var grow = config.GrowDirection;
 
         VerticalListAnchor verticalAnchor;
         HorizontalListAnchor horizontalAnchor;
@@ -333,11 +336,13 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
     public void UpdateAllNodesDisplay() {
         foreach (StatusTimerNode<TKey> node in _allNodes) {
-            node.ApplyOverlayConfig(_overlayConfig);
+            node.ApplyOverlayConfig();
         }
     }
 
     public void UpdateNodeContent(List<StatusInfo> finalSortedList, NodeKind nodeKind) {
+        var config = _getOverlayConfig();
+
         int i = 0;
         for (; i < finalSortedList.Count && i < _allNodes.Count; i++) {
             StatusInfo status = finalSortedList[i];
@@ -349,7 +354,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                 node.IsVisible = true;
             }
 
-            node.UpdateValues(_overlayConfig);
+            node.UpdateValues();
         }
 
         for (; i < _allNodes.Count; i++) {
@@ -365,20 +370,19 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         Action<TInner> configureInner,
         Action<TInner, StatusTimerNode<TKey>> addNodeToInner,
         int outerCount,
-        int itemsPerInner,
-        StatusTimerOverlayConfig? initialOverlayConfig
+        int itemsPerInner
     )
         where TOuter : NodeBase
         where TInner : NodeBase {
         TOuter outer = createOuter();
 
-        for (int i = 0, nodeIndex = 0; i < outerCount && nodeIndex < _overlayConfig.MaxStatuses; i++) {
+        for (int i = 0, nodeIndex = 0; i < outerCount && nodeIndex < _getOverlayConfig().MaxStatuses; i++) {
             TInner inner = createInner();
             configureInner(inner);
             addInnerToOuter(outer, inner);
 
-            for (int j = 0; j < itemsPerInner && nodeIndex < _overlayConfig.MaxStatuses; j++, nodeIndex++) {
-                StatusTimerNode<TKey> node = new(initialOverlayConfig) {
+            for (int j = 0; j < itemsPerInner && nodeIndex < _getOverlayConfig().MaxStatuses; j++, nodeIndex++) {
+                StatusTimerNode<TKey> node = new(_getOverlayConfig) {
                     Height = StatusNodeHeight,
                     Width = StatusNodeWidth,
                     Origin = new Vector2(StatusNodeWidth / 2, StatusNodeHeight / 2),

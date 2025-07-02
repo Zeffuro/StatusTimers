@@ -13,7 +13,7 @@ namespace StatusTimers.Factories;
 public static class FunctionalSettingsUIFactory
 {
     public static VerticalListNode<NodeBase> Create(
-        StatusTimerOverlayConfig config,
+        Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind,
         Action? onChanged = null,
         float checkBoxHeight = 16)
@@ -45,22 +45,22 @@ public static class FunctionalSettingsUIFactory
             // Hide permanent statuses
             node.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
                 "Hide permanent statuses",
-                () => !config.ShowPermaIcons,
-                isChecked => { config.ShowPermaIcons = !isChecked; onChanged?.Invoke(); }
+                () => !getConfig().ShowPermaIcons,
+                isChecked => { getConfig().ShowPermaIcons = !isChecked; onChanged?.Invoke(); }
             ));
 
             // Show food/potion name
             node.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
                 "Show food or potion name instead of Well Fed/Medicated.",
-                () => config.StatusAsItemName,
-                isChecked => { config.StatusAsItemName = isChecked; onChanged?.Invoke(); }
+                () => getConfig().StatusAsItemName,
+                isChecked => { getConfig().StatusAsItemName = isChecked; onChanged?.Invoke(); }
             ));
 
             // Allow dismissing status by right-clicking the status icon
             node.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
                 "Allow dismissing status by right-clicking the status icon.",
-                () => config.AllowDismissStatus,
-                isChecked => { config.AllowDismissStatus = isChecked; onChanged?.Invoke(); }
+                () => getConfig().AllowDismissStatus,
+                isChecked => { getConfig().AllowDismissStatus = isChecked; onChanged?.Invoke(); }
             ));
         }
 
@@ -70,8 +70,8 @@ public static class FunctionalSettingsUIFactory
             // Allow targeting the enemy by clicking the status icon
             node.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
                 "Allow targeting the enemy by clicking the status icon.",
-                () => config.AllowTargetActor,
-                isChecked => { config.AllowTargetActor = isChecked; onChanged?.Invoke(); }
+                () => getConfig().AllowTargetActor,
+                isChecked => { getConfig().AllowTargetActor = isChecked; onChanged?.Invoke(); }
             ));
         }
 

@@ -50,7 +50,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
         _layoutManager = new StatusOverlayLayoutManager<TKey>(
             this,
-            OverlayConfig
+            () => OverlayConfig
         );
 
         _layoutManager.SetNodeActionHandler(HandleStatusNodeAction);

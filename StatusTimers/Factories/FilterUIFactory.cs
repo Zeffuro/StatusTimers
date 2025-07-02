@@ -31,7 +31,7 @@ public static class FilterUIFactory
     private const float SectionHeight = 400;
 
     public static VerticalListNode<NodeBase> CreateFilterSection(
-        StatusTimerOverlayConfig? config,
+        Func<StatusTimerOverlayConfig> getConfig,
         FilterChangedCallback? onChanged = null,
         Action? onToggled = null)
     {
@@ -62,16 +62,16 @@ public static class FilterUIFactory
 
         var filterContentGroup = new VerticalListNode<NodeBase>
         {
-            IsVisible = config.FilterEnabled,
+            IsVisible = getConfig().FilterEnabled,
             FitContents = true,
             ItemVerticalSpacing = 4,
         };
 
         section.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
             "Enabled",
-            () => config.FilterEnabled,
+            () => getConfig().FilterEnabled,
             isChecked => {
-                config.FilterEnabled = isChecked;
+                getConfig().FilterEnabled = isChecked;
                 if (filterContentGroup != null) {
                     filterContentGroup.IsVisible = isChecked;
                     section.Height = isChecked ? SectionHeight : CheckBoxHeight;
@@ -102,16 +102,16 @@ public static class FilterUIFactory
 
         radioButtonGroup.AddButton("Blacklist", () =>
         {
-            config.FilterIsBlacklist = true;
+            getConfig().FilterIsBlacklist = true;
             onChanged?.Invoke();
         });
         radioButtonGroup.AddButton("Whitelist", () =>
         {
-            config.FilterIsBlacklist = false;
+            getConfig().FilterIsBlacklist = false;
             onChanged?.Invoke();
         });
 
-        radioButtonGroup.SelectedOption = config.FilterIsBlacklist ? "Blacklist" : "Whitelist";
+        radioButtonGroup.SelectedOption = getConfig().FilterIsBlacklist ? "Blacklist" : "Whitelist";
         horizontalListNode.AddNode(radioButtonGroup);
 
         horizontalListNode.AddNode(
@@ -121,7 +121,7 @@ public static class FilterUIFactory
                 IsVisible = true,
                 Tooltip = "Export Filter List",
                 TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
-                OnClick = () => TryExportFilterListToClipboard(config.FilterList)
+                OnClick = () => TryExportFilterListToClipboard(getConfig().FilterList)
             }
         );
         horizontalListNode.AddNode(
@@ -132,7 +132,7 @@ public static class FilterUIFactory
                 IsVisible = true,
                 TooltipString = "     Import Filter List \n(hold shift to confirm)",
                 TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
-                OnClick = () => TryImportFilterListFromClipboard(config, onChanged)
+                OnClick = () => TryImportFilterListFromClipboard(getConfig(), onChanged)
             }
         );
 
@@ -144,7 +144,7 @@ public static class FilterUIFactory
             status => status.Icon,
             status =>
             {
-                if (config.FilterList.Add(status.RowId)) {
+                if (getConfig().FilterList.Add(status.RowId)) {
                     onChanged?.Invoke();
                 }
             });
@@ -152,11 +152,11 @@ public static class FilterUIFactory
         filterContentGroup.AddNode(filteredDropdownNode);
 
         var statusListNode = CreateStatusListNode(
-            config.FilterList,
+            getConfig().FilterList,
             allStatuses,
             rowId =>
             {
-                if (config.FilterList.Remove(rowId)) {
+                if (getConfig().FilterList.Remove(rowId)) {
                     onChanged?.Invoke();
                 }
             }
