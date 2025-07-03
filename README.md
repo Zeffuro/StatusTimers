@@ -1,6 +1,6 @@
 # StatusTimers Plugin
 
-A Final Fantasy XIV Dalamud Plugin that shows you your statuses (buffs and debuffs) with a progressbar using Native UI elements (made possible by KTK, KamiToolKit).
+A Final Fantasy XIV Dalamud Plugin that shows you your statuses (buffs and debuffs) with a timer and progressbar using Native UI elements (made possible by KTK, KamiToolKit).
 
 ![example](Images/example.png)
 

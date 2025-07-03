@@ -9,6 +9,28 @@
         <ProjectReference Include="..\KamiToolKit\KamiToolKit.csproj"/>
     </ItemGroup>
 
+    <!-- Release Configuration -->
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <Deterministic>true</Deterministic>
+    </PropertyGroup>
+
+    <!-- Dalamud Configuration -->
+    <PropertyGroup>
+        <DalamudCIDist>release</DalamudCIDist>
+        <DalamudVersion>dev</DalamudVersion>
+        <DalamudLocal>../dalamud/</DalamudLocal>
+        <DalamudLibPath>$(APPDATA)\XIVLauncher\addon\Hooks\$(DalamudVersion)\</DalamudLibPath>
+    </PropertyGroup>
+
+    <!-- Assembly Reference Locations -->
+    <PropertyGroup>
+        <AssemblySearchPaths>
+            $(AssemblySearchPaths);
+            $(DalamudLocal);
+            $(DalamudLibPath);
+        </AssemblySearchPaths>
+    </PropertyGroup>
+
     <ItemGroup>
         <Content Include="Media\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
