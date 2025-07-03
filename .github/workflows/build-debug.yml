@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout and Initialise
         uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       # Get Date and time
       - name: Set Date Output
