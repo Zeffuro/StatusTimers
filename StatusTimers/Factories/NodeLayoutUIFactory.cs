@@ -21,15 +21,11 @@ public static class NodeLayoutUIFactory
 {
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
-    private const float SectionHeight = 200;
+    private const float SectionHeight = 220;
     public static VerticalListNode<NodeBase> CreateNodeLayoutSection(
         string label,
-        StatusNodeAnchorConfig anchorConfig,
+        StatusTimerOverlayConfig.NodePartConfig nodePart,
         OverlayManager? overlayManager,
-        Func<bool> getEnabled = null,
-        Action<bool> setEnabled = null,
-        Func<TextStyle> getStyle = null,
-        Action<TextStyle> setStyle = null,
         Action onChanged = null,
         Action onToggled = null)
     {
@@ -41,33 +37,30 @@ public static class NodeLayoutUIFactory
             IsVisible = true,
             FitContents = true,
         };
-
-        CheckboxNode enabledCheckbox = null;
         VerticalListNode<NodeBase> settingsGroup = null;
 
-        if (getEnabled != null && setEnabled != null)
+        var enabledCheckbox = new CheckboxNode
         {
-            section.AddNode(new CheckboxNode
+            LabelText = $"Show {label}",
+            Width = 180,
+            Height = 22,
+            IsVisible = true,
+            IsChecked = nodePart.IsVisible,
+            OnClick = isChecked =>
             {
-                LabelText = $"Show {label}",
-                Width = 180,
-                Height = 22,
-                IsVisible = true,
-                IsChecked = getEnabled(),
-                OnClick = isChecked => {
-                    setEnabled(isChecked);
-                    if (settingsGroup != null) {
-                        settingsGroup.IsVisible = isChecked;
-                        section.Height = isChecked ? SectionHeight : CheckBoxHeight;
-                        section.FitContents = isChecked;
-                        section.RecalculateLayout();
-                    }
-
-                    onChanged?.Invoke();
-                    onToggled?.Invoke();
+                nodePart.IsVisible = isChecked;
+                if (settingsGroup != null)
+                {
+                    settingsGroup.IsVisible = isChecked;
+                    section.Height = isChecked ? SectionHeight : CheckBoxHeight;
+                    section.FitContents = isChecked;
+                    section.RecalculateLayout();
                 }
-            });
-        }
+                onChanged?.Invoke();
+                onToggled?.Invoke();
+            }
+        };
+        section.AddNode(enabledCheckbox);
 
         settingsGroup = new VerticalListNode<NodeBase>
         {
@@ -75,10 +68,42 @@ public static class NodeLayoutUIFactory
             Height = SectionHeight,
             Width = 600,
             ItemVerticalSpacing = 0,
-            IsVisible = getEnabled?.Invoke() ?? true
+            IsVisible = nodePart.IsVisible
         };
 
-        if (getStyle != null && setStyle != null && overlayManager != null)
+        settingsGroup = new VerticalListNode<NodeBase>
+        {
+            X = OptionOffset,
+            Height = SectionHeight,
+            Width = 600,
+            ItemVerticalSpacing = 0,
+            IsVisible = nodePart.IsVisible
+        };
+
+        var backgroundRow = new HorizontalFlexNode<NodeBase>
+        {
+            IsVisible = nodePart.BackgroundEnabled != null,
+            Width = 562,
+            Height = 32,
+            FitPadding = 4
+        };
+        settingsGroup.AddNode(backgroundRow);
+
+        var backgroundCheckbox = new CheckboxNode {
+            LabelText = $"Show {label} background",
+            Width = 180,
+            Height = 22,
+            IsVisible = nodePart.BackgroundEnabled != null,
+            IsChecked = nodePart.BackgroundEnabled ?? false,
+            OnClick = isChecked => {
+                nodePart.BackgroundEnabled = isChecked;
+                onChanged?.Invoke();
+                onToggled?.Invoke();
+            }
+        };
+        backgroundRow.AddNode(backgroundCheckbox);
+
+        if (nodePart.Style != null && overlayManager != null)
         {
             var styleRow = new HorizontalFlexNode<NodeBase>
             {
@@ -92,15 +117,15 @@ public static class NodeLayoutUIFactory
 
             styleRow.AddNode(ConfigurationUIFactory.CreateLabeledDropdown(
                 "Font",
-                () => getStyle().FontType,
-                v => { var s = getStyle(); s.FontType = v; setStyle(s); onChanged?.Invoke(); },
+                () => nodePart.Style.FontType,
+                v => { nodePart.Style.FontType = v; onChanged?.Invoke(); },
                 ConfigurationUIFactory.FontMap
             ));
 
             styleRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption(
                 "Font Size",
-                () => (int)getStyle().FontSize,
-                v => { var s = getStyle(); s.FontSize = v; setStyle(s); onChanged?.Invoke(); }
+                () => nodePart.Style.FontSize,
+                v => { nodePart.Style.FontSize = v; onChanged?.Invoke(); }
             ));
 
             var styleRow2 = new HorizontalFlexNode<NodeBase>
@@ -115,16 +140,17 @@ public static class NodeLayoutUIFactory
 
             styleRow2.AddNode(CreateColorPreviewButton(
                 "Text Color",
-                () => getStyle().TextColor,
-                c => { var s = getStyle(); s.TextColor = c; setStyle(s); onChanged?.Invoke(); },
-                overlayManager, // or pass overlayManager as parameter
+                () => nodePart.Style.TextColor,
+                c => { nodePart.Style.TextColor = c; onChanged?.Invoke(); },
+                overlayManager,
                 onChanged,
                 32
             ));
+
             styleRow2.AddNode(CreateColorPreviewButton(
                 "Text Outline Color",
-                () => getStyle().TextOutlineColor,
-                c => { var s = getStyle(); s.TextOutlineColor = c; setStyle(s); onChanged?.Invoke(); },
+                () => nodePart.Style.TextOutlineColor,
+                c => { nodePart.Style.TextOutlineColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged,
                 32
@@ -138,13 +164,16 @@ public static class NodeLayoutUIFactory
             Height = 32,
             FitPadding = 4
         };
-        offsetRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Offset X",
-            () => (int)anchorConfig.OffsetX,
-            v => { anchorConfig.OffsetX = v; onChanged?.Invoke(); }));
-        offsetRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Offset Y",
-            () => (int)anchorConfig.OffsetY,
-            v => { anchorConfig.OffsetY = v; onChanged?.Invoke(); }));
+
         settingsGroup.AddNode(offsetRow);
+
+        offsetRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Offset X",
+            () => (int)nodePart.Anchor.OffsetX,
+            v => { nodePart.Anchor.OffsetX = v; onChanged?.Invoke(); }));
+
+        offsetRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Offset Y",
+            () => (int)nodePart.Anchor.OffsetY,
+            v => { nodePart.Anchor.OffsetY = v; onChanged?.Invoke(); }));
 
         var sizeRow = new HorizontalFlexNode<NodeBase>
         {
@@ -153,13 +182,15 @@ public static class NodeLayoutUIFactory
             Height = 32,
             FitPadding = 4
         };
-        sizeRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Width",
-            () => (int)anchorConfig.Width,
-            v => { anchorConfig.Width = v; onChanged?.Invoke(); }));
-        sizeRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Height",
-            () => (int)anchorConfig.Height,
-            v => { anchorConfig.Height = v; onChanged?.Invoke(); }));
         settingsGroup.AddNode(sizeRow);
+
+        sizeRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Width",
+            () => (int)nodePart.Anchor.Width,
+            v => { nodePart.Anchor.Width = v; onChanged?.Invoke(); }));
+
+        sizeRow.AddNode(ConfigurationUIFactory.CreateLabeledNumericOption("Height",
+            () => (int)nodePart.Anchor.Height,
+            v => { nodePart.Anchor.Height = v; onChanged?.Invoke(); }));
 
         var anchorTargetDict = ((AnchorTarget[])Enum.GetValues(typeof(AnchorTarget)))
             .ToDictionary(a => a, a => a.ToString());
@@ -170,15 +201,16 @@ public static class NodeLayoutUIFactory
             Height = 32,
             FitPadding = 8
         };
-        anchorToRow.AddNode(ConfigurationUIFactory.CreateLabeledDropdown("Anchor",
-            () => anchorConfig.AnchorTo,
-            v => { anchorConfig.AnchorTo = v; onChanged?.Invoke(); },
-            anchorTargetDict));
         settingsGroup.AddNode(anchorToRow);
 
+        anchorToRow.AddNode(ConfigurationUIFactory.CreateLabeledDropdown("Anchor",
+            () => nodePart.Anchor.AnchorTo,
+            v => { nodePart.Anchor.AnchorTo = v; onChanged?.Invoke(); },
+            anchorTargetDict));;
+
         settingsGroup.AddNode(CreateAlignmentFlagSection(
-            () => anchorConfig.Alignment,
-            v => { anchorConfig.Alignment = v; onChanged?.Invoke(); },
+            () => nodePart.Anchor.Alignment,
+            v => { nodePart.Anchor.Alignment = v; onChanged?.Invoke(); },
             onChanged
         ));
 

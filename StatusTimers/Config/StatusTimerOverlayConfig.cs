@@ -6,6 +6,7 @@ using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace StatusTimers.Config;
 
@@ -35,6 +36,119 @@ public class StatusTimerOverlayConfig
         }
     }
 
+    // Node Part Configs
+
+    [JsonProperty]
+    public NodePartConfig Icon { get; set; } = new()
+    {
+        IsVisible = true,
+        BackgroundEnabled = null,
+        Anchor = new StatusNodeAnchorConfig
+        {
+            AnchorTo = AnchorTarget.ContainerLeft,
+            OffsetX = 0,
+            OffsetY = 0,
+            Alignment = AnchorAlignment.Left,
+            Width = 48,
+            Height = 64
+        }
+    };
+
+    [JsonProperty]
+    public NodePartConfig Name { get; set; } = new()
+    {
+        IsVisible = true,
+        BackgroundEnabled = false,
+        Anchor = new StatusNodeAnchorConfig
+        {
+            AnchorTo = AnchorTarget.IconRight,
+            OffsetX = 8,
+            OffsetY = 8,
+            Alignment = AnchorAlignment.Left,
+            Width = 180,
+            Height = 28
+        },
+        Style = new TextStyle
+        {
+            FontSize = 20,
+            FontType = FontType.Axis,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(53),
+            TextFlags = TextFlags.Edge
+        }
+    };
+
+    [JsonProperty]
+    public NodePartConfig Timer { get; set; } = new()
+    {
+        IsVisible = true,
+        BackgroundEnabled = true,
+        Anchor = new StatusNodeAnchorConfig
+        {
+            AnchorTo = AnchorTarget.NameRight,
+            OffsetX = 30,
+            OffsetY = 0,
+            Alignment = AnchorAlignment.VerticalCenter | AnchorAlignment.Right,
+            Width = 44,
+            Height = 22
+        },
+        Style = new TextStyle
+        {
+            FontSize = 20,
+            FontType = FontType.TrumpGothic,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(53),
+            TextFlags = TextFlags.Edge
+        }
+    };
+
+    [JsonProperty]
+    public NodePartConfig Actor { get; set; } = new()
+    {
+        IsVisible = true,
+        BackgroundEnabled = false,
+        Anchor = new StatusNodeAnchorConfig
+        {
+            AnchorTo = AnchorTarget.NameBottom,
+            OffsetX = 0,
+            OffsetY = -6,
+            Alignment = AnchorAlignment.Left,
+            Width = 120,
+            Height = 12
+        },
+        Style = new TextStyle
+        {
+            FontSize = 14,
+            FontType = FontType.Axis,
+            TextColor = ColorHelper.GetColor(50),
+            TextOutlineColor = ColorHelper.GetColor(54),
+            TextFlags = TextFlags.Edge
+        }
+    };
+
+    [JsonProperty]
+    public NodePartConfig Progress { get; set; } = new()
+    {
+        IsVisible = true,
+        BackgroundEnabled = null,
+        Anchor = new StatusNodeAnchorConfig
+        {
+            AnchorTo = AnchorTarget.ActorNameBottom,
+            OffsetX = -7,
+            OffsetY = 20,
+            Alignment = AnchorAlignment.Bottom,
+            Height = 20,
+            Width = 200
+        }
+        // No TextStyle for progress bar
+    };
+
+    [JsonProperty]
+    public float RowWidth { get; set; } = 270f;
+
+    [JsonProperty]
+    public float RowHeight { get; set; } = 48f;
+
     [JsonProperty]
     public bool FilterStatuses
     {
@@ -45,20 +159,6 @@ public class StatusTimerOverlayConfig
             {
                 field = value;
                 Notify(nameof(FilterStatuses));
-            }
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowIcon
-    {
-        get => field;
-        set
-        {
-            if (ShowIcon != value)
-            {
-                field = value;
-                Notify(nameof(ShowIcon), updateNodes: true);
             }
         }
     } = true;
@@ -218,86 +318,6 @@ public class StatusTimerOverlayConfig
     } = 100;
 
     [JsonProperty]
-    public bool ShowStatusName
-    {
-        get => field;
-        set
-        {
-            if (ShowStatusName != value)
-            {
-                field = value;
-                Notify(nameof(ShowStatusName), updateNodes: true);
-            }
-        }
-    } = true;
-
-    private void OnStatusNameTextStyleChanged() => Notify(nameof(StatusNameTextStyle), updateNodes: true);
-    [JsonProperty]
-    public TextStyle StatusNameTextStyle
-    {
-        get => field;
-        set {
-            if (Equals(field, value)) {
-                return;
-            }
-
-            field.Changed -= OnStatusNameTextStyleChanged;
-            field = value;
-            field.Changed += OnStatusNameTextStyleChanged;
-            Notify(nameof(StatusNameTextStyle));
-        }
-    } = new()
-    {
-        FontSize = 20,
-        FontType = FontType.Axis,
-        TextColor = ColorHelper.GetColor(50),
-        TextOutlineColor = ColorHelper.GetColor(53),
-        TextFlags = TextFlags.Edge
-    };
-
-    [JsonProperty]
-    public bool ShowStatusRemaining
-    {
-        get => field;
-        set
-        {
-            if (ShowStatusRemaining != value)
-            {
-                field = value;
-                Notify(nameof(ShowStatusRemaining), updateNodes: true);
-            }
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowStatusRemainingBackground
-    {
-        get => field;
-        set
-        {
-            if (ShowStatusRemainingBackground != value)
-            {
-                field = value;
-                Notify(nameof(ShowStatusRemainingBackground), updateNodes: true);
-            }
-        }
-    } = true;
-
-    [JsonProperty]
-    public bool ShowProgress
-    {
-        get => field;
-        set
-        {
-            if (ShowProgress != value)
-            {
-                field = value;
-                Notify(nameof(ShowProgress), updateNodes: true);
-            }
-        }
-    } = true;
-
-    [JsonProperty]
     public int StatusHorizontalPadding
     {
         get => field;
@@ -324,31 +344,6 @@ public class StatusTimerOverlayConfig
             }
         }
     } = 4;
-
-    private void OnStatusRemainingTextStyleChanged() => Notify(nameof(StatusRemainingTextStyle), updateNodes: true);
-    [JsonProperty]
-    public TextStyle StatusRemainingTextStyle
-    {
-        get => field;
-        set
-        {
-            if (Equals(field, value)) {
-                return;
-            }
-
-            field.Changed -= OnStatusRemainingTextStyleChanged;
-            field = value;
-            field.Changed += OnStatusRemainingTextStyleChanged;
-            Notify(nameof(StatusRemainingTextStyle));
-        }
-    } = new()
-    {
-        FontSize = 20,
-        FontType = FontType.TrumpGothic,
-        TextColor = ColorHelper.GetColor(50),
-        TextOutlineColor = ColorHelper.GetColor(53),
-        TextFlags = TextFlags.Edge
-    };
 
     [JsonProperty]
     public SortCriterion PrimarySort
@@ -449,45 +444,6 @@ public class StatusTimerOverlayConfig
     } = true;
 
     [JsonProperty]
-    public bool ShowActorName
-    {
-        get => field;
-        set
-        {
-            if (ShowActorName != value)
-            {
-                field = value;
-                Notify(nameof(ShowActorName), updateNodes: true);
-            }
-        }
-    } = true;
-
-    private void OnActorNameTextStyleChanged() => Notify(nameof(ActorNameTextStyle), updateNodes: true);
-    [JsonProperty]
-    public TextStyle ActorNameTextStyle
-    {
-        get => field;
-        set
-        {
-            if (Equals(field, value)) {
-                return;
-            }
-
-            field.Changed -= OnActorNameTextStyleChanged;
-            field = value;
-            field.Changed += OnActorNameTextStyleChanged;
-            Notify(nameof(ActorNameTextStyle));
-        }
-    } = new()
-    {
-        FontSize = 14,
-        FontType = FontType.Axis,
-        TextColor = ColorHelper.GetColor(50),
-        TextOutlineColor = ColorHelper.GetColor(54),
-        TextFlags = TextFlags.Edge
-    };
-
-    [JsonProperty]
     public bool ShowPermaIcons
     {
         get => field;
@@ -515,6 +471,100 @@ public class StatusTimerOverlayConfig
         }
     } = true;
 
-    [JsonProperty]
-    public StatusNodeLayoutConfig StatusNodeLayout { get; set; } = new StatusNodeLayoutConfig();
+    public class NodePartConfig
+    {
+        public bool IsVisible { get; set; }
+        public bool? BackgroundEnabled { get; set; }
+        public StatusNodeAnchorConfig Anchor { get; set; }
+        public TextStyle? Style { get; set; } // Only set for nodes with text
+    }
+
+    public class StatusNodeAnchorConfig
+    {
+        public AnchorTarget AnchorTo { get; set; }
+        public float OffsetX { get; set; }
+        public float OffsetY { get; set; }
+        public AnchorAlignment Alignment { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+    }
+
+    public class TextStyle : IEquatable<TextStyle>
+    {
+        public event Action? Changed;
+
+        public int FontSize {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public FontType FontType {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public Vector4 TextColor {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public Vector4 TextOutlineColor {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public TextFlags TextFlags {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as TextStyle);
+
+        public bool Equals(TextStyle? other)
+        {
+            if (other is null) {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other)) {
+                return true;
+            }
+
+            return FontSize == other.FontSize
+                   && FontType == other.FontType
+                   && TextColor.Equals(other.TextColor)
+                   && TextOutlineColor.Equals(other.TextOutlineColor)
+                   && TextFlags == other.TextFlags;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(FontSize, FontType, TextColor, TextOutlineColor, TextFlags);
+        }
+    }
 }

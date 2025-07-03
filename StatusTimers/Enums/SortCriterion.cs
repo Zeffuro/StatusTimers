@@ -6,5 +6,6 @@ public enum SortCriterion {
     TimeRemaining = 2,
     OwnStatusFirst = 3,
     PartyPriority = 4,
-    EnemyLetter = 5
+    EnemyLetter = 5,
+    PermaIcon = 6
 }

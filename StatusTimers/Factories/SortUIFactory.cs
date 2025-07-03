@@ -45,7 +45,8 @@ public static class SortUIFactory
             { SortCriterion.StatusType, "Status Type" },
             { SortCriterion.TimeRemaining, "Time Remaining" },
             { SortCriterion.OwnStatusFirst, "Own Status First" },
-            { SortCriterion.PartyPriority, "Party Priority" }
+            { SortCriterion.PartyPriority, "Party Priority" },
+            { SortCriterion.PermaIcon, "Permanent Icons" }
         };
 
         if (kind == NodeKind.MultiDoT) {

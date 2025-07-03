@@ -62,6 +62,7 @@ public static class StatusSorter {
             SortCriterion.OwnStatusFirst => status.SelfInflicted,
             SortCriterion.PartyPriority => status.PartyPriority,
             SortCriterion.EnemyLetter => status.EnemyLetter,
+            SortCriterion.PermaIcon => status.IsPermanent,
             _ => 0
         };
     }

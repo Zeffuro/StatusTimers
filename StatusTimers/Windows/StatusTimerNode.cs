@@ -7,6 +7,7 @@ using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
+using StatusTimers.Extensions;
 using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
@@ -20,17 +21,16 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     public delegate void StatusNodeActionHandler(uint statusId, ulong? gameObjectToTargetId, NodeKind nodeKind,
         bool allowDismiss, bool allowTarget);
 
-    private TextNode _actorName;
     private ResNode _containerResNode;
 
     private readonly Func<StatusTimerOverlayConfig> _getOverlayConfig;
-    private StatusNodeLayoutConfig _layout;
-    private IconImageNode _iconNode;
 
-    private CastBarProgressBarNode _progressNode;
     private StatusInfo _statusInfo;
-    private TextNode _statusName;
+    private IconImageNode _iconNode;
+    private CastBarProgressBarNode _progressNode;
+    private NodeBase _statusName;
     private NodeBase _statusRemaining;
+    private NodeBase _actorName;
 
     private Dictionary<string, NodeBase> _nodeMap = new();
 
@@ -38,64 +38,50 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _getOverlayConfig = getOverlayConfig;
 
         var config = _getOverlayConfig();
-        _layout = config.StatusNodeLayout;
 
         _containerResNode = new ResNode {
             IsVisible = true,
-            Width = _layout.RowWidth,
-            Height = _layout.RowHeight,
+            Width = config.RowWidth,
+            Height = config.RowHeight,
         };
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
 
-        _iconNode = new IconImageNode {
-            IsVisible = config.ShowIcon,
-            Width = _layout.IconAnchor.Width,
-            Height = _layout.IconAnchor.Height,
-            X = _layout.IconAnchor.OffsetX,
-            Y = _layout.IconAnchor.OffsetY,
-        };
+        // Icon
+        _iconNode = new IconImageNode();
+        ApplyNodeSettings(_iconNode, config.Icon);
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
-        _statusName = new TextNode {
-            IsVisible = config.ShowStatusName,
-            Width = _layout.NameAnchor.Width,
-            Height = _layout.NameAnchor.Height,
-            FontSize = (uint)config.StatusNameTextStyle.FontSize,
-            X = _layout.NameAnchor.OffsetX,
-            Y = _layout.NameAnchor.OffsetY,
-            TextColor = config.StatusNameTextStyle.TextColor,
-            TextOutlineColor = config.StatusNameTextStyle.TextOutlineColor,
-            TextFlags = TextFlags.Edge,
-            NodeFlags = NodeFlags.Clip
-        };
-        config.StatusNameTextStyle.Changed += OnStatusNameTextStyleChanged;
+        // Status Name
+        _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        ApplyNodeSettings(_statusName, config.Name);
+        ApplyTextStyle(_statusName, config.Name.Style);
+        if (config.Name.Style != null) {
+            config.Name.Style.Changed += OnStatusNameTextStyleChanged;
+        }
         GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
-        _progressNode = new CastBarProgressBarNode {
-            IsVisible = config.ShowProgress,
-            Height = _layout.ProgressAnchor.Height,
-            Width = _layout.ProgressAnchor.Width > 0 ? _layout.ProgressAnchor.Width : 200,
-            X = _layout.ProgressAnchor.OffsetX,
-            Y = _layout.ProgressAnchor.OffsetY,
-            Progress = 1f,
-        };
+        // Progress
+        _progressNode = new CastBarProgressBarNode();
+        ApplyNodeSettings(_progressNode, config.Progress);
         GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
 
-        _actorName = new TextNode {
-            IsVisible = config.ShowActorName,
-            Width = _layout.ActorNameAnchor.Width,
-            Height = _layout.ActorNameAnchor.Height,
-            FontSize = (uint)config.ActorNameTextStyle.FontSize,
-            X = _layout.ActorNameAnchor.OffsetX,
-            Y = _layout.ActorNameAnchor.OffsetY,
-            TextColor = config.ActorNameTextStyle.TextColor,
-            TextOutlineColor = config.ActorNameTextStyle.TextOutlineColor,
-            TextFlags = TextFlags.Edge
-        };
-        config.ActorNameTextStyle.Changed += OnActorNameTextStyleChanged;
+        // Actor Name
+        _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        ApplyNodeSettings(_actorName, config.Actor);
+        ApplyTextStyle(_actorName, config.Actor.Style);
+        if (config.Actor.Style != null) {
+            config.Actor.Style.Changed += OnActorNameTextStyleChanged;
+        }
         GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
 
-        SetRemainingNode();
+        // Timer
+        _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        ApplyNodeSettings(_statusRemaining, config.Timer);
+        ApplyTextStyle(_statusRemaining, config.Timer.Style);
+        if (config.Timer.Style != null) {
+            config.Timer.Style.Changed += OnStatusRemainingTextStyleChanged;
+        }
+        GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
 
         RegisterNodeMap();
 
@@ -134,28 +120,35 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     public void ApplyOverlayConfig() {
         var config = _getOverlayConfig();
 
-        bool needsRebuild =
-            (_statusRemaining is TextNineGridNode) != config.ShowStatusRemainingBackground
-            || !GetCurrentTextStyle(_statusRemaining)!.Equals(config.StatusRemainingTextStyle);
+        bool needsRebuildName = (_statusName is TextNineGridNode) != (config.Name.BackgroundEnabled == true);
+        bool needsRebuildActor = (_actorName is TextNineGridNode) != (config.Actor.BackgroundEnabled == true);
+        bool needsRebuildTimer = (_statusRemaining is TextNineGridNode) != (config.Timer.BackgroundEnabled == true);
 
-        if (needsRebuild) {
-            SetRemainingNode();
+        if (needsRebuildName || needsRebuildActor || needsRebuildTimer) {
+            RebuildNodes(config, needsRebuildName, needsRebuildActor, needsRebuildTimer);
         }
 
-        ApplyNodeSettings(_iconNode, config.StatusNodeLayout.IconAnchor, config.ShowIcon);
-        ApplyNodeSettings(_statusName, config.StatusNodeLayout.NameAnchor, config.ShowStatusName);
-        ApplyNodeSettings(_progressNode, config.StatusNodeLayout.ProgressAnchor, config.ShowProgress);
-        ApplyNodeSettings(_actorName, config.StatusNodeLayout.ActorNameAnchor, config.ShowActorName);
+        ApplyNodeSettings(_iconNode, config.Icon);
+        ApplyNodeSettings(_statusName, config.Name);
+        ApplyTextStyle(_statusName, config.Name.Style);
+
+        ApplyNodeSettings(_progressNode, config.Progress);
+
+        ApplyNodeSettings(_actorName, config.Actor);
+        ApplyTextStyle(_actorName, config.Actor.Style);
 
         UpdateLayoutOffsets();
 
-        _actorName.IsVisible = config.ShowActorName && _statusInfo.ActorName != null;
+        _actorName.IsVisible = config.Actor.IsVisible && _statusInfo.ActorName != null;
 
         UpdateValues();
     }
 
-    private void ApplyStyle(NodeBase node, TextStyle style)
-    {
+    private void ApplyTextStyle(NodeBase node, StatusTimerOverlayConfig.TextStyle style) {
+        if (style == null) {
+            return;
+        }
+
         switch (node)
         {
             case TextNode tn:
@@ -175,13 +168,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void ApplyNodeSettings(NodeBase node, StatusNodeAnchorConfig anchor, bool isVisible)
-    {
-        node.IsVisible = isVisible;
-        node.Width = anchor.Width;
-        node.Height = anchor.Height;
-        node.X = anchor.OffsetX;
-        node.Y = anchor.OffsetY;
+    private void ApplyNodeSettings(NodeBase node, StatusTimerOverlayConfig.NodePartConfig partConfig) {
+        node.IsVisible = partConfig.IsVisible;
+        node.Width = partConfig.Anchor.Width;
+        node.Height = partConfig.Anchor.Height;
+        node.X = partConfig.Anchor.OffsetX;
+        node.Y = partConfig.Anchor.OffsetY;
     }
 
     private void RegisterNodeMap() {
@@ -201,6 +193,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     private void UpdateLayoutOffsets() {
+        var config = _getOverlayConfig();
         _nodeMap["Icon"] = _iconNode;
         _nodeMap["Name"] = _statusName;
         _nodeMap["ActorName"] = _actorName;
@@ -209,12 +202,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _nodeMap["Timer"] = _statusRemaining;
         }
 
-        LayoutNode(_iconNode, _layout.IconAnchor, "Icon");
-        LayoutNode(_statusName, _layout.NameAnchor, "Name");
-        LayoutNode(_actorName, _layout.ActorNameAnchor, "ActorName");
-        LayoutNode(_progressNode, _layout.ProgressAnchor, "Progress");
+        LayoutNode(_iconNode, config.Icon.Anchor, "Icon");
+        LayoutNode(_statusName, config.Name.Anchor, "Name");
+        LayoutNode(_actorName, config.Actor.Anchor, "ActorName");
+        LayoutNode(_progressNode, config.Progress.Anchor, "Progress");
         if (_statusRemaining != null) {
-            LayoutNode(_statusRemaining, _layout.TimerAnchor, "Timer");
+            LayoutNode(_statusRemaining, config.Timer.Anchor, "Timer");
         }
     }
 
@@ -246,9 +239,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                         var node = _nodeMap[key];
                         string edge = anchorStr.Substring(key.Length);
 
-                        // Determine if the anchoring node wants vertical center
                         bool wantsVerticalCenter = alignment.HasFlag(AnchorAlignment.VerticalCenter) || alignment.HasFlag(AnchorAlignment.Center);
-                        // Determine if the anchoring node wants horizontal center (uncommon for anchors, but possible)
                         bool wantsHorizontalCenter = alignment.HasFlag(AnchorAlignment.HorizontalCenter) || alignment.HasFlag(AnchorAlignment.Center);
 
                         switch (edge)
@@ -270,7 +261,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void LayoutNode(NodeBase node, StatusNodeAnchorConfig anchorConfig, string selfKey) {
+    private void LayoutNode(NodeBase node, StatusTimerOverlayConfig.StatusNodeAnchorConfig anchorConfig, string selfKey) {
         var (baseX, baseY) = GetAnchorBasePosition(anchorConfig.AnchorTo, selfKey, anchorConfig.Alignment);
         float x = baseX + anchorConfig.OffsetX;
         float y = baseY + anchorConfig.OffsetY;
@@ -295,52 +286,46 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.Y = y;
     }
 
-    private void SetRemainingNode() {
-        var config = _getOverlayConfig();
-        bool shouldBeNineGrid = config.ShowStatusRemainingBackground;
-        bool isCurrentlyNineGrid = _statusRemaining is TextNineGridNode;
+    private void RebuildNodes(StatusTimerOverlayConfig config, bool rebuildName, bool rebuildActor, bool rebuildTimer)
+    {
+        // Remove and dispose old nodes if necessary
+        if (rebuildName && _statusName != null) {
+            GlobalServices.NativeController.DetachNode(_statusName);
+            _statusName.Dispose();
+            _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+            ApplyNodeSettings(_statusName, config.Name);
+            ApplyTextStyle(_statusName, config.Name.Style);
+            if (config.Name.Style != null) {
+                config.Name.Style.Changed += OnStatusNameTextStyleChanged;
+            }
 
-        if (shouldBeNineGrid == isCurrentlyNineGrid && _statusRemaining != null) {
-            return;
+            GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
         }
+        if (rebuildActor && _actorName != null) {
+            GlobalServices.NativeController.DetachNode(_actorName);
+            _actorName.Dispose();
+            _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+            ApplyNodeSettings(_actorName, config.Actor);
+            ApplyTextStyle(_actorName, config.Actor.Style);
+            if (config.Actor.Style != null) {
+                config.Actor.Style.Changed += OnActorNameTextStyleChanged;
+            }
 
-        if (_statusRemaining != null) {
-            try {
-                GlobalServices.NativeController.DetachNode(_statusRemaining);
-            } catch { /* ignore safely or log */ }
-            try {
-                _statusRemaining.Dispose();
-            } catch { /* ignore safely or log */ }
-            _statusRemaining = null;
+            GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
         }
+        if (rebuildTimer && _statusRemaining != null) {
+            GlobalServices.NativeController.DetachNode(_statusRemaining);
+            _statusRemaining.Dispose();
+            _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+            ApplyNodeSettings(_statusRemaining, config.Timer);
+            ApplyTextStyle(_statusRemaining, config.Timer.Style);
+            if (config.Timer.Style != null) {
+                config.Timer.Style.Changed += OnStatusRemainingTextStyleChanged;
+            }
 
-        if (shouldBeNineGrid) {
-            _statusRemaining = new TextNineGridNode {
-                IsVisible = config.ShowStatusRemaining,
-                Width = _layout.TimerAnchor.Width,
-                Height = _layout.TimerAnchor.Height,
-                FontSize = config.StatusRemainingTextStyle.FontSize,
-                FontType = config.StatusRemainingTextStyle.FontType,
-                TextColor = config.StatusRemainingTextStyle.TextColor,
-                TextOutlineColor = config.StatusRemainingTextStyle.TextOutlineColor,
-                TextFlags = config.StatusRemainingTextStyle.TextFlags
-            };
+            GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
         }
-        else {
-            _statusRemaining = new TextNode {
-                IsVisible = config.ShowStatusRemaining,
-                Width = _layout.TimerAnchor.Width,
-                Height = _layout.TimerAnchor.Height,
-                FontSize = (uint)config.StatusRemainingTextStyle.FontSize,
-                FontType = config.StatusRemainingTextStyle.FontType,
-                TextColor = config.StatusRemainingTextStyle.TextColor,
-                TextOutlineColor = config.StatusRemainingTextStyle.TextOutlineColor,
-                TextFlags = config.StatusRemainingTextStyle.TextFlags
-            };
-        }
-        config.StatusRemainingTextStyle.Changed += OnStatusRemainingTextStyleChanged;
-        GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
-        _statusRemaining.X = Width - _statusRemaining.Width;
+        RegisterNodeMap();
     }
 
     public void UpdateValues() {
@@ -358,13 +343,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             return;
         }
 
-        _statusName.Text = _statusInfo.Name;
+        _statusName.SetText(_statusInfo.Name);
 
-        _iconNode.IsVisible = config.ShowIcon;
-        _statusRemaining.IsVisible = config.ShowStatusRemaining;
-        _statusName.IsVisible = config.ShowStatusName;
-        _progressNode.IsVisible = config.ShowProgress;
-        _actorName.IsVisible = config.ShowActorName && _statusInfo.ActorName != null;
+        _iconNode.IsVisible = config.Icon.IsVisible;
+        _statusRemaining.IsVisible = config.Timer.IsVisible;
+        _statusName.IsVisible = config.Name.IsVisible;
+        _progressNode.IsVisible = config.Progress.IsVisible;
+        _actorName.IsVisible = config.Actor.IsVisible && _statusInfo.ActorName != null;
 
         if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds <= 0) {
             _progressNode.IsVisible = false;
@@ -375,14 +360,14 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 Timeline?.StartAnimation(10);
             }
 
-            _progressNode.IsVisible = config.ShowProgress;
-            _statusRemaining.IsVisible = config.ShowStatusRemaining;
+            _progressNode.IsVisible = config.Progress.IsVisible;
+            _statusRemaining.IsVisible = config.Timer.IsVisible;
 
-            if (_statusInfo.ActorName != null && config.ShowActorName) {
-                _actorName.Text = $"{(config.ShowActorLetter ? _statusInfo.EnemyLetter : "")}{_statusInfo.ActorName}";
+            if (_statusInfo.ActorName != null && config.Actor.IsVisible) {
+                _actorName.SetText($"{(config.ShowActorLetter ? _statusInfo.EnemyLetter : "")}{_statusInfo.ActorName}");
             }
             else {
-                _actorName.Text = "";
+                _actorName.SetText("");
             }
 
             float max = Math.Max(_statusInfo.MaxSeconds, 1f);
@@ -399,9 +384,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void OnStatusNameTextStyleChanged() => ApplyStyle(_statusName, _getOverlayConfig().StatusNameTextStyle);
-    private void OnActorNameTextStyleChanged() => ApplyStyle(_actorName, _getOverlayConfig().ActorNameTextStyle);
-    private void OnStatusRemainingTextStyleChanged() => ApplyStyle(_statusRemaining, _getOverlayConfig().StatusRemainingTextStyle);
+    private void OnStatusNameTextStyleChanged() => ApplyTextStyle(_statusName, _getOverlayConfig().Name.Style);
+    private void OnActorNameTextStyleChanged() => ApplyTextStyle(_actorName, _getOverlayConfig().Actor.Style);
+    private void OnStatusRemainingTextStyleChanged() => ApplyTextStyle(_statusRemaining, _getOverlayConfig().Timer.Style);
 
     private unsafe void OnIconClicked(AddonEventData eventData) {
         var config = _getOverlayConfig();
@@ -456,12 +441,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.AddTimeline(keyFrames);
     }
 
-    private TextStyle? GetCurrentTextStyle(NodeBase node)
+    private StatusTimerOverlayConfig.TextStyle? GetCurrentTextStyle(NodeBase node)
     {
         // If _statusRemaining could be null, add a null check
         return node switch
         {
-            TextNode text => new TextStyle
+            TextNode text => new StatusTimerOverlayConfig.TextStyle
             {
                 FontSize = (int)text.FontSize,
                 FontType = text.FontType,
@@ -469,7 +454,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 TextOutlineColor = text.TextOutlineColor,
                 TextFlags = text.TextFlags
             },
-            TextNineGridNode nine => new TextStyle
+            TextNineGridNode nine => new StatusTimerOverlayConfig.TextStyle
             {
                 FontSize = nine.FontSize,
                 FontType = nine.FontType,
@@ -483,9 +468,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     protected override void Dispose(bool disposing) {
         if (disposing) {
-            _getOverlayConfig().StatusNameTextStyle.Changed -= OnStatusNameTextStyleChanged;
-            _getOverlayConfig().StatusRemainingTextStyle.Changed -= OnStatusRemainingTextStyleChanged;
-            _getOverlayConfig().ActorNameTextStyle.Changed -= OnActorNameTextStyleChanged;
+            _getOverlayConfig().Name.Style.Changed -= OnStatusNameTextStyleChanged;
+            _getOverlayConfig().Timer.Style.Changed -= OnStatusRemainingTextStyleChanged;
+            _getOverlayConfig().Actor.Style.Changed -= OnActorNameTextStyleChanged;
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();

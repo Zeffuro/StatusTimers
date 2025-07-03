@@ -130,16 +130,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "icon",
-                    overlay.OverlayConfig.StatusNodeLayout.IconAnchor,
+                    overlay.OverlayConfig.Icon,
                     overlayManager,
-                    getEnabled: () => overlay.OverlayConfig.ShowIcon,
-                    setEnabled: v => overlay.OverlayConfig.ShowIcon = v,
-                    onChanged: () => {
-                        overlay.OverlayConfig.Notify(
-                            nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            updateNodes: true
-                        );
-                    },
+                    onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Icon), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
@@ -148,18 +141,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "status name",
-                    overlay.OverlayConfig.StatusNodeLayout.NameAnchor,
+                    overlay.OverlayConfig.Name,
                     overlayManager,
-                    getEnabled: () => overlay.OverlayConfig.ShowStatusName,
-                    setEnabled: v => overlay.OverlayConfig.ShowStatusName = v,
-                    getStyle: () => overlay.OverlayConfig.StatusNameTextStyle,
-                    setStyle: s => overlay.OverlayConfig.StatusNameTextStyle = s,
-                    onChanged: () => {
-                        overlay.OverlayConfig.Notify(
-                            nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            updateNodes: true
-                        );
-                    },
+                    onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Name), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
@@ -168,18 +152,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "time remaining",
-                    overlay.OverlayConfig.StatusNodeLayout.TimerAnchor,
+                    overlay.OverlayConfig.Timer,
                     overlayManager,
-                    getEnabled: () => overlay.OverlayConfig.ShowStatusRemaining,
-                    setEnabled: v => overlay.OverlayConfig.ShowStatusRemaining = v,
-                    getStyle: () => overlay.OverlayConfig.StatusRemainingTextStyle,
-                    setStyle: s => overlay.OverlayConfig.StatusRemainingTextStyle = s,
-                    onChanged: () => {
-                        overlay.OverlayConfig.Notify(
-                            nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            updateNodes: true
-                        );
-                    },
+                    onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Timer), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
@@ -188,16 +163,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(
                 NodeLayoutUIFactory.CreateNodeLayoutSection(
                     "progressbar",
-                    overlay.OverlayConfig.StatusNodeLayout.ProgressAnchor,
+                    overlay.OverlayConfig.Progress,
                     overlayManager,
-                    getEnabled: () => overlay.OverlayConfig.ShowProgress,
-                    setEnabled: v => overlay.OverlayConfig.ShowProgress = v,
-                    onChanged: () => {
-                        overlay.OverlayConfig.Notify(
-                            nameof(overlay.OverlayConfig.StatusNodeLayout),
-                            updateNodes: true
-                        );
-                    },
+                    onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Progress), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                 )
             );
@@ -207,21 +175,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 mainSettingsGroup.AddNode(
                     NodeLayoutUIFactory.CreateNodeLayoutSection(
                         "enemy name",
-                        overlay.OverlayConfig.StatusNodeLayout.ActorNameAnchor,
+                        overlay.OverlayConfig.Actor,
                         overlayManager,
-                        getEnabled: () => overlay.OverlayConfig.ShowActorName,
-                        setEnabled: v => overlay.OverlayConfig.ShowActorName = v,
-                        getStyle: () => overlay.OverlayConfig.ActorNameTextStyle,
-                        setStyle: s => overlay.OverlayConfig.ActorNameTextStyle = s,
-                        onChanged: () => {
-                            overlay.OverlayConfig.Notify(
-                                nameof(overlay.OverlayConfig.StatusNodeLayout),
-                                updateNodes: true
-                            );
-                        },
+                        onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Actor), updateNodes: true),
                         onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
                     )
                 );
+
                 mainSettingsGroup.AddNode(ConfigurationUIFactory.CreateCheckboxOption("Show enemy letter",
                     () => overlay.OverlayConfig.ShowActorLetter,
                     isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked));

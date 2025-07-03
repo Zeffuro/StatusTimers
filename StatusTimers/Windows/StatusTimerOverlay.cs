@@ -224,10 +224,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         _needsRebuild = true;
     }
 
-    private void SubscribeToEvents() {
-        OverlayConfig.StatusRemainingTextStyle.Changed += () => OnPropertyChanged(nameof(OverlayConfig.StatusRemainingTextStyle), updateNodes: true);
-    }
-
     private void SetSortDefaults(NodeKind nodeKind)
     {
         switch (nodeKind) {
@@ -250,7 +246,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             $"{_nodeKind.ToString()}.json");
         Load(configPath);
         GlobalServices.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
-        SubscribeToEvents();
     }
 
     public void SaveConfig() {
