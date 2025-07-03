@@ -68,6 +68,14 @@ jobs:
           Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/${{ env.url }}/latest.zip -OutFile ./dalamud/latest.zip
           Expand-Archive -Path ./dalamud/latest.zip ./dalamud
 
+        # Copy Dalamud to expected path for build compatibility
+      - name: Copy Dalamud to expected directory
+        shell: pwsh
+        run: |
+          $target = "$env:USERPROFILE\AppData\Roaming\XIVLauncher\addon\Hooks\dev"
+          mkdir -Force $target
+          Copy-Item -Path "./dalamud/*" -Destination $target -Recurse -Force
+
       # Restore, Build and Test
       - name: Restore project dependencies
         run: dotnet restore --verbosity normal
