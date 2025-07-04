@@ -57,7 +57,35 @@ public static class VisualSettingsUIFactory
         node.AddNode();
         node.AddDummy(new ResNode(), checkBoxHeight);
 
-        // Scale + Horizontal Padding
+        // Node Height and Width
+        node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
+            ConfigurationUIFactory.CreateLabeledNumericOption("Container Width",
+                () => getConfig().RowWidth,
+                value => { getConfig().RowWidth = value; onChanged?.Invoke(); }
+            ),
+            ConfigurationUIFactory.CreateLabeledNumericOption("Container Height",
+                () => getConfig().RowHeight,
+                value => { getConfig().RowHeight = value; onChanged?.Invoke(); }
+            ),
+            20
+        ));
+
+        // Padding
+        node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
+            ConfigurationUIFactory.CreateLabeledNumericOption("Horizontal Padding",
+                () => getConfig().StatusHorizontalPadding,
+                value => { getConfig().StatusHorizontalPadding = value; onChanged?.Invoke(); }
+            ),
+            ConfigurationUIFactory.CreateLabeledNumericOption("Vertical Padding",
+                () => getConfig().StatusVerticalPadding,
+                value => { getConfig().StatusVerticalPadding = value; onChanged?.Invoke(); }
+            ),
+            20
+        ));
+
+        node.AddDummy(new ResNode(), checkBoxHeight);
+
+        // Scale Label
         node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
             new TextNode
             {
@@ -72,16 +100,15 @@ public static class VisualSettingsUIFactory
                 AlignmentType = AlignmentType.Left,
                 Text = "Scale"
             },
-            ConfigurationUIFactory.CreateLabeledNumericOption("Horizontal Padding",
-                () => getConfig().StatusHorizontalPadding,
-                value => { getConfig().StatusHorizontalPadding = value; onChanged?.Invoke(); }
-            ),
-            checkBoxHeight
+            new ResNode {
+                IsVisible = true,
+                Width = 300,
+                Height = 30
+            },
+            16
         ));
 
-        node.AddNode();
-
-        // Scale slider + Vertical Padding
+        // Scale slider
         node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
             ConfigurationUIFactory.CreateSliderOption(
                 5,
@@ -90,14 +117,13 @@ public static class VisualSettingsUIFactory
                 () => getConfig().ScaleInt,
                 value => { getConfig().ScaleInt = value; onChanged?.Invoke(); }
             ),
-            ConfigurationUIFactory.CreateLabeledNumericOption("Vertical Padding",
-                () => getConfig().StatusVerticalPadding,
-                value => { getConfig().StatusVerticalPadding = value; onChanged?.Invoke(); }
-            ),
+            new ResNode {
+                IsVisible = true,
+                Width = 300,
+                Height = 30
+            },
             30
         ));
-
-        node.AddDummy(new ResNode(), checkBoxHeight);
 
         // Statuses per row/column and Max statuses displayed
         TextNode statusPerLineNode = new()

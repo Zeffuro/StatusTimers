@@ -144,10 +144,30 @@ public class StatusTimerOverlayConfig
     };
 
     [JsonProperty]
-    public float RowWidth { get; set; } = 270f;
+    public int RowWidth {
+        get;
+        set
+        {
+            if (RowWidth != value)
+            {
+                field = value;
+                Notify(nameof(RowWidth), needsRebuild: true);
+            }
+        }
+    } = 300;
 
     [JsonProperty]
-    public float RowHeight { get; set; } = 48f;
+    public int RowHeight {
+        get;
+        set
+        {
+            if (RowHeight != value)
+            {
+                field = value;
+                Notify(nameof(RowHeight), needsRebuild: true);
+            }
+        }
+    } = 60;
 
     [JsonProperty]
     public bool FilterStatuses

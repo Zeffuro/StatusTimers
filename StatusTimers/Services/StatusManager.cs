@@ -131,9 +131,9 @@ public static class StatusManager {
             switch (status.StatusId) {
                 case 48: // Well Fed
                 case 49: // Medicated
-                    (string Name, uint IconId)? resolved = ResolveFoodParam(status.Param);
-                    if (resolved is (string nameResolved, uint iconIdResolved)) {
-                        name = nameResolved;
+                    FoodParams? resolved = ResolveFoodParam(status.Param);
+                    if (resolved != null) {
+                        name = resolved.Name;
                         //iconId = iconIdResolved;
                     }
 
@@ -173,15 +173,11 @@ public static class StatusManager {
         _itemFoodToItemLut = lut.ToFrozenDictionary();
     }
 
-    private static (string Name, uint IconId)? ResolveFoodParam(ushort param) {
+    private static FoodParams? ResolveFoodParam(ushort param) {
         if (!_itemFoodToItemLut.TryGetValue((uint)(param - 10000), out uint itemId)) {
             return null;
         }
 
-        if (!_itemSheet.TryGetRow(itemId, out Item item)) {
-            return null;
-        }
-
-        return (item.Name.ExtractText(), item.Icon);
+        return !_itemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ExtractText(), item.Icon);
     }
 }
