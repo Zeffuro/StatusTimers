@@ -50,6 +50,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         CalculatedOverlaySize = CalculateOverlaySize();
 
         _backgroundNode = new NineGridNode {
+            NodeId = 2,
             Size = CalculatedOverlaySize,
             BottomOffset = 8,
             TopOffset = 21,
@@ -172,6 +173,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         if (config.FillRowsFirst) {
             SetupContainers(
                 () => new VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> {
+                    NodeId = 3,
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
@@ -185,6 +187,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                     float innerHeight = config.RowHeight;
 
                     HorizontalListNode<StatusTimerNode<TKey>> list = new() {
+                        NodeId = 2,
                         Width = innerWidth,
                         Height = innerHeight,
                         IsVisible = true,
@@ -206,6 +209,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         else {
             SetupContainers(
                 () => new HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> {
+                    NodeId = 3,
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
@@ -218,6 +222,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                                         (Math.Min(config.ItemsPerLine, config.MaxStatuses) - 1) *
                                         config.StatusVerticalPadding;
                     VerticalListNode<StatusTimerNode<TKey>> list = new() {
+                        NodeId = 2,
                         Height = innerHeight,
                         Width = innerWidth,
                         IsVisible = true,

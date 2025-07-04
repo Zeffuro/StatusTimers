@@ -1,3 +1,4 @@
+using KamiToolKit.Nodes;
 using Newtonsoft.Json;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -65,6 +66,20 @@ public class Util
         catch
         {
             return null;
+        }
+    }
+
+    public static void ApplyConfigPosition(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
+    {
+        if (config != null && overlay != null) {
+            overlay.Position = config.Position;
+        }
+    }
+
+    public static void SaveOverlayPosition(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
+    {
+        if (config != null && overlay != null) {
+            config.Position = overlay.Position;
         }
     }
 

@@ -98,7 +98,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
 
             _configLists[kind].AddNode(
-                ImportExportResetUIFactory.Create(() => overlay.OverlayConfig, kind,
+                ImportExportResetUIFactory.Create(() => overlay, () => overlay.OverlayConfig, kind,
                     onConfigChanged: () => { },
                     closeWindow: Close)
             );

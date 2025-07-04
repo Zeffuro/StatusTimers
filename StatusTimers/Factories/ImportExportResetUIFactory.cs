@@ -8,6 +8,8 @@ using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
+using StatusTimers.Models;
+using StatusTimers.Windows;
 using System;
 using System.Drawing;
 using System.IO;
@@ -20,6 +22,7 @@ namespace StatusTimers.Factories;
 public static class ImportExportResetUIFactory
 {
     public static HorizontalListNode<NodeBase> Create(
+        Func<StatusTimerOverlay<StatusKey>> getOverlay,
         Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind,
         Action onConfigChanged,
@@ -41,7 +44,7 @@ public static class ImportExportResetUIFactory
             IsVisible = true,
             Tooltip = " Import Configuration\n(hold shift to confirm)",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
-            OnClick = () => TryImportConfigFromClipboard(getConfig(), onConfigChanged, closeWindow)
+            OnClick = () => TryImportConfigFromClipboard(getOverlay(), getConfig(), onConfigChanged, closeWindow)
         });
 
         // Export Button
@@ -69,6 +72,7 @@ public static class ImportExportResetUIFactory
     }
 
     private static void TryImportConfigFromClipboard(
+        StatusTimerOverlay<StatusKey> overlay,
         StatusTimerOverlayConfig currentOverlayConfig,
         Action onConfigChanged,
         Action closeWindow)
@@ -86,6 +90,7 @@ public static class ImportExportResetUIFactory
                 foreach (var prop in typeof(StatusTimerOverlayConfig).GetProperties().Where(p => p.CanRead && p.CanWrite)) {
                     prop.SetValue(currentOverlayConfig, prop.GetValue(imported));
                 }
+                overlay.Position = imported.Position;
                 GlobalServices.Logger.Info("Configuration imported from clipboard.");
                 currentOverlayConfig.Notify("Config", needsRebuild: true, updateNodes: true);
                 onConfigChanged?.Invoke();

@@ -25,8 +25,6 @@ namespace StatusTimers.Windows;
 [JsonObject(MemberSerialization.OptIn)]
 public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     private bool isDisposed = false;
-    private const float StatusNodeWidth = 300;
-    private const float StatusNodeHeight = 60;
 
     private NodeKind _nodeKind;
 
@@ -245,6 +243,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         string configPath = Path.Combine(GlobalServices.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
         Load(configPath);
+
+        if (OverlayConfig != null) {
+            Helpers.Util.ApplyConfigPosition(OverlayConfig, this);
+        }
+
         GlobalServices.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
     }
 
@@ -255,6 +258,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
         string configPath = Path.Combine(GlobalServices.PluginInterface.GetPluginConfigDirectory(),
             $"{_nodeKind.ToString()}.json");
+
+        if (OverlayConfig != null) {
+            Helpers.Util.SaveOverlayPosition(OverlayConfig, this);
+        }
+
         Save(configPath);
         GlobalServices.Logger.Verbose($"Saved overlay '{_nodeKind.ToString()}' to {configPath}");
     }

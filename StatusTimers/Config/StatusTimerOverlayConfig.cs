@@ -408,6 +408,17 @@ public class StatusTimerOverlayConfig
     }
 
     [JsonProperty]
+    public Vector2 Position {
+        get => field;
+        set {
+            if (field != value) {
+                field = value;
+                Notify(nameof(Position));
+            }
+        }
+    }
+
+    [JsonProperty]
     public SortOrder PrimarySortOrder
     {
         get => field;

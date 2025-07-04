@@ -1,6 +1,8 @@
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
 using StatusTimers.Factories;
 using System;
 using System.Numerics;
@@ -10,6 +12,7 @@ namespace StatusTimers.Windows;
 public unsafe class OverlayManager : IDisposable {
     private bool _isDisposed = false;
     private ConfigurationWindow? _configurationWindow;
+    private OverlayRootNode? _statusTimerRootNode;
     private EnemyMultiDoTOverlay? _enemyMultiDoTOverlay;
     private PlayerCombinedStatusesOverlay? _playerCombinedOverlay;
     private ColorPickerAddon? _colorPickerAddon;
@@ -20,6 +23,7 @@ public unsafe class OverlayManager : IDisposable {
         Services.Services.NameplateAddonController.OnDetach += DetachNodes;
     }
 
+    public SimpleComponentNode StatusTimerRootNode => _statusTimerRootNode;
     public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
     public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
     public ColorPickerAddon? ColorPickerInstance => _colorPickerAddon;
@@ -42,14 +46,23 @@ public unsafe class OverlayManager : IDisposable {
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
         DetachAndDisposeAll();
 
+        var screenSize = new Vector2(AtkStage.Instance()->ScreenSize.Width, AtkStage.Instance()->ScreenSize.Height);
+
+        _statusTimerRootNode = new OverlayRootNode(screenSize, Services.Services.NativeController);
+
         _playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
+            NodeId = 2,
             Position = new Vector2(100, 100),
             Size = new Vector2(400, 400)
         };
         _enemyMultiDoTOverlay = new EnemyMultiDoTOverlay {
+            NodeId = 3,
             Position = new Vector2(600, 100),
             Size = new Vector2(400, 400)
         };
+
+        _statusTimerRootNode.AddOverlay(_playerCombinedOverlay);
+        _statusTimerRootNode.AddOverlay(_enemyMultiDoTOverlay);
 
         _colorPickerAddon = new ColorPickerAddon(this) {
             InternalName = "StatusTimerColorPicker",
@@ -65,14 +78,9 @@ public unsafe class OverlayManager : IDisposable {
             NativeController = Services.Services.NativeController
         };
 
-        if (addonNamePlate != null) {
-            if (_playerCombinedOverlay != null) {
-                Services.Services.NativeController.AttachNode(_playerCombinedOverlay, addonNamePlate->RootNode);
-            }
-
-            if (_enemyMultiDoTOverlay != null) {
-                Services.Services.NativeController.AttachNode(_enemyMultiDoTOverlay, addonNamePlate->RootNode);
-            }
+        if (addonNamePlate != null && _statusTimerRootNode != null)
+        {
+            _statusTimerRootNode.AttachAllToNativeController(addonNamePlate->RootNode);
         }
 
         _enemyMultiDoTOverlay?.Setup();
@@ -84,26 +92,23 @@ public unsafe class OverlayManager : IDisposable {
     }
 
     private void DetachAndDisposeAll() {
-        if (_colorPickerAddon != null) {
+        if (_colorPickerAddon != null)
+        {
             _colorPickerAddon.Dispose();
             _colorPickerAddon = null;
         }
-        if (_configurationWindow != null) {
+        if (_configurationWindow != null)
+        {
             _configurationWindow.Dispose();
             _configurationWindow = null;
         }
-        if (_playerCombinedOverlay != null) {
-            Services.Services.NativeController.DetachNode(_playerCombinedOverlay);
-            _playerCombinedOverlay.OnDispose();
-            _playerCombinedOverlay.Dispose();
-            _playerCombinedOverlay = null;
+        if (_statusTimerRootNode != null)
+        {
+            _statusTimerRootNode.Cleanup();
+            _statusTimerRootNode = null;
         }
-        if (_enemyMultiDoTOverlay != null) {
-            Services.Services.NativeController.DetachNode(_enemyMultiDoTOverlay);
-            _enemyMultiDoTOverlay.OnDispose();
-            _enemyMultiDoTOverlay.Dispose();
-            _enemyMultiDoTOverlay = null;
-        }
+        _playerCombinedOverlay = null;
+        _enemyMultiDoTOverlay = null;
     }
 
     public void OnUpdate() {

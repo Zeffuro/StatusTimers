@@ -40,6 +40,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         var config = _getOverlayConfig();
 
         _containerResNode = new ResNode {
+            NodeId = 1,
             IsVisible = true,
             Width = config.RowWidth,
             Height = config.RowHeight,
@@ -47,12 +48,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
 
         // Icon
-        _iconNode = new IconImageNode();
+        _iconNode = new IconImageNode { NodeId = 1 };
         ApplyNodeSettings(_iconNode, config.Icon);
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
         // Status Name
-        _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode { NodeId = 2 } : new TextNode{ NodeId = 2 };
         ApplyNodeSettings(_statusName, config.Name);
         ApplyTextStyle(_statusName, config.Name.Style);
         if (config.Name.Style != null) {
@@ -61,12 +62,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
         // Progress
-        _progressNode = new CastBarProgressBarNode();
+        _progressNode = new CastBarProgressBarNode { NodeId = 4 };
         ApplyNodeSettings(_progressNode, config.Progress);
         GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
 
         // Actor Name
-        _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode { NodeId = 3 } : new TextNode { NodeId = 3 };
         ApplyNodeSettings(_actorName, config.Actor);
         ApplyTextStyle(_actorName, config.Actor.Style);
         if (config.Actor.Style != null) {
@@ -75,7 +76,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
 
         // Timer
-        _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
         ApplyNodeSettings(_statusRemaining, config.Timer);
         ApplyTextStyle(_statusRemaining, config.Timer.Style);
         if (config.Timer.Style != null) {
@@ -292,7 +293,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (rebuildName && _statusName != null) {
             GlobalServices.NativeController.DetachNode(_statusName);
             _statusName.Dispose();
-            _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+            _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 2 } : new TextNode{ NodeId = 2 };
             ApplyNodeSettings(_statusName, config.Name);
             ApplyTextStyle(_statusName, config.Name.Style);
             if (config.Name.Style != null) {
@@ -304,7 +305,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (rebuildActor && _actorName != null) {
             GlobalServices.NativeController.DetachNode(_actorName);
             _actorName.Dispose();
-            _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+            _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 3 } : new TextNode{ NodeId = 3 };
             ApplyNodeSettings(_actorName, config.Actor);
             ApplyTextStyle(_actorName, config.Actor.Style);
             if (config.Actor.Style != null) {
@@ -316,7 +317,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (rebuildTimer && _statusRemaining != null) {
             GlobalServices.NativeController.DetachNode(_statusRemaining);
             _statusRemaining.Dispose();
-            _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+            _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
             ApplyNodeSettings(_statusRemaining, config.Timer);
             ApplyTextStyle(_statusRemaining, config.Timer.Style);
             if (config.Timer.Style != null) {
