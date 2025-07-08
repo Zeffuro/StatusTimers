@@ -105,8 +105,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             var enabledCheckbox = ConfigurationUIFactory.CreateCheckboxOption(
                 "Enabled",
-                () => overlay.IsVisible,
+                () => overlay.OverlayConfig.Enabled,
                 isChecked => {
+                    overlay.OverlayConfig.Enabled = isChecked;
                     ToggleEnabled(overlay, mainSettingsGroup, kind, isChecked);
                 }
             );

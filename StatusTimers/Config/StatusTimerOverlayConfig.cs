@@ -296,6 +296,17 @@ public class StatusTimerOverlayConfig
     } = GrowDirection.DownRight;
 
     [JsonProperty]
+    public bool Enabled {
+        get => field;
+        set {
+            if (field != value) {
+                field = value;
+                Notify(nameof(Enabled));
+            }
+        }
+    } = false;
+
+    [JsonProperty]
     public int ItemsPerLine
     {
         get => field;

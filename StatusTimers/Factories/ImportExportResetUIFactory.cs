@@ -90,6 +90,7 @@ public static class ImportExportResetUIFactory
                 foreach (var prop in typeof(StatusTimerOverlayConfig).GetProperties().Where(p => p.CanRead && p.CanWrite)) {
                     prop.SetValue(currentOverlayConfig, prop.GetValue(imported));
                 }
+                overlay.IsVisible = imported.Enabled;
                 overlay.Position = imported.Position;
                 GlobalServices.Logger.Info("Configuration imported from clipboard.");
                 currentOverlayConfig.Notify("Config", needsRebuild: true, updateNodes: true);

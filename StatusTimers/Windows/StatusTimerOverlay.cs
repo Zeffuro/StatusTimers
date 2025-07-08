@@ -206,6 +206,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             if (property == "ScaleInt") {
                 Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
             }
+
+            if (property == "Enabled") {
+                Helpers.Util.ApplyConfigProps(OverlayConfig, this);
+            }
             if (needsRebuild) {
                 MarkNeedsRebuild();
             }
@@ -245,7 +249,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         Load(configPath);
 
         if (OverlayConfig != null) {
-            Helpers.Util.ApplyConfigPosition(OverlayConfig, this);
+            Helpers.Util.ApplyConfigProps(OverlayConfig, this);
         }
 
         GlobalServices.Logger.Info($"Loaded overlay '{_nodeKind.ToString()}' from {configPath}");
@@ -260,7 +264,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             $"{_nodeKind.ToString()}.json");
 
         if (OverlayConfig != null) {
-            Helpers.Util.SaveOverlayPosition(OverlayConfig, this);
+            Helpers.Util.SaveOverlayProps(OverlayConfig, this);
         }
 
         Save(configPath);

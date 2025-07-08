@@ -69,16 +69,18 @@ public class Util
         }
     }
 
-    public static void ApplyConfigPosition(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
+    public static void ApplyConfigProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
     {
         if (config != null && overlay != null) {
+            overlay.IsVisible = config.Enabled;
             overlay.Position = config.Position;
         }
     }
 
-    public static void SaveOverlayPosition(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
+    public static void SaveOverlayProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
     {
         if (config != null && overlay != null) {
+            config.Enabled = overlay.IsVisible;
             config.Position = overlay.Position;
         }
     }
