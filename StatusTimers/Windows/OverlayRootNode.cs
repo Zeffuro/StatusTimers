@@ -19,6 +19,9 @@ public class OverlayRootNode : SimpleComponentNode
         IsVisible = true;
         Position = Vector2.Zero;
         Size = screenSize;
+        EventFlagsSet = false;
+        CollisionNode.IsVisible = false;
+        CollisionNode.EventFlagsSet = false;
 
         _nativeController = controller;
     }
