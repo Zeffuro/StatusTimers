@@ -12,13 +12,13 @@ namespace StatusTimers.Factories;
 
 public static class FunctionalSettingsUIFactory
 {
-    public static VerticalListNode<NodeBase> Create(
+    public static VerticalListNode Create(
         Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind,
         Action? onChanged = null,
         float checkBoxHeight = 16)
     {
-        var node = new VerticalListNode<NodeBase>
+        var node = new VerticalListNode
         {
             IsVisible = true,
             ItemSpacing = 3,

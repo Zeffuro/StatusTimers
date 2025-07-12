@@ -94,7 +94,7 @@ public class ColorPickerAddon : NativeAddon
         return mainList;
     }
 
-    private HorizontalListNode<NodeBase> CreateSVSection()
+    private HorizontalListNode CreateSVSection()
     {
         _svContainer = new SimpleComponentNode() {
             IsVisible = true,
@@ -167,7 +167,7 @@ public class ColorPickerAddon : NativeAddon
         };
         NativeController.AttachNode(_svCrosshair, _svContainer);
 
-        var pickerRow = new HorizontalListNode<NodeBase>
+        var pickerRow = new HorizontalListNode
         {
             IsVisible = true,
             Width = 320,

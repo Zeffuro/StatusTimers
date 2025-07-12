@@ -21,14 +21,14 @@ namespace StatusTimers.Factories;
 
 public static class ImportExportResetUIFactory
 {
-    public static HorizontalListNode<NodeBase> Create(
+    public static HorizontalListNode Create(
         Func<StatusTimerOverlay<StatusKey>> getOverlay,
         Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind,
         Action onConfigChanged,
         Action closeWindow)
     {
-        var node = new HorizontalListNode<NodeBase> {
+        var node = new HorizontalListNode {
             Height = 0,
             Width = 600,
             Alignment = HorizontalListAnchor.Right,

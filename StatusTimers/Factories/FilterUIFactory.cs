@@ -30,12 +30,12 @@ public static class FilterUIFactory
     private const float CheckBoxHeight = 16;
     private const float SectionHeight = 400;
 
-    public static VerticalListNode<NodeBase> CreateFilterSection(
+    public static VerticalListNode CreateFilterSection(
         Func<StatusTimerOverlayConfig> getConfig,
         FilterChangedCallback? onChanged = null,
         Action? onToggled = null)
     {
-        var section = new VerticalListNode<NodeBase>
+        var section = new VerticalListNode
         {
             IsVisible = true,
             Width = 600,
@@ -60,7 +60,7 @@ public static class FilterUIFactory
         var allStatuses = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
             .Where(status => status.RowId != 0).ToList();
 
-        var filterContentGroup = new VerticalListNode<NodeBase>
+        var filterContentGroup = new VerticalListNode
         {
             IsVisible = getConfig().FilterEnabled,
             FitContents = true,
@@ -86,7 +86,7 @@ public static class FilterUIFactory
 
         section.AddDummy(new ResNode(), ConfigurationUIFactory.CheckBoxHeight);
 
-        HorizontalListNode<NodeBase> horizontalListNode = new() {
+        HorizontalListNode horizontalListNode = new() {
             X = ConfigurationUIFactory.OptionOffset,
             IsVisible = true,
             Width = 600,
@@ -167,14 +167,14 @@ public static class FilterUIFactory
         return section;
     }
 
-    public static HorizontalListNode<NodeBase> CreateFilteredDropdown<T>(
+    public static HorizontalListNode CreateFilteredDropdown<T>(
         Func<List<T>> optionsProvider,
         Func<T, string> displaySelector,
         Func<T, uint>? iconSelector,
         Action<T?> setter,
         bool allowNoResult = true)
     {
-        var flexNode = new HorizontalListNode<NodeBase>
+        var flexNode = new HorizontalListNode
         {
             IsVisible = true,
             X = ConfigurationUIFactory.OptionOffset,
@@ -297,12 +297,12 @@ public static class FilterUIFactory
         return flexNode;
     }
 
-    public static VerticalListNode<NodeBase> CreateStatusListNode(
+    public static VerticalListNode CreateStatusListNode(
         HashSet<uint> filterList,
         List<LuminaStatus> allStatuses,
         Action<uint> onRemove = null)
     {
-        var statusListNode = new VerticalListNode<NodeBase>
+        var statusListNode = new VerticalListNode
         {
             Width = 300,
             IsVisible = true,
@@ -314,7 +314,7 @@ public static class FilterUIFactory
         {
             var status = allStatuses.FirstOrDefault(s => s.RowId == rowId);
 
-            var row = new HorizontalListNode<NodeBase>
+            var row = new HorizontalListNode
             {
                 X = ConfigurationUIFactory.OptionOffset,
                 Height = 32,

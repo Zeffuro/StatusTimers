@@ -18,8 +18,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
 
-    private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _configLists = new();
-    private readonly Dictionary<NodeKind, VerticalListNode<NodeBase>> _filterSectionNodes = new();
+    private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
+    private readonly Dictionary<NodeKind, VerticalListNode> _filterSectionNodes = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
     private TabBarNode _tabBar;
 
@@ -81,7 +81,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
             NativeController.AttachNode(_configScrollingAreas[kind], this);
 
-            _configLists[kind] = new VerticalListNode<NodeBase> {
+            _configLists[kind] = new VerticalListNode {
                 Height = 0,
                 Width = _configScrollingAreas[kind].ContentNode.Width,
                 IsVisible = true,
@@ -90,7 +90,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
-            var mainSettingsGroup = new VerticalListNode<NodeBase> {
+            var mainSettingsGroup = new VerticalListNode {
                 IsVisible = overlay.IsVisible,
                 Width = _configScrollingAreas[kind].ContentNode.Width,
                 FitContents = true,
@@ -247,7 +247,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         });
     }
 
-    private void RecalculateAllLayouts(VerticalListNode<NodeBase> group, NodeKind kind, bool scrollToBottom = false) {
+    private void RecalculateAllLayouts(VerticalListNode group, NodeKind kind, bool scrollToBottom = false) {
         group.RecalculateLayout();
         _configLists[kind].RecalculateLayout();
         _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
@@ -256,7 +256,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         }
     }
 
-    private void ToggleEnabled(StatusTimerOverlay<StatusKey>? overlay, VerticalListNode<NodeBase> group, NodeKind kind, bool isChecked) {
+    private void ToggleEnabled(StatusTimerOverlay<StatusKey>? overlay, VerticalListNode group, NodeKind kind, bool isChecked) {
         if (overlay != null) {
             overlay.IsVisible = isChecked;
             group.IsVisible = isChecked;

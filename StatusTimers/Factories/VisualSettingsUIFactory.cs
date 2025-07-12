@@ -14,14 +14,14 @@ namespace StatusTimers.Factories;
 
 public static class VisualSettingsUIFactory
 {
-    public static VerticalListNode<NodeBase> Create(
+    public static VerticalListNode Create(
         StatusTimerOverlay<StatusKey> overlay,
         Func<StatusTimerOverlayConfig> getConfig,
         Action? onChanged = null,
         float optionOffset = 18,
         float checkBoxHeight = 16)
     {
-        var node = new VerticalListNode<NodeBase>
+        var node = new VerticalListNode
         {
             IsVisible = true,
             ItemSpacing = 3,

@@ -22,14 +22,14 @@ public static class NodeLayoutUIFactory
     private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
     private const float SectionHeight = 220;
-    public static VerticalListNode<NodeBase> CreateNodeLayoutSection(
+    public static VerticalListNode CreateNodeLayoutSection(
         string label,
         StatusTimerOverlayConfig.NodePartConfig nodePart,
         OverlayManager? overlayManager,
         Action onChanged = null,
         Action onToggled = null)
     {
-        var section = new VerticalListNode<NodeBase>
+        var section = new VerticalListNode
         {
             X = OptionOffset,
             Width = 600,
@@ -37,7 +37,7 @@ public static class NodeLayoutUIFactory
             IsVisible = true,
             FitContents = true,
         };
-        VerticalListNode<NodeBase> settingsGroup = null;
+        VerticalListNode settingsGroup = null;
 
         var enabledCheckbox = new CheckboxNode
         {
@@ -62,7 +62,7 @@ public static class NodeLayoutUIFactory
         };
         section.AddNode(enabledCheckbox);
 
-        settingsGroup = new VerticalListNode<NodeBase>
+        settingsGroup = new VerticalListNode
         {
             X = OptionOffset,
             Height = SectionHeight,
@@ -71,7 +71,7 @@ public static class NodeLayoutUIFactory
             IsVisible = nodePart.IsVisible
         };
 
-        settingsGroup = new VerticalListNode<NodeBase>
+        settingsGroup = new VerticalListNode
         {
             X = OptionOffset,
             Height = SectionHeight,
@@ -219,13 +219,13 @@ public static class NodeLayoutUIFactory
         return section;
     }
 
-    public static VerticalListNode<NodeBase> CreateAlignmentFlagSection(
+    public static VerticalListNode CreateAlignmentFlagSection(
         Func<AnchorAlignment> getAlignment,
         Action<AnchorAlignment> setAlignment,
         Action onChanged = null
     )
     {
-        var alignmentSection = new VerticalListNode<NodeBase>
+        var alignmentSection = new VerticalListNode
         {
             X = OptionOffset,
             ItemSpacing = 0,
@@ -244,7 +244,7 @@ public static class NodeLayoutUIFactory
             TextColor = TextStyles.OptionLabel.TextColor
         });
 
-        var horizontalRow = new HorizontalListNode<NodeBase>
+        var horizontalRow = new HorizontalListNode
         {
             X = OptionOffset,
             Width = 600,
@@ -315,7 +315,7 @@ public static class NodeLayoutUIFactory
 
         alignmentSection.AddNode(horizontalRow);
 
-        var verticalRow = new HorizontalListNode<NodeBase>
+        var verticalRow = new HorizontalListNode
         {
             X = OptionOffset,
             Width = 600,
