@@ -177,7 +177,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
-                    ItemVerticalSpacing = config.StatusVerticalPadding
+                    ItemSpacing = config.StatusVerticalPadding
                 },
                 outer => GlobalServices.NativeController.AttachNode(outer, _ownerOverlay),
                 () => {
@@ -191,7 +191,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                         Width = innerWidth,
                         Height = innerHeight,
                         IsVisible = true,
-                        ItemHorizontalSpacing = config.StatusHorizontalPadding
+                        ItemSpacing = config.StatusHorizontalPadding
                     };
                     _rows.Add(list);
                     return list;
@@ -213,7 +213,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                     Width = CalculatedOverlaySize.X,
                     Height = CalculatedOverlaySize.Y,
                     IsVisible = true,
-                    ItemHorizontalSpacing = config.StatusHorizontalPadding
+                    ItemSpacing = config.StatusHorizontalPadding
                 },
                 outer => GlobalServices.NativeController.AttachNode(outer, _ownerOverlay),
                 () => {
@@ -226,7 +226,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
                         Height = innerHeight,
                         Width = innerWidth,
                         IsVisible = true,
-                        ItemVerticalSpacing = config.StatusVerticalPadding,
+                        ItemSpacing = config.StatusVerticalPadding,
                         Alignment = VerticalListAnchor.Top
                     };
                     _columns.Add(list);

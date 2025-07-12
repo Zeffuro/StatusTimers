@@ -22,7 +22,7 @@ public static class SortUIFactory
             IsVisible = true,
             Width = 600,
             Height = 200,
-            ItemVerticalSpacing = 2,
+            ItemSpacing = 2,
             FitContents = true
         };
 

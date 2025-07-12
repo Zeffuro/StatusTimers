@@ -94,6 +94,7 @@ public static class StatusManager {
         string name = gameData.Name.ExtractText();
         float remainingSeconds = status.RemainingTime;
         ulong sourceObjectId = objectId;
+        uint sourceId = status.SourceId;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
         byte partyPrio = gameData.PartyListPriority;

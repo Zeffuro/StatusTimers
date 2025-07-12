@@ -18,7 +18,7 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers.Windows;
 
 public sealed class StatusTimerNode<TKey> : ResNode {
-    public delegate void StatusNodeActionHandler(uint statusId, ulong? gameObjectToTargetId, NodeKind nodeKind,
+    public delegate void StatusNodeActionHandler(uint statusId, ulong gameObjectToTargetId, NodeKind nodeKind,
         bool allowDismiss, bool allowTarget);
 
     private ResNode _containerResNode;
@@ -398,19 +398,17 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         AtkEventData* atkEventData = (AtkEventData*)eventData.AtkEventDataPointer;
 
-        ulong? gameObjectToTargetId = null;
+        bool shouldInvoke =
+            (atkEventData->MouseData.ButtonId == 1 && Kind == NodeKind.Combined) ||
+            (atkEventData->MouseData.ButtonId == 0 && Kind == NodeKind.MultiDoT);
 
-        if (atkEventData->MouseData.ButtonId == 1 && Kind == NodeKind.Combined &&
-            config.AllowDismissStatus) {
-        }
-
-        if (atkEventData->MouseData.ButtonId == 0 && Kind == NodeKind.MultiDoT) {
-            gameObjectToTargetId = _statusInfo.GameObjectId;
+        if (!shouldInvoke) {
+            return;
         }
 
         OnStatusNodeActionTriggered?.Invoke(
             _statusInfo.Id,
-            gameObjectToTargetId,
+            _statusInfo.GameObjectId,
             Kind,
             config.AllowDismissStatus,
             config.AllowTargetActor

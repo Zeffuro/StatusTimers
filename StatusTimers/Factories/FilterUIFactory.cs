@@ -40,7 +40,7 @@ public static class FilterUIFactory
             IsVisible = true,
             Width = 600,
             Height = SectionHeight,
-            ItemVerticalSpacing = 4,
+            ItemSpacing = 4,
             FitContents = true,
         };
 
@@ -64,7 +64,7 @@ public static class FilterUIFactory
         {
             IsVisible = getConfig().FilterEnabled,
             FitContents = true,
-            ItemVerticalSpacing = 4,
+            ItemSpacing = 4,
         };
 
         section.AddNode(ConfigurationUIFactory.CreateCheckboxOption(
@@ -306,7 +306,7 @@ public static class FilterUIFactory
         {
             Width = 300,
             IsVisible = true,
-            ItemVerticalSpacing = 4,
+            ItemSpacing = 4,
             FitContents = true,
         };
 
@@ -320,7 +320,7 @@ public static class FilterUIFactory
                 Height = 32,
                 Width = 300,
                 IsVisible = true,
-                ItemHorizontalSpacing = 4
+                ItemSpacing = 4
             };
 
             row.AddNode(new IconImageNode

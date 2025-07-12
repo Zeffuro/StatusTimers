@@ -33,7 +33,7 @@ public static class NodeLayoutUIFactory
         {
             X = OptionOffset,
             Width = 600,
-            ItemVerticalSpacing = 0,
+            ItemSpacing = 0,
             IsVisible = true,
             FitContents = true,
         };
@@ -67,7 +67,7 @@ public static class NodeLayoutUIFactory
             X = OptionOffset,
             Height = SectionHeight,
             Width = 600,
-            ItemVerticalSpacing = 0,
+            ItemSpacing = 0,
             IsVisible = nodePart.IsVisible
         };
 
@@ -76,7 +76,7 @@ public static class NodeLayoutUIFactory
             X = OptionOffset,
             Height = SectionHeight,
             Width = 600,
-            ItemVerticalSpacing = 0,
+            ItemSpacing = 0,
             IsVisible = nodePart.IsVisible
         };
 
@@ -228,7 +228,7 @@ public static class NodeLayoutUIFactory
         var alignmentSection = new VerticalListNode<NodeBase>
         {
             X = OptionOffset,
-            ItemVerticalSpacing = 0,
+            ItemSpacing = 0,
             IsVisible = true,
             Width = 600,
         };
@@ -249,7 +249,7 @@ public static class NodeLayoutUIFactory
             X = OptionOffset,
             Width = 600,
             Height = 28,
-            ItemHorizontalSpacing = 8,
+            ItemSpacing = 8,
             IsVisible = true
         };
 
@@ -320,7 +320,7 @@ public static class NodeLayoutUIFactory
             X = OptionOffset,
             Width = 600,
             Height = 28,
-            ItemHorizontalSpacing = 8,
+            ItemSpacing = 8,
             IsVisible = true
         };
 

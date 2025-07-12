@@ -144,18 +144,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         _layoutManager.RecalculateLayout();
     }
 
-    private void FinalizeOverlayPositionAndSize(Vector2 newPosition, Vector2 newSize) {
-        Size = newSize;
-
-        // Magic
-        MagicCornerYeetFix();
-    }
-
-    private void MagicCornerYeetFix() {
-        Position += new Vector2(1, 1);
-        Position -= new Vector2(1, 1);
-    }
-
     private void RebuildContainers(Action onCompleteCallback = null) {
         if (_isRebuildingContainers) {
             return;
@@ -165,7 +153,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             _isRebuildingContainers = true;
             _layoutManager.RebuildContainers(() => {
                 Size = _layoutManager.CalculatedOverlaySize;
-                FinalizeOverlayPositionAndSize(Position, _layoutManager.CalculatedOverlaySize);
                 onCompleteCallback?.Invoke();
             });
         }
@@ -188,16 +175,16 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         _layoutManager.ToggleBackground(isLocked);
     }
 
-    private void HandleStatusNodeAction(uint statusId, ulong? gameObjectToTargetId, NodeKind nodeKind,
+    private void HandleStatusNodeAction(uint statusId, ulong gameObjectToTargetId, NodeKind nodeKind,
         bool allowDismiss, bool allowTarget) {
         if (nodeKind == NodeKind.Combined && allowDismiss) {
             GameStatusManager.ExecuteStatusOff(statusId);
         }
 
-        if (nodeKind == NodeKind.MultiDoT && gameObjectToTargetId.HasValue && allowTarget) {
+        if (nodeKind == NodeKind.MultiDoT && allowTarget) {
             GlobalServices.TargetManager.Target =
                 GlobalServices.ObjectTable.FirstOrDefault(gameObject =>
-                    gameObject is not null && gameObject.GameObjectId == gameObjectToTargetId.Value);
+                    gameObject is not null && gameObject.GameObjectId == gameObjectToTargetId);
         }
     }
 

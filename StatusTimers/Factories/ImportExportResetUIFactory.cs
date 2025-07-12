@@ -33,7 +33,7 @@ public static class ImportExportResetUIFactory
             Width = 600,
             Alignment = HorizontalListAnchor.Right,
             FirstItemSpacing = 3,
-            ItemHorizontalSpacing = 2,
+            ItemSpacing = 2,
             IsVisible = true,
         };
 

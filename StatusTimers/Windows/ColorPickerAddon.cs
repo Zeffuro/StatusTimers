@@ -87,7 +87,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Width = Size.X,
             Height = Size.Y,
-            ItemVerticalSpacing = 0,
+            ItemSpacing = 0,
             FitContents = false,
         };
         NativeController.AttachNode(mainList, this);
@@ -172,7 +172,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Width = 320,
             Height = SVBoxSize,
-            ItemHorizontalSpacing = 10
+            ItemSpacing = 10
         };
         pickerRow.AddNode(_svContainer);
 

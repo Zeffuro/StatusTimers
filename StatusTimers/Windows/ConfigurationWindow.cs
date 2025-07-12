@@ -86,7 +86,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Width = _configScrollingAreas[kind].ContentNode.Width,
                 IsVisible = true,
                 FitContents = true,
-                ItemVerticalSpacing = 3
+                ItemSpacing = 3
             };
             NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
 
@@ -94,7 +94,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 IsVisible = overlay.IsVisible,
                 Width = _configScrollingAreas[kind].ContentNode.Width,
                 FitContents = true,
-                ItemVerticalSpacing = 3
+                ItemSpacing = 3
             };
 
             _configLists[kind].AddNode(
