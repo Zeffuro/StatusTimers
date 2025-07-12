@@ -86,7 +86,7 @@ public static class SortUIFactory
         return section;
     }
 
-    public static HorizontalFlexNode<NodeBase> CreateSortRow(
+    public static HorizontalFlexNode CreateSortRow(
         string labelText,
         Func<SortCriterion> criterionGetter,
         Action<SortCriterion> criterionSetter,
@@ -94,7 +94,7 @@ public static class SortUIFactory
         Action<SortOrder> orderSetter,
         Dictionary<SortCriterion, string> criteriaMap)
     {
-        var flexNode = new HorizontalFlexNode<NodeBase>
+        var flexNode = new HorizontalFlexNode
         {
             IsVisible = true,
             X = ConfigurationUIFactory.OptionOffset,

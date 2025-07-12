@@ -80,7 +80,7 @@ public static class NodeLayoutUIFactory
             IsVisible = nodePart.IsVisible
         };
 
-        var backgroundRow = new HorizontalFlexNode<NodeBase>
+        var backgroundRow = new HorizontalFlexNode
         {
             IsVisible = nodePart.BackgroundEnabled != null,
             Width = 562,
@@ -105,7 +105,7 @@ public static class NodeLayoutUIFactory
 
         if (nodePart.Style != null && overlayManager != null)
         {
-            var styleRow = new HorizontalFlexNode<NodeBase>
+            var styleRow = new HorizontalFlexNode
             {
                 IsVisible = true,
                 Width = 562,
@@ -128,7 +128,7 @@ public static class NodeLayoutUIFactory
                 v => { nodePart.Style.FontSize = v; onChanged?.Invoke(); }
             ));
 
-            var styleRow2 = new HorizontalFlexNode<NodeBase>
+            var styleRow2 = new HorizontalFlexNode
             {
                 IsVisible = true,
                 Width = 562,
@@ -157,7 +157,7 @@ public static class NodeLayoutUIFactory
             ));
         }
 
-        var offsetRow = new HorizontalFlexNode<NodeBase>
+        var offsetRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 562,
@@ -175,7 +175,7 @@ public static class NodeLayoutUIFactory
             () => (int)nodePart.Anchor.OffsetY,
             v => { nodePart.Anchor.OffsetY = v; onChanged?.Invoke(); }));
 
-        var sizeRow = new HorizontalFlexNode<NodeBase>
+        var sizeRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 562,
@@ -194,7 +194,7 @@ public static class NodeLayoutUIFactory
 
         var anchorTargetDict = ((AnchorTarget[])Enum.GetValues(typeof(AnchorTarget)))
             .ToDictionary(a => a, a => a.ToString());
-        var anchorToRow = new HorizontalFlexNode<NodeBase>
+        var anchorToRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 562,
@@ -399,7 +399,7 @@ public static class NodeLayoutUIFactory
         onChanged?.Invoke();
     }
 
-    public static HorizontalFlexNode<NodeBase> CreateColorPreviewButton(
+    public static HorizontalFlexNode CreateColorPreviewButton(
         string labelText,
         Func<Vector4> getColor,
         Action<Vector4> setColor,
@@ -408,7 +408,7 @@ public static class NodeLayoutUIFactory
         float size = 32f
     )
     {
-        var flexNode = new HorizontalFlexNode<NodeBase>
+        var flexNode = new HorizontalFlexNode
         {
             IsVisible = true,
             X = OptionOffset,

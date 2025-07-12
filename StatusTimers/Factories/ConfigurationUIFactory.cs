@@ -47,9 +47,9 @@ public static class ConfigurationUIFactory
         };
     }
 
-    public static HorizontalFlexNode<NodeBase> CreateTwoOptionsRow(NodeBase first, NodeBase second, float height)
+    public static HorizontalFlexNode CreateTwoOptionsRow(NodeBase first, NodeBase second, float height)
     {
-        return new HorizontalFlexNode<NodeBase>
+        return new HorizontalFlexNode
         {
             IsVisible = true,
             X = OptionOffset,
@@ -60,14 +60,14 @@ public static class ConfigurationUIFactory
         }.WithNodes(first, second);
     }
 
-    public static HorizontalFlexNode<NodeBase> CreateLabeledDropdown<TEnum>(
+    public static HorizontalFlexNode CreateLabeledDropdown<TEnum>(
         string labelText,
         Func<TEnum> getter,
         Action<TEnum> setter,
         IReadOnlyDictionary<TEnum, string> enumToDisplayNameMap
     ) where TEnum : Enum
     {
-        var flexNode = new HorizontalFlexNode<NodeBase>
+        var flexNode = new HorizontalFlexNode
         {
             IsVisible = true,
             X = OptionOffset,
@@ -111,9 +111,9 @@ public static class ConfigurationUIFactory
         return flexNode;
     }
 
-    public static HorizontalFlexNode<NodeBase> CreateLabeledNumericOption(string labelText, Func<int> getter, Action<int> setter)
+    public static HorizontalFlexNode CreateLabeledNumericOption(string labelText, Func<int> getter, Action<int> setter)
     {
-        var flexNode = new HorizontalFlexNode<NodeBase>
+        var flexNode = new HorizontalFlexNode
         {
             IsVisible = true,
             X = OptionOffset,
@@ -170,7 +170,7 @@ public static class ConfigurationUIFactory
         };
     }
 
-    private static HorizontalFlexNode<NodeBase> WithNodes(this HorizontalFlexNode<NodeBase> flex, params NodeBase[] nodes)
+    private static HorizontalFlexNode WithNodes(this HorizontalFlexNode flex, params NodeBase[] nodes)
     {
         foreach (var n in nodes) {
             flex.AddNode(n);

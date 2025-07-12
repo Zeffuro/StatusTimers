@@ -321,9 +321,9 @@ public class ColorPickerAddon : NativeAddon
         return listNode;
     }
 
-    private HorizontalFlexNode<NodeBase> CreateRGBASection()
+    private HorizontalFlexNode CreateRGBASection()
     {
-        var rgbaInputRow = new HorizontalFlexNode<NodeBase>
+        var rgbaInputRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 500,
@@ -351,9 +351,9 @@ public class ColorPickerAddon : NativeAddon
         return rgbaInputRow;
     }
 
-    private HorizontalFlexNode<NodeBase> CreateHSVSection()
+    private HorizontalFlexNode CreateHSVSection()
     {
-        var hsvInputRow = new HorizontalFlexNode<NodeBase>
+        var hsvInputRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 375,
@@ -395,9 +395,9 @@ public class ColorPickerAddon : NativeAddon
         return hsvInputRow;
     }
 
-    private HorizontalFlexNode<NodeBase> CreateHexAndDropdownSection()
+    private HorizontalFlexNode CreateHexAndDropdownSection()
     {
-        var thirdRow = new HorizontalFlexNode<NodeBase>
+        var thirdRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 300,
@@ -440,9 +440,9 @@ public class ColorPickerAddon : NativeAddon
         return thirdRow;
     }
 
-    private HorizontalFlexNode<NodeBase> CreateButtonRow()
+    private HorizontalFlexNode CreateButtonRow()
     {
-        var buttonRow = new HorizontalFlexNode<NodeBase>
+        var buttonRow = new HorizontalFlexNode
         {
             IsVisible = true,
             Width = 180,
@@ -493,7 +493,7 @@ public class ColorPickerAddon : NativeAddon
 
     // --- Input/Update helpers ---
 
-    private NumericInputNode AddColorInput(HorizontalFlexNode<NodeBase> row, string label, int value, Action<int> onChanged, int min = 0, int max = 255)
+    private NumericInputNode AddColorInput(HorizontalFlexNode row, string label, int value, Action<int> onChanged, int min = 0, int max = 255)
     {
         ResNode resNode = new ResNode {
             IsVisible = true,
