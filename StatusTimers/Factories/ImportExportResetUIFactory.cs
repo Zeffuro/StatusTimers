@@ -93,7 +93,7 @@ public static class ImportExportResetUIFactory
                 overlay.IsVisible = imported.Enabled;
                 overlay.Position = imported.Position;
                 GlobalServices.Logger.Info("Configuration imported from clipboard.");
-                currentOverlayConfig.Notify("Config", needsRebuild: true, updateNodes: true);
+                currentOverlayConfig.Notify("Config", updateNodes: true);
                 onConfigChanged?.Invoke();
                 closeWindow?.Invoke();
             } else {

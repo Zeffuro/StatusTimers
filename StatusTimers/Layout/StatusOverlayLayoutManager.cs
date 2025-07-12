@@ -1,10 +1,9 @@
-using KamiToolKit.Classes;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Models;
+using StatusTimers.Nodes;
 using StatusTimers.Windows;
 using System;
 using System.Collections.Generic;
@@ -17,16 +16,16 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
     private bool isDisposed = false;
 
     private readonly List<StatusTimerNode<TKey>> _allNodes = new();
-    private readonly List<VerticalListNode<StatusTimerNode<TKey>>> _columns = new();
+    private readonly List<VerticalListNode> _columns = new();
     private readonly Func<StatusTimerOverlayConfig?> _getOverlayConfig;
 
     private readonly StatusTimerOverlay<TKey> _ownerOverlay;
-    private readonly List<HorizontalListNode<StatusTimerNode<TKey>>> _rows = new();
+    private readonly List<HorizontalListNode> _rows = new();
 
     private NineGridNode _backgroundNode;
 
     private StatusTimerNode<TKey>.StatusNodeActionHandler _onNodeActionTriggered;
-    private NodeBase _rootContainer;
+    private HybridDirectionalFlexNode _rootContainer;
 
     public StatusOverlayLayoutManager(
         StatusTimerOverlay<TKey> ownerOverlay,
@@ -37,7 +36,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
     public Vector2 CalculatedOverlaySize { get; private set; }
 
-    public NodeBase RootContainer => _rootContainer;
+    public HybridDirectionalFlexNode RootContainer => _rootContainer;
     public NineGridNode BackgroundNode => _backgroundNode;
 
     public IReadOnlyList<StatusTimerNode<TKey>> AllNodes => _allNodes;
@@ -160,173 +159,72 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         BuildContainers();
     }
 
-    public void BuildContainers() {
+    public void BuildContainers()
+    {
         _allNodes.Clear();
-        _rows.Clear();
-        _columns.Clear();
 
         var config = _getOverlayConfig();
-
         CalculatedOverlaySize = CalculateOverlaySize();
-        int outerCount = (int)Math.Ceiling(config.MaxStatuses / (double)config.ItemsPerLine);
 
-        if (config.FillRowsFirst) {
-            SetupContainers(
-                () => new VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> {
-                    NodeId = 3,
-                    Width = CalculatedOverlaySize.X,
-                    Height = CalculatedOverlaySize.Y,
-                    IsVisible = true,
-                    ItemSpacing = config.StatusVerticalPadding
-                },
-                outer => GlobalServices.NativeController.AttachNode(outer, _ownerOverlay),
-                () => {
-                    float innerWidth = Math.Min(config.ItemsPerLine, config.MaxStatuses) * config.RowWidth +
-                                       (Math.Min(config.ItemsPerLine, config.MaxStatuses) - 1) *
-                                       config.StatusHorizontalPadding;
-                    float innerHeight = config.RowHeight;
+        _rootContainer = new HybridDirectionalFlexNode
+        {
+            X = 0,
+            Y = 0,
+            NodeId = 3,
+            Width = CalculatedOverlaySize.X,
+            Height = CalculatedOverlaySize.Y,
+            IsVisible = true,
+            ItemSpacing = config.FillRowsFirst ? config.StatusVerticalPadding : config.StatusHorizontalPadding,
+            GrowDirection = (FlexGrowDirection)config.GrowDirection,
+            ItemsPerLine = config.ItemsPerLine,
+            FillRowsFirst = config.FillRowsFirst
+        };
 
-                    HorizontalListNode<StatusTimerNode<TKey>> list = new() {
-                        NodeId = 2,
-                        Width = innerWidth,
-                        Height = innerHeight,
-                        IsVisible = true,
-                        ItemSpacing = config.StatusHorizontalPadding
-                    };
-                    _rows.Add(list);
-                    return list;
-                },
-                (outer, inner) => outer.AddNode(inner),
-                inner => { },
-                (inner, node) => {
-                    inner.AddNode(node);
-                    node.OuterContainer = inner;
-                },
-                outerCount,
-                config.ItemsPerLine
-            );
-        }
-        else {
-            SetupContainers(
-                () => new HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> {
-                    NodeId = 3,
-                    Width = CalculatedOverlaySize.X,
-                    Height = CalculatedOverlaySize.Y,
-                    IsVisible = true,
-                    ItemSpacing = config.StatusHorizontalPadding
-                },
-                outer => GlobalServices.NativeController.AttachNode(outer, _ownerOverlay),
-                () => {
-                    float innerWidth = config.RowWidth;
-                    float innerHeight = Math.Min(config.ItemsPerLine, config.MaxStatuses) * config.RowHeight +
-                                        (Math.Min(config.ItemsPerLine, config.MaxStatuses) - 1) *
-                                        config.StatusVerticalPadding;
-                    VerticalListNode<StatusTimerNode<TKey>> list = new() {
-                        NodeId = 2,
-                        Height = innerHeight,
-                        Width = innerWidth,
-                        IsVisible = true,
-                        ItemSpacing = config.StatusVerticalPadding,
-                        Alignment = VerticalListAnchor.Top
-                    };
-                    _columns.Add(list);
-                    return list;
-                },
-                (outer, inner) => outer.AddNode(inner),
-                inner => { },
-                (inner, node) => {
-                    inner.AddNode(node);
-                    node.OuterContainer = inner;
-                },
-                outerCount,
-                config.ItemsPerLine
-            );
+        for (int i = 0; i < config.MaxStatuses; i++)
+        {
+            var node = new StatusTimerNode<TKey>(_getOverlayConfig)
+            {
+                Height = config.RowHeight,
+                Width = config.RowWidth,
+                IsVisible = false
+            };
+            _rootContainer.AddNode(node);
+            _allNodes.Add(node);
+
+            if (_onNodeActionTriggered != null) {
+                node.OnStatusNodeActionTriggered += _onNodeActionTriggered;
+            }
         }
 
+        _rootContainer.RecalculateLayout();
+
+        GlobalServices.NativeController.AttachNode(_rootContainer, _ownerOverlay);
         _ownerOverlay.Size = CalculatedOverlaySize;
         ToggleBackground(_ownerOverlay.IsLocked);
-    }
-
-    private bool _isRebuilding = false;
-
-    public void RebuildContainers(Action onCompleteCallback = null) {
-        if (_rootContainer != null) {
-            GlobalServices.NativeController.DetachNode(_rootContainer);
-            _rootContainer = null;
-        }
-        if (_backgroundNode != null) {
-            GlobalServices.NativeController.DetachNode(_backgroundNode);
-            _backgroundNode = null;
-        }
-        _allNodes.Clear();
-        _rows.Clear();
-        _columns.Clear();
-
-        BuildContainersOnly();
-
-        GlobalServices.Framework.RunOnTick(() => {
-            if (isDisposed) {
-                return;
-            }
-
-            try {
-                RecalculateLayout();
-                onCompleteCallback?.Invoke();
-            }
-            finally {
-                _isRebuilding = false;
-            }
-        }, delayTicks: 3);
     }
 
     public void RecalculateLayout()
     {
         var config = _getOverlayConfig();
-        var grow = config.GrowDirection;
-
-        VerticalListAnchor verticalAnchor;
-        HorizontalListAnchor horizontalAnchor;
-
-        switch (grow)
-        {
-            case GrowDirection.UpLeft:
-                verticalAnchor = VerticalListAnchor.Bottom;
-                horizontalAnchor = HorizontalListAnchor.Right;
-                break;
-            case GrowDirection.UpRight:
-                verticalAnchor = VerticalListAnchor.Bottom;
-                horizontalAnchor = HorizontalListAnchor.Left;
-                break;
-            case GrowDirection.DownLeft:
-                verticalAnchor = VerticalListAnchor.Top;
-                horizontalAnchor = HorizontalListAnchor.Right;
-                break;
-            case GrowDirection.DownRight:
-            default:
-                verticalAnchor = VerticalListAnchor.Top;
-                horizontalAnchor = HorizontalListAnchor.Left;
-                break;
-        }
-
-        SetVerticalAlignment(verticalAnchor);
-        SetHorizontalAlignment(horizontalAnchor);
-
-        float rootContainerOffsetX = 0, rootContainerOffsetY = 0;
-
         if (_rootContainer != null)
         {
-            _rootContainer.X = rootContainerOffsetX;
-            _rootContainer.Y = rootContainerOffsetY;
+            _rootContainer.GrowDirection = (FlexGrowDirection)config.GrowDirection;
+            _rootContainer.ItemsPerLine = config.ItemsPerLine;
+            _rootContainer.FillRowsFirst = config.FillRowsFirst;
+            _rootContainer.ItemSpacing = config.FillRowsFirst ? config.StatusVerticalPadding : config.StatusHorizontalPadding;
 
-            switch (_rootContainer)
+            CalculatedOverlaySize = CalculateOverlaySize();
+            _rootContainer.Width = CalculatedOverlaySize.X;
+            _rootContainer.Height = CalculatedOverlaySize.Y;
+            _backgroundNode.Size = CalculatedOverlaySize;
+
+            foreach (var node in _allNodes)
             {
-                case VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> vRoot:
-                    vRoot.RecalculateLayout();
-                    break;
-                case HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> hRoot:
-                    hRoot.RecalculateLayout();
-                    break;
+                node.Width = config.RowWidth;
+                node.Height = config.RowHeight;
             }
+
+            _rootContainer.RecalculateLayout();
         }
     }
 
@@ -343,8 +241,6 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
     }
 
     public void UpdateNodeContent(List<StatusInfo> finalSortedList, NodeKind nodeKind) {
-        var config = _getOverlayConfig();
-
         int i = 0;
         for (; i < finalSortedList.Count && i < _allNodes.Count; i++) {
             StatusInfo status = finalSortedList[i];
@@ -361,71 +257,6 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
         for (; i < _allNodes.Count; i++) {
             _allNodes[i].IsVisible = false;
-        }
-    }
-
-    private void SetupContainers<TOuter, TInner>(
-        Func<TOuter> createOuter,
-        Action<TOuter> attachOuter,
-        Func<TInner> createInner,
-        Action<TOuter, TInner> addInnerToOuter,
-        Action<TInner> configureInner,
-        Action<TInner, StatusTimerNode<TKey>> addNodeToInner,
-        int outerCount,
-        int itemsPerInner
-    )
-        where TOuter : NodeBase
-        where TInner : NodeBase {
-        TOuter outer = createOuter();
-
-        for (int i = 0, nodeIndex = 0; i < outerCount && nodeIndex < _getOverlayConfig().MaxStatuses; i++) {
-            TInner inner = createInner();
-            configureInner(inner);
-            addInnerToOuter(outer, inner);
-
-            for (int j = 0; j < itemsPerInner && nodeIndex < _getOverlayConfig().MaxStatuses; j++, nodeIndex++) {
-                StatusTimerNode<TKey> node = new(_getOverlayConfig) {
-                    Height = _getOverlayConfig().RowHeight,
-                    Width = _getOverlayConfig().RowWidth,
-                    Origin = new Vector2(_getOverlayConfig().RowWidth / 2, _getOverlayConfig().RowHeight / 2),
-                    IsVisible = false
-                };
-                addNodeToInner(inner, node);
-                _allNodes.Add(node);
-
-                if (_onNodeActionTriggered != null) {
-                    node.OnStatusNodeActionTriggered += _onNodeActionTriggered;
-                }
-            }
-        }
-
-        attachOuter(outer);
-        _rootContainer = outer;
-    }
-
-    private void SetVerticalAlignment(VerticalListAnchor anchor) {
-        if (_rootContainer is VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>> verticalRoot) {
-            verticalRoot.Alignment = anchor;
-            verticalRoot.RecalculateLayout();
-        }
-        else if (_rootContainer is HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>>) {
-            foreach (VerticalListNode<StatusTimerNode<TKey>> verticalList in _columns) {
-                verticalList.Alignment = anchor;
-                verticalList.RecalculateLayout();
-            }
-        }
-    }
-
-    private void SetHorizontalAlignment(HorizontalListAnchor anchor) {
-        if (_rootContainer is VerticalListNode<HorizontalListNode<StatusTimerNode<TKey>>>) {
-            foreach (HorizontalListNode<StatusTimerNode<TKey>> horizontalList in _rows) {
-                horizontalList.Alignment = anchor;
-                horizontalList.RecalculateLayout();
-            }
-        }
-        else if (_rootContainer is HorizontalListNode<VerticalListNode<StatusTimerNode<TKey>>> horizontalRoot) {
-            horizontalRoot.Alignment = anchor;
-            horizontalRoot.RecalculateLayout();
         }
     }
 

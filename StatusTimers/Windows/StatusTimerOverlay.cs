@@ -36,8 +36,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     private bool _isConfigLoading;
     private bool _isSetupCompleted;
-    private bool _needsRebuild;
-    private bool _isRebuildingContainers;
 
     private StatusOverlayLayoutManager<TKey> _layoutManager;
 
@@ -68,9 +66,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             () => OverlayConfig.TertiarySortOrder
         );
 
-        OverlayConfig.OnPropertyChanged += (property, updateNodes, needsRebuild) => {
+        OverlayConfig.OnPropertyChanged += (property, updateNodes) => {
             GlobalServices.Logger.Verbose($"Property changed: {property}");
-            OnPropertyChanged(property, needsRebuild, updateNodes);
+            OnPropertyChanged(property, updateNodes);
         };
     }
 
@@ -124,12 +122,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
     }
 
     public void OnUpdate() {
-        if (_needsRebuild && !_isRebuildingContainers)
-        {
-            _needsRebuild = false;
-            RebuildContainers(SaveConfig);
-        }
-
         List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
 
         _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
@@ -142,23 +134,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         }
 
         _layoutManager.RecalculateLayout();
-    }
-
-    private void RebuildContainers(Action onCompleteCallback = null) {
-        if (_isRebuildingContainers) {
-            return;
-        }
-
-        try {
-            _isRebuildingContainers = true;
-            _layoutManager.RebuildContainers(() => {
-                Size = _layoutManager.CalculatedOverlaySize;
-                onCompleteCallback?.Invoke();
-            });
-        }
-        finally {
-            _isRebuildingContainers = false;
-        }
     }
 
     private void ToggleDrag(bool isLocked) {
@@ -188,7 +163,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         }
     }
 
-    private void OnPropertyChanged(string property, bool needsRebuild = false, bool updateNodes = false) {
+    private void OnPropertyChanged(string property, bool updateNodes = false) {
         if (!_isConfigLoading) {
             if (property == "ScaleInt") {
                 Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
@@ -197,20 +172,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             if (property == "Enabled") {
                 Helpers.Util.ApplyConfigProps(OverlayConfig, this);
             }
-            if (needsRebuild) {
-                MarkNeedsRebuild();
-            }
 
             if (updateNodes) {
                 _layoutManager.UpdateAllNodesDisplay();
             }
         }
         SaveConfig();
-    }
-
-    private void MarkNeedsRebuild()
-    {
-        _needsRebuild = true;
     }
 
     private void SetSortDefaults(NodeKind nodeKind)

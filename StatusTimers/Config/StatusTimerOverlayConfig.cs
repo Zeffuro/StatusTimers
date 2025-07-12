@@ -15,10 +15,10 @@ namespace StatusTimers.Config;
 /// </summary>
 public class StatusTimerOverlayConfig
 {
-    public event Action<string, bool, bool>? OnPropertyChanged;
+    public event Action<string, bool>? OnPropertyChanged;
 
-    public void Notify(string property, bool updateNodes = false, bool needsRebuild = false)
-        => OnPropertyChanged?.Invoke(property, updateNodes, needsRebuild);
+    public void Notify(string property, bool updateNodes = false)
+        => OnPropertyChanged?.Invoke(property, updateNodes);
 
     public StatusTimerOverlayConfig(NodeKind kind) {
         switch (kind) {
@@ -151,7 +151,7 @@ public class StatusTimerOverlayConfig
             if (RowWidth != value)
             {
                 field = value;
-                Notify(nameof(RowWidth), needsRebuild: true);
+                Notify(nameof(RowWidth));
             }
         }
     } = 300;
@@ -164,7 +164,7 @@ public class StatusTimerOverlayConfig
             if (RowHeight != value)
             {
                 field = value;
-                Notify(nameof(RowHeight), needsRebuild: true);
+                Notify(nameof(RowHeight));
             }
         }
     } = 60;
@@ -234,7 +234,7 @@ public class StatusTimerOverlayConfig
             if (FillRowsFirst != value)
             {
                 field = value;
-                Notify(nameof(FillRowsFirst), needsRebuild: true);
+                Notify(nameof(FillRowsFirst));
             }
         }
     } = false;
@@ -315,7 +315,7 @@ public class StatusTimerOverlayConfig
             if (ItemsPerLine != value)
             {
                 field = value;
-                Notify(nameof(ItemsPerLine), needsRebuild: true);
+                Notify(nameof(ItemsPerLine));
             }
         }
     } = 16;
@@ -329,7 +329,7 @@ public class StatusTimerOverlayConfig
             if (MaxStatuses != value)
             {
                 field = value;
-                Notify(nameof(MaxStatuses), needsRebuild: true);
+                Notify(nameof(MaxStatuses));
             }
         }
     } = 30;
@@ -343,7 +343,7 @@ public class StatusTimerOverlayConfig
             if (ScaleInt != value)
             {
                 field = value;
-                Notify(nameof(ScaleInt), needsRebuild: true);
+                Notify(nameof(ScaleInt));
             }
         }
     } = 100;
@@ -357,7 +357,7 @@ public class StatusTimerOverlayConfig
             if (StatusHorizontalPadding != value)
             {
                 field = value;
-                Notify(nameof(StatusHorizontalPadding), needsRebuild: true);
+                Notify(nameof(StatusHorizontalPadding));
             }
         }
     } = 4;
@@ -371,7 +371,7 @@ public class StatusTimerOverlayConfig
             if (StatusVerticalPadding != value)
             {
                 field = value;
-                Notify(nameof(StatusVerticalPadding), needsRebuild: true);
+                Notify(nameof(StatusVerticalPadding));
             }
         }
     } = 4;
@@ -385,7 +385,7 @@ public class StatusTimerOverlayConfig
             if (PrimarySort != value)
             {
                 field = value;
-                Notify(nameof(PrimarySort), needsRebuild: true);
+                Notify(nameof(PrimarySort));
             }
         }
     }
@@ -399,7 +399,7 @@ public class StatusTimerOverlayConfig
             if (SecondarySort != value)
             {
                 field = value;
-                Notify(nameof(SecondarySort), needsRebuild: true);
+                Notify(nameof(SecondarySort));
             }
         }
     }
@@ -413,7 +413,7 @@ public class StatusTimerOverlayConfig
             if (TertiarySort != value)
             {
                 field = value;
-                Notify(nameof(TertiarySort), needsRebuild: true);
+                Notify(nameof(TertiarySort));
             }
         }
     }
@@ -438,7 +438,7 @@ public class StatusTimerOverlayConfig
             if (PrimarySortOrder != value)
             {
                 field = value;
-                Notify(nameof(PrimarySortOrder), needsRebuild: true);
+                Notify(nameof(PrimarySortOrder));
             }
         }
     } = SortOrder.Ascending;
@@ -452,7 +452,7 @@ public class StatusTimerOverlayConfig
             if (SecondarySortOrder != value)
             {
                 field = value;
-                Notify(nameof(SecondarySortOrder), needsRebuild: true);
+                Notify(nameof(SecondarySortOrder));
             }
         }
     } = SortOrder.Ascending;
@@ -466,7 +466,7 @@ public class StatusTimerOverlayConfig
             if (TertiarySortOrder != value)
             {
                 field = value;
-                Notify(nameof(TertiarySortOrder), needsRebuild: true);
+                Notify(nameof(TertiarySortOrder));
             }
         }
     } = SortOrder.Ascending;
