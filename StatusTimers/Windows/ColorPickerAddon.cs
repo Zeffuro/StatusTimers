@@ -33,7 +33,6 @@ public class ColorPickerAddon : NativeAddon
     private TextInputNode? _hexInput;
     private NumericInputNode? _redInput, _greenInput, _blueInput, _alphaInput, _hueInput, _saturationInput, _valueInput;
     private ImGuiImageNode? _svSquareNode, _svSquareNode2, _svSquareNode3, _hueBarNode, _alphaBarNode;
-    private IDalamudTextureWrap? _svTexture, _svTexture2, _svTexture3, _hueTexture, _alphaTexture;
     private SimpleComponentNode? _svContainer, _hueContainer, _alphaContainer;
     private NodeBase? _svCrosshair, _hueCrosshair, _alphaCrosshair;
     private bool _isDraggingSV, _isDraggingHue, _isDraggingAlpha;
@@ -60,7 +59,6 @@ public class ColorPickerAddon : NativeAddon
 
     protected override unsafe void OnSetup(AtkUnitBase* addon)
     {
-        GlobalServices.Framework.RunOnFrameworkThread(LoadTexturesBlocking);
         CreateAdvancedColorPicker();
     }
 
@@ -114,14 +112,10 @@ public class ColorPickerAddon : NativeAddon
             Alpha = 1f,
             WrapMode = 2,
             ImageNodeFlags = 0,
-            EnableEventFlags = true
+            EnableEventFlags = true,
+            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+                @"Media\Textures\sv_overlay_1_white.png")
         };
-        GlobalServices.Framework.RunOnFrameworkThread(() => {
-            if (_svTexture != null) {
-                _svSquareNode.LoadTexture(_svTexture);
-                _svSquareNode.TextureSize = _svTexture.Size;
-            }
-        });
         NativeController.AttachNode(_svSquareNode, _svContainer);
 
         _svSquareNode2 = new ImGuiImageNode()
@@ -130,14 +124,10 @@ public class ColorPickerAddon : NativeAddon
             Size = new Vector2(SVBoxSize),
             Alpha = 1f,
             WrapMode = 2,
-            ImageNodeFlags = 0
+            ImageNodeFlags = 0,
+            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+                @"Media\Textures\sv_overlay_2_horizontal_gradient.png")
         };
-        GlobalServices.Framework.RunOnFrameworkThread(() => {
-            if (_svTexture2 != null) {
-                _svSquareNode2.LoadTexture(_svTexture2);
-                _svSquareNode2.TextureSize = _svTexture2.Size;
-            }
-        });
         NativeController.AttachNode(_svSquareNode2, _svContainer);
 
         _svSquareNode3 = new ImGuiImageNode()
@@ -146,14 +136,10 @@ public class ColorPickerAddon : NativeAddon
             Size = new Vector2(SVBoxSize),
             Alpha = 1f,
             WrapMode = 2,
-            ImageNodeFlags = 0
+            ImageNodeFlags = 0,
+            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+                @"Media\Textures\sv_overlay_3_vertical_black.png")
         };
-        GlobalServices.Framework.RunOnFrameworkThread(() => {
-            if (_svTexture3 != null) {
-                _svSquareNode3.LoadTexture(_svTexture3);
-                _svSquareNode3.TextureSize = _svTexture3.Size;
-            }
-        });
         NativeController.AttachNode(_svSquareNode3, _svContainer);
 
         _svCrosshair = new SimpleImageNode() {
@@ -196,14 +182,9 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Width = BarWidth,
             Height = SVBoxSize,
-            LoadedTexture = _hueTexture,
+            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+                @"Media\Textures\hue_bar.png"),
         };
-        GlobalServices.Framework.RunOnFrameworkThread(() => {
-            if (_hueTexture != null) {
-                _hueBarNode.LoadTexture(_hueTexture);
-                _hueBarNode.TextureSize = _hueTexture.Size;
-            }
-        });
         NativeController.AttachNode(_hueBarNode, _hueContainer);
 
         _hueCrosshair = new ResNode() {
@@ -244,15 +225,10 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Width = BarWidth,
             Height = SVBoxSize,
-            LoadedTexture = _alphaTexture,
             EnableEventFlags = true,
+            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
+                @"Media\Textures\alpha_bar.png"),
         };
-        GlobalServices.Framework.RunOnFrameworkThread(() => {
-            if (_alphaTexture != null) {
-                _alphaBarNode.LoadTexture(_alphaTexture);
-                _alphaBarNode.TextureSize = _alphaTexture.Size;
-            }
-        });
         NativeController.AttachNode(_alphaBarNode, _alphaContainer);
 
         _alphaCrosshair = new ResNode() {
@@ -470,25 +446,6 @@ public class ColorPickerAddon : NativeAddon
         });
 
         return buttonRow;
-    }
-
-    private void LoadTexturesBlocking() {
-        var svPath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\sv_overlay_1_white.png");
-        var svPath2 = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\sv_overlay_2_horizontal_gradient.png");
-        var svPath3 = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\sv_overlay_3_vertical_black.png");
-        var huePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\hue_bar.png");
-        var alphaPath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-            @"Media\Textures\alpha_bar.png");
-
-        _svTexture = GlobalServices.TextureProvider.GetFromFile(svPath).RentAsync().Result;
-        _svTexture2 = GlobalServices.TextureProvider.GetFromFile(svPath2).RentAsync().Result;
-        _svTexture3 = GlobalServices.TextureProvider.GetFromFile(svPath3).RentAsync().Result;
-        _hueTexture = GlobalServices.TextureProvider.GetFromFile(huePath).RentAsync().Result;
-        _alphaTexture = GlobalServices.TextureProvider.GetFromFile(alphaPath).RentAsync().Result;
     }
 
     // --- Input/Update helpers ---
