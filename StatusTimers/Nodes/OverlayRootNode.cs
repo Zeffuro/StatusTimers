@@ -6,9 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace StatusTimers.Windows;
+namespace StatusTimers.Nodes;
 
-public class OverlayRootNode : SimpleComponentNode
+public class OverlayRootNode : SimpleOverlayNode
 {
     private readonly List<NodeBase> _overlays = [];
     private NativeController _nativeController;
@@ -19,9 +19,6 @@ public class OverlayRootNode : SimpleComponentNode
         IsVisible = true;
         Position = Vector2.Zero;
         Size = screenSize;
-        EventFlagsSet = false;
-        CollisionNode.IsVisible = false;
-        CollisionNode.EventFlagsSet = false;
 
         _nativeController = controller;
     }

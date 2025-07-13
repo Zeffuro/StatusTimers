@@ -79,7 +79,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 ContentHeight = 1500.0f,
                 IsVisible = false
             };
-            NativeController.AttachNode(_configScrollingAreas[kind], this);
+            AttachNode(_configScrollingAreas[kind]);
 
             _configLists[kind] = new VerticalListNode {
                 Height = 0,
@@ -114,7 +114,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             _configLists[kind].AddNode(enabledCheckbox);
 
-            mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
+            mainSettingsGroup.AddDummy(CheckBoxHeight);
 
             // Visual Settings
             mainSettingsGroup.AddNode(
@@ -188,7 +188,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked));
             }
 
-            mainSettingsGroup.AddDummy(new ResNode(), CheckBoxHeight);
+            mainSettingsGroup.AddDummy(CheckBoxHeight);
 
             // Functional Settings
             mainSettingsGroup.AddNode(
@@ -233,7 +233,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
         }
 
-        NativeController.AttachNode(_tabBar, this);
+        AttachNode(_tabBar);
         _configScrollingAreas.First().Value.IsVisible = true;
     }
 

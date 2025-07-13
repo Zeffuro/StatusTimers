@@ -84,7 +84,7 @@ public static class FilterUIFactory
             }
         ));
 
-        section.AddDummy(new ResNode(), ConfigurationUIFactory.CheckBoxHeight);
+        section.AddDummy(ConfigurationUIFactory.CheckBoxHeight);
 
         HorizontalListNode horizontalListNode = new() {
             X = ConfigurationUIFactory.OptionOffset,
@@ -279,7 +279,7 @@ public static class FilterUIFactory
         };
 
         flexNode.AddNode(textInput);
-        flexNode.AddDummy(new ResNode(), 120);
+        flexNode.AddDummy(120);
 
         if (iconSelector != null)
         {

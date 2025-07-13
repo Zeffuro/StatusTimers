@@ -4,6 +4,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using StatusTimers.Factories;
+using StatusTimers.Nodes;
 using System;
 using System.Numerics;
 

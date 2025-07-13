@@ -55,7 +55,7 @@ public static class VisualSettingsUIFactory
         ));
 
         node.AddNode();
-        node.AddDummy(new ResNode(), checkBoxHeight);
+        node.AddDummy(checkBoxHeight);
 
         // Node Height and Width
         node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
@@ -83,7 +83,7 @@ public static class VisualSettingsUIFactory
             20
         ));
 
-        node.AddDummy(new ResNode(), checkBoxHeight);
+        node.AddDummy(checkBoxHeight);
 
         // Scale Label
         node.AddNode(ConfigurationUIFactory.CreateTwoOptionsRow(
@@ -211,7 +211,7 @@ public static class VisualSettingsUIFactory
             }
         ));
 
-        node.AddDummy(new ResNode(), checkBoxHeight);
+        node.AddDummy(checkBoxHeight);
 
         return node;
     }

@@ -88,7 +88,7 @@ public class ColorPickerAddon : NativeAddon
             ItemSpacing = 0,
             FitContents = false,
         };
-        NativeController.AttachNode(mainList, this);
+        AttachNode(mainList);
         return mainList;
     }
 

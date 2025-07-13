@@ -75,7 +75,7 @@ public static class FunctionalSettingsUIFactory
             ));
         }
 
-        node.AddDummy(new ResNode(), checkBoxHeight);
+        node.AddDummy(checkBoxHeight);
 
         return node;
     }
