@@ -77,6 +77,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Width = ContentSize.X,
                 Height = ContentSize.Y - _tabBar.Height,
                 ContentHeight = 1500.0f,
+                ScrollSpeed = 50,
                 IsVisible = false
             };
             AttachNode(_configScrollingAreas[kind]);
