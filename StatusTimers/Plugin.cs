@@ -11,20 +11,16 @@ namespace StatusTimers;
 public class Plugin : IDalamudPlugin {
     public const string CommandName = "/statustimers";
     public readonly OverlayManager OverlayManager;
-    public Configuration Configuration;
 
     public unsafe Plugin(IDalamudPluginInterface pluginInterface) {
         pluginInterface.Create<Services.Services>();
 
         BackupHelper.DoConfigBackup(pluginInterface);
 
-        Configuration = Services.Services.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-
         Services.Services.NativeController = new NativeController(pluginInterface);
         Services.Services.NameplateAddonController = new NameplateAddonController(pluginInterface);
 
         OverlayManager = new OverlayManager();
-
 
         Services.Services.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
         Services.Services.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
@@ -47,8 +43,6 @@ public class Plugin : IDalamudPlugin {
     public void Dispose() {
         Services.Services.Framework.Update -= OnFrameworkUpdate;
         Services.Services.CommandManager.RemoveHandler(CommandName);
-
-        Configuration.Save();
 
         Services.Services.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
         Services.Services.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
