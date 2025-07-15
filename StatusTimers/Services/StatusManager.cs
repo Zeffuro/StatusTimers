@@ -1,6 +1,9 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.ClientState.Statuses;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.Interop;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using StatusTimers.Config;
@@ -13,19 +16,20 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
-using Status = Dalamud.Game.ClientState.Statuses.Status;
+using Status = FFXIVClientStructs.FFXIV.Client.Game.Status;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 
 namespace StatusTimers.Services;
 
 public static class StatusManager {
     private static readonly ExcelSheet<Item> _itemSheet = Services.DataManager.GetExcelSheet<Item>();
+    private static readonly ExcelSheet<LuminaStatus> _statusSheet = Services.DataManager.GetExcelSheet<LuminaStatus>();
     private static FrozenDictionary<uint, uint> _itemFoodToItemLut;
     private static readonly Dictionary<uint, float> StatusDurations = new();
 
     private static readonly FrozenSet<uint> HarmfulStatusIds = Services.DataManager
         .GetExcelSheet<LuminaStatus>()!
-        .Where(s => s is { IsPermanent: false })
+        .Where(s => s is { IsPermanent: false, StatusCategory: 2 })
         .Select(s => s.RowId)
         .ToFrozenSet();
 
@@ -35,48 +39,63 @@ public static class StatusManager {
         PopulateDictionaries();
     }
 
-    public static IReadOnlyList<StatusInfo> GetPlayerStatuses(StatusTimerOverlayConfig? config) {
+    public static unsafe IReadOnlyList<StatusInfo> GetPlayerStatuses(StatusTimerOverlayConfig? config) {
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
         if (player?.StatusList == null) {
             return [];
         }
 
-        return player.StatusList
-            .Where(status => status.StatusId != 0)
-            .Select(status => TransformStatus(status, player.GameObjectId, config))
-            .Where(transformedStatus => transformedStatus != null)
-            .Cast<StatusInfo>()
-            .ToList();
-        ;
+        Character* character = (Character*) player.Address;
+
+        var result = new List<StatusInfo>();
+        var statusManager = character->GetStatusManager();
+
+        for (int i = 0; i < statusManager->NumValidStatuses; i++) {
+            var status = statusManager->Status[i];
+            if (status.StatusId == 0) {
+                continue;
+            }
+
+            var transformed = TransformStatus(status, player.GameObjectId, config);
+            if (transformed.HasValue) {
+                result.Add(transformed.Value);
+            }
+        }
+
+        return result;
     }
 
-    public static IReadOnlyList<StatusInfo> GetHostileStatuses(StatusTimerOverlayConfig? config) {
+    public static unsafe IReadOnlyList<StatusInfo> GetHostileStatuses(StatusTimerOverlayConfig? config) {
         _hostileStatusBuffer.Clear();
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
         if (player == null) {
             return _hostileStatusBuffer;
         }
-
-        foreach (IGameObject obj in Services.ObjectTable) {
-            if (obj is not IBattleChara target ||
-                target.ObjectIndex == player.GameObjectId ||
-                !target.IsTargetable ||
-                !target.IsHostile()) {
+        var characterManager = CharacterManager.Instance();
+        var battleCharas = characterManager->BattleCharas;
+        foreach (var battleCharaPointer in battleCharas)
+        {
+            if (battleCharaPointer == null) {
                 continue;
             }
 
-            StatusList statusList = target.StatusList;
-            foreach (Status status in statusList) {
-                if (status.StatusId == 0 || status.SourceId != player.GameObjectId) {
+            var battleChar = battleCharaPointer.Value;
+
+            if (!battleChar->GetIsTargetable() || battleChar->ObjectIndex == player.ObjectIndex) {
+                continue;
+            }
+
+            foreach (var statusId in HarmfulStatusIds) {
+
+                int statusIndex = battleChar->StatusManager.GetStatusIndex(statusId);
+                if (statusIndex == -1) {
                     continue;
                 }
 
-                if (!HarmfulStatusIds.Contains(status.StatusId)) {
-                    continue;
-                }
+                var status = battleChar->StatusManager.Status[statusIndex];
 
-                StatusInfo? transformedStatus = TransformStatus(status, target.GameObjectId, config);
+                StatusInfo? transformedStatus = TransformStatus(status, battleChar->GetGameObjectId(), config, battleChar);
                 if (transformedStatus.HasValue) {
                     _hostileStatusBuffer.Add(transformedStatus.Value);
                 }
@@ -86,15 +105,16 @@ public static class StatusManager {
         return _hostileStatusBuffer;
     }
 
-    private static StatusInfo? TransformStatus(Status status, ulong objectId, StatusTimerOverlayConfig? config) {
-        LuminaStatus gameData = status.GameData.Value;
+    private static unsafe StatusInfo? TransformStatus(Status status, ulong objectId, StatusTimerOverlayConfig? config, BattleChara* battleChar = null) {
+        if (!_statusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData)) {
+            return null;
+        };
 
         uint id = status.StatusId;
         uint iconId = gameData.Icon;
         string name = gameData.Name.ExtractText();
         float remainingSeconds = status.RemainingTime;
         ulong sourceObjectId = objectId;
-        uint sourceId = status.SourceId;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
         byte partyPrio = gameData.PartyListPriority;
@@ -113,19 +133,16 @@ public static class StatusManager {
             iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
         }
 
-        // TODO Make extraction optional based on configuration
         string? actorName = null;
         char? enemyLetter = null;
 
-
-        IGameObject? actor = Services.ObjectTable.FirstOrDefault(o => o is not null && o.GameObjectId == objectId);
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
 
         bool selfInflicted = player.GameObjectId == sourceObjectId;
 
-        if (actor is not null && player != null && actor.GameObjectId != player.GameObjectId) {
-            actorName = actor.Name.TextValue;
-            enemyLetter = EnemyListHelper.GetEnemyLetter((uint)actor.GameObjectId);
+        if (battleChar is not null && player != null && objectId != player.GameObjectId) {
+            actorName = battleChar->NameString;
+            enemyLetter = EnemyListHelper.GetEnemyLetter((uint)objectId);
         }
 
         if (config.StatusAsItemName) {
