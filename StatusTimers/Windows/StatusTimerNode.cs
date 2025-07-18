@@ -358,7 +358,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
         else {
             if (Math.Abs(_statusInfo.RemainingSeconds - _statusInfo.MaxSeconds) < 0.01 && config.AnimationsEnabled) {
-                Timeline?.StartAnimation(10);
+                Timeline?.PlayAnimation(10);
             }
 
             _progressNode.IsVisible = config.Progress.IsVisible;
