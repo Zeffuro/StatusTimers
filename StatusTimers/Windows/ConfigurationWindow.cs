@@ -20,7 +20,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
     private readonly Dictionary<NodeKind, VerticalListNode> _filterSectionNodes = new();
-    private readonly Dictionary<NodeKind, ScrollingAreaNode> _configScrollingAreas = new();
+    private readonly Dictionary<NodeKind, ScrollingAreaNode<ResNode>> _configScrollingAreas = new();
     private TabBarNode _tabBar;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
@@ -33,7 +33,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, ScrollingAreaNode node) in _configScrollingAreas) {
+        foreach ((NodeKind k, ScrollingAreaNode<ResNode> node) in _configScrollingAreas) {
             node.IsVisible = k == kind;
         }
     }
@@ -71,7 +71,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 continue;
             }
 
-            _configScrollingAreas[kind] = new ScrollingAreaNode {
+            _configScrollingAreas[kind] = new ScrollingAreaNode<ResNode> {
                 X = ContentStartPosition.X,
                 Y = ContentStartPosition.Y + _tabBar.Height,
                 Width = ContentSize.X,
