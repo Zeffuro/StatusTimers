@@ -8,7 +8,7 @@ namespace StatusTimers.StatusSources;
 
 public class EnemyMultiDoTSource : IStatusSource<StatusKey> {
     public IReadOnlyList<StatusInfo> Fetch(StatusTimerOverlayConfig? config) {
-        return StatusManager.GetHostileStatuses(config);
+        return StatusManager.GetHostilePlayerStatuses(config);
     }
 
     public StatusKey KeyOf(StatusInfo info) {

@@ -65,7 +65,7 @@ public static class StatusManager {
         return result;
     }
 
-    public static unsafe IReadOnlyList<StatusInfo> GetHostileStatuses(StatusTimerOverlayConfig? config) {
+    public static unsafe IReadOnlyList<StatusInfo> GetHostilePlayerStatuses(StatusTimerOverlayConfig? config) {
         _hostileStatusBuffer.Clear();
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
@@ -82,7 +82,7 @@ public static class StatusManager {
 
             var battleChar = battleCharaPointer.Value;
 
-            if (!battleChar->GetIsTargetable() || battleChar->ObjectIndex == player.ObjectIndex) {
+            if (!battleChar->GetIsTargetable() || battleChar->GetGameObjectId() == player.GameObjectId) {
                 continue;
             }
 
@@ -92,8 +92,11 @@ public static class StatusManager {
                 if (statusIndex == -1) {
                     continue;
                 }
-
                 var status = battleChar->StatusManager.Status[statusIndex];
+
+                if (status.SourceObject.Id != player.GameObjectId) {
+                    continue;
+                }
 
                 StatusInfo? transformedStatus = TransformStatus(status, battleChar->GetGameObjectId(), config, battleChar);
                 if (transformedStatus.HasValue) {
