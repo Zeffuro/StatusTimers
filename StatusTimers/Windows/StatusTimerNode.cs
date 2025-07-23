@@ -108,12 +108,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    public override float Width {
-        get => base.Width;
-        set {
-            base.Width = value;
-            UpdateLayoutOffsets();
-        }
+    protected override void OnSizeChanged() {
+        UpdateLayoutOffsets();
     }
 
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
