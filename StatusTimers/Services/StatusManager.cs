@@ -51,12 +51,12 @@ public static class StatusManager {
         var statusManager = character->GetStatusManager();
 
         for (int i = 0; i < statusManager->NumValidStatuses; i++) {
-            var status = statusManager->Status[i];
+            ref var status = ref statusManager->Status[i];
             if (status.StatusId == 0) {
                 continue;
             }
 
-            var transformed = TransformStatus(status, player.GameObjectId, config);
+            var transformed = TransformStatus(ref status, player.GameObjectId, config);
             if (transformed.HasValue) {
                 result.Add(transformed.Value);
             }
@@ -72,33 +72,29 @@ public static class StatusManager {
         if (player == null) {
             return _hostileStatusBuffer;
         }
-        var characterManager = CharacterManager.Instance();
-        var battleCharas = characterManager->BattleCharas;
-        foreach (var battleCharaPointer in battleCharas)
+
+        foreach (BattleChara* battleChara in CharacterManager.Instance()->BattleCharas)
         {
-            if (battleCharaPointer == null) {
+            if (battleChara == null) {
                 continue;
             }
 
-            var battleChar = battleCharaPointer.Value;
-
-            if (!battleChar->GetIsTargetable() || battleChar->GetGameObjectId() == player.GameObjectId) {
+            if (!battleChara->GetIsTargetable() || battleChara->GetGameObjectId() == player.GameObjectId) {
                 continue;
             }
 
             foreach (var statusId in HarmfulStatusIds) {
-
-                int statusIndex = battleChar->StatusManager.GetStatusIndex(statusId);
+                int statusIndex = battleChara->StatusManager.GetStatusIndex(statusId);
                 if (statusIndex == -1) {
                     continue;
                 }
-                var status = battleChar->StatusManager.Status[statusIndex];
+                ref var status = ref battleChara->StatusManager.Status[statusIndex];
 
                 if (status.SourceObject.Id != player.GameObjectId) {
                     continue;
                 }
 
-                StatusInfo? transformedStatus = TransformStatus(status, battleChar->GetGameObjectId(), config, battleChar);
+                StatusInfo? transformedStatus = TransformStatus(ref status, battleChara->GetGameObjectId(), config, battleChara);
                 if (transformedStatus.HasValue) {
                     _hostileStatusBuffer.Add(transformedStatus.Value);
                 }
@@ -108,7 +104,7 @@ public static class StatusManager {
         return _hostileStatusBuffer;
     }
 
-    private static unsafe StatusInfo? TransformStatus(Status status, ulong objectId, StatusTimerOverlayConfig? config, BattleChara* battleChar = null) {
+    private static unsafe StatusInfo? TransformStatus(ref Status status, ulong objectId, StatusTimerOverlayConfig? config, BattleChara* battleChar = null) {
         if (!_statusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData)) {
             return null;
         };
