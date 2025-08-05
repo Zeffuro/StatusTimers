@@ -1,4 +1,5 @@
 using Dalamud.Game.Addon.Events;
+using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Game.Addon.Lifecycle;
 using KamiToolKit;
 using KamiToolKit.Classes.TimelineBuilding;

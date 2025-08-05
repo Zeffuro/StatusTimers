@@ -19,7 +19,6 @@ public unsafe class OverlayManager : IDisposable {
     private ColorPickerAddon? _colorPickerAddon;
 
     public OverlayManager() {
-        Services.Services.NameplateAddonController.PreEnable += PreAttach;
         Services.Services.NameplateAddonController.OnAttach += AttachNodes;
         Services.Services.NameplateAddonController.OnDetach += DetachNodes;
     }
@@ -36,12 +35,8 @@ public unsafe class OverlayManager : IDisposable {
         _isDisposed = true;
 
         DetachAndDisposeAll();
-        Services.Services.NameplateAddonController.PreEnable -= PreAttach;
         Services.Services.NameplateAddonController.OnAttach -= AttachNodes;
         Services.Services.NameplateAddonController.OnDetach -= DetachNodes;
-    }
-
-    private void PreAttach(AddonNamePlate* addonNamePlate) {
     }
 
     private void AttachNodes(AddonNamePlate* addonNamePlate) {
