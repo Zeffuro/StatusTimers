@@ -128,37 +128,6 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         return new Vector2(Math.Max(0, totalWidth), Math.Max(0, totalHeight));
     }
 
-    private void BuildContainersOnly() {
-        CalculatedOverlaySize = CalculateOverlaySize();
-
-        _backgroundNode = new NineGridNode {
-            Size = CalculatedOverlaySize,
-            BottomOffset = 8,
-            TopOffset = 21,
-            LeftOffset = 21,
-            RightOffset = 21
-        };
-        _backgroundNode.AddPart(new Part {
-            TexturePath = "ui/uld/HUDLayout.tex",
-            Size = new Vector2(44, 32),
-            TextureCoordinates = new Vector2(0, 0)
-        });
-        _backgroundNode.AddPart(new Part {
-            TexturePath = "ui/uld/HUDLayout.tex",
-            Size = new Vector2(88, 16),
-            TextureCoordinates = new Vector2(0, 16)
-        });
-        _backgroundNode.AddPart(new Part {
-            TexturePath = "ui/uld/HUDLayout.tex",
-            Size = new Vector2(156, 80),
-            TextureCoordinates = new Vector2(0, 24)
-        });
-
-        GlobalServices.NativeController.AttachNode(_backgroundNode, _ownerOverlay);
-
-        BuildContainers();
-    }
-
     public void BuildContainers()
     {
         _allNodes.Clear();
