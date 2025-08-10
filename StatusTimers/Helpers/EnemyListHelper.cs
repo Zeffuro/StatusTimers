@@ -13,6 +13,11 @@ public static unsafe class EnemyListHelper {
 
     // Call this once per frame or on enemy list change
     public static void UpdateEnemyListMapping() {
+        var numberArray = AtkStage.Instance()->GetNumberArrayData(NumberArrayType.EnemyList);
+        if (numberArray == null) {
+            return;
+        }
+
         var enemyListNumberInstance = EnemyListNumberArray.Instance();
         var enemyNumberArrayEnemies = enemyListNumberInstance->Enemies;
         int enemyCount = enemyListNumberInstance->Unk1;
