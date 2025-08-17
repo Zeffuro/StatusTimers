@@ -17,6 +17,8 @@ jobs:
       # Checkout the repository code
       - name: Checkout and Initialise
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # Install the required .NET SDK
       - name: Setup .NET
