@@ -3,7 +3,7 @@ using KamiToolKit.Nodes;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 
-namespace StatusTimers.Nodes;
+namespace StatusTimers.Nodes.FilterSection;
 
 public sealed class StatusFilterRowNode : HorizontalListNode {
     private readonly Status _status;
@@ -32,7 +32,7 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             Text = status.RowId.ToString(),
             IsVisible = true,
             Height = 24,
-            Width = 40,
+            Width = 60,
             AlignmentType = AlignmentType.Right
         };
         AddNode(_statusIdTextNode);

@@ -21,6 +21,7 @@ public static class FunctionalSettingsUIFactory
         var node = new VerticalListNode
         {
             IsVisible = true,
+            Width = 600,
             ItemSpacing = 3,
             FitContents = true
         };

@@ -1,65 +1,57 @@
 using KamiToolKit.Nodes;
-using StatusTimers.Nodes;
-using StatusTimers.Services;
+using StatusTimers.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class StatusFilterDropdownNode<T> : HorizontalListNode
+namespace StatusTimers.Nodes.FilterSection;
+
+public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
 {
     private readonly Func<List<T>> _optionsProvider;
     private readonly Func<T, string> _displaySelector;
     private readonly Func<T, uint>? _iconSelector;
-    private readonly HashSet<uint> _filterList;
-    private readonly StatusFilterListNode _statusListNode;
+    private readonly Func<StatusTimerOverlayConfig> _getConfig;
+    private StatusFilterListNode? _statusListNode;
     private readonly Action? _onChanged;
     private readonly bool _allowNoResult;
     private bool _isUpdating = false;
 
     private IconImageNode? _iconNode;
     private T? _currentSelection;
+    private TextInputNode _textInputNode;
+    private TextDropDownNode _dropdownNode;
+    private TextButtonNode _addButtonNode;
 
     public StatusFilterDropdownNode(
         Func<List<T>> optionsProvider,
         Func<T, string> displaySelector,
         Func<T, uint>? iconSelector,
-        HashSet<uint> filterList,
-        StatusFilterListNode statusListNode,
+        Func<StatusTimerOverlayConfig> getConfig,
+        StatusFilterListNode? statusListNode = null,
         Action? onChanged = null,
         bool allowNoResult = true)
     {
-        Services.Logger.Info("DropdownNode constructed");
+        Services.Services.Logger.Info("DropdownNode constructed");
         _optionsProvider = optionsProvider;
         _displaySelector = displaySelector;
         _iconSelector = iconSelector;
-        _filterList = filterList;
+        _getConfig = getConfig;
         _statusListNode = statusListNode;
         _onChanged = onChanged;
         _allowNoResult = allowNoResult;
 
-        Width = 600;
-        Height = 60;
-        IsVisible = true;
-
-        BuildNodes();
-    }
-
-    private void BuildNodes()
-    {
-        var textInput = new TextInputNode
-        {
+        _textInputNode = new TextInputNode {
             IsVisible = true,
             Width = 200,
-            Height = 28
+            Height = 28,
+            OnInputComplete = input => {
+                string filter = input.TextValue ?? "";
+                UpdateDropdownOptions(filter);
+            }
         };
+        AddNode(_textInputNode);
 
-        textInput.OnInputComplete = input =>
-        {
-            string filter = input.TextValue ?? "";
-            UpdateDropdownOptions(filter);
-        };
-
-        AddNode(textInput);
         AddDummy(120);
 
         if (_iconSelector != null)
@@ -78,7 +70,6 @@ public class StatusFilterDropdownNode<T> : HorizontalListNode
 
     private void UpdateDropdownOptions(string filter)
     {
-        Services.Logger.Info("DropdownNode.UpdateDropdownOptions called");
         if (_isUpdating) {
             return;
         }
@@ -102,7 +93,7 @@ public class StatusFilterDropdownNode<T> : HorizontalListNode
             ? ["No results found"]
             : filtered.Select(_displaySelector).ToList();
 
-        var dropdown = new TextDropDownNode
+        _dropdownNode = new TextDropDownNode
         {
             IsVisible = true,
             Y = 2,
@@ -110,31 +101,21 @@ public class StatusFilterDropdownNode<T> : HorizontalListNode
             Height = 28,
             MaxListOptions = 5,
             Options = displayOptions,
-            OnOptionSelected = s =>
-            {
-                SetIcon(s, filtered);
-            },
+            OnOptionSelected = s => SetIcon(s, filtered),
             SelectedOption = displayOptions.FirstOrDefault() ?? "No results found"
         };
-        AddNode(dropdown);
+        AddNode(_dropdownNode);
 
-        var addButton = new TextButtonNode
+        _addButtonNode = new TextButtonNode
         {
             IsVisible = true,
             Y = 2,
             Height = 28,
             Width = 32,
             Label = "+",
-            OnClick = () => {
-                if (_currentSelection != null && _iconSelector != null) {
-                    var id = _iconSelector(_currentSelection);
-                    if (_filterList.Add(id)) {
-                        //_onChanged?.Invoke();
-                    }
-                }
-            }
+            OnClick = OnAddButtonClick
         };
-        AddNode(addButton);
+        AddNode(_addButtonNode);
 
         if (displayOptions.Count > 0 && displayOptions[0] != "No results found") {
             SetIcon(displayOptions[0], filtered);
@@ -143,6 +124,18 @@ public class StatusFilterDropdownNode<T> : HorizontalListNode
             SetIcon("", filtered);
         }
         _isUpdating = false;
+    }
+
+    private void OnAddButtonClick()
+    {
+        if (_currentSelection != null && _iconSelector != null)
+        {
+            var id = _iconSelector(_currentSelection);
+            if (_getConfig().FilterList.Add(id))
+            {
+                _onChanged?.Invoke();
+            }
+        }
     }
 
     private void SetIcon(string selectedOption, List<T> filtered)
@@ -155,5 +148,9 @@ public class StatusFilterDropdownNode<T> : HorizontalListNode
         else if (_iconNode != null) {
             _iconNode.IconId = 230402;
         }
+    }
+
+    public void SetStatusListNode(StatusFilterListNode listNode) {
+        _statusListNode = listNode;
     }
 }

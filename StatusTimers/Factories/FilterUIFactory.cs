@@ -17,6 +17,7 @@ using StatusTimers.Windows;
 using Lumina.Excel.Sheets;
 using StatusTimers.Helpers;
 using StatusTimers.Nodes;
+using StatusTimers.Nodes.FilterSection;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
@@ -35,6 +36,7 @@ public static class FilterUIFactory
 
     public static VerticalListNode CreateFilterSection(
         Func<StatusTimerOverlayConfig> getConfig,
+        //out StatusFilterListNode statusFilterNode,
         Action? onChanged = null,
         Action? onToggled = null)
     {
@@ -46,19 +48,6 @@ public static class FilterUIFactory
             ItemSpacing = 4,
             FitContents = true,
         };
-
-        section.AddNode(new TextNode
-        {
-            IsVisible = true,
-            Width = 120,
-            Height = TextStyles.Header.Height,
-            FontSize = TextStyles.Defaults.FontSize,
-            TextColor = TextStyles.Header.TextColor,
-            TextOutlineColor = TextStyles.Defaults.OutlineColor,
-            TextFlags = TextStyles.Defaults.Flags,
-            AlignmentType = AlignmentType.Left,
-            Text = "Filter Settings"
-        });
 
         var allStatuses = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
             .Where(status => status.RowId != 0).ToList();
@@ -124,7 +113,7 @@ public static class FilterUIFactory
                 IsVisible = true,
                 Tooltip = "Export Filter List",
                 TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
-                OnClick = () => TryExportFilterListToClipboard(getConfig().FilterList)
+                //OnClick = () => TryExportFilterListToClipboard(getConfig().FilterList)
             }
         );
         horizontalListNode.AddNode(
@@ -135,7 +124,7 @@ public static class FilterUIFactory
                 IsVisible = true,
                 TooltipString = "     Import Filter List \n(hold shift to confirm)",
                 TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
-                OnClick = () => TryImportFilterListFromClipboard(getConfig(), onChanged)
+                //OnClick = () => TryImportFilterListFromClipboard(getConfig(), onChanged)
             }
         );
 
@@ -152,7 +141,7 @@ public static class FilterUIFactory
             () => allStatuses,
             status => $"{status.RowId} {status.Name.ExtractText()}",
             status => status.Icon,
-            getConfig().FilterList,
+            getConfig,
             statusListNode,
             onChanged: () => statusListNode.Refresh()
         );
@@ -163,45 +152,5 @@ public static class FilterUIFactory
         section.AddNode(filterContentGroup);
 
         return section;
-    }
-
-    private static void TryExportFilterListToClipboard(HashSet<uint> filterList)
-    {
-        var exportString = Util.SerializeFilterList(filterList);
-        ImGui.SetClipboardText(exportString);
-        Notification notification = new() {
-            Content = "Filter list exported to clipboard.",
-            Type = NotificationType.Success,
-        };
-        GlobalServices.NotificationManager.AddNotification(notification);
-        GlobalServices.Logger.Info("Filter list exported to clipboard.");
-    }
-
-    private static void TryImportFilterListFromClipboard(StatusTimerOverlayConfig config, Action? onChanged)
-    {
-        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
-            return;
-        }
-        Notification notification = new() {
-            Content = "Filter list imported from clipboard.",
-            Type = NotificationType.Success,
-        };
-        var clipboard = ImGui.GetClipboardText();
-        if (!string.IsNullOrWhiteSpace(clipboard)) {
-            var imported = Util.DeserializeFilterList(clipboard);
-            config.FilterList.Clear();
-            foreach (var id in imported) {
-                config.FilterList.Add(id);
-            }
-
-            onChanged?.Invoke();
-            notification.Content = $"Imported {imported.Count} filter IDs from clipboard.";
-            GlobalServices.Logger.Info($"Imported {imported.Count} filter IDs from clipboard.");
-        } else {
-            notification.Content = "Clipboard data was invalid or could not be imported.";
-            notification.Type = NotificationType.Error;
-            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
-        }
-        GlobalServices.NotificationManager.AddNotification(notification);
     }
 }

@@ -1,12 +1,9 @@
 using KamiToolKit.Nodes;
-using StatusTimers.Nodes;
-using StatusTimers.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 
-namespace StatusTimers.Nodes;
+namespace StatusTimers.Nodes.FilterSection;
 
 public sealed class StatusFilterListNode : VerticalListNode {
     private readonly List<LuminaStatus> _statusList;
@@ -34,9 +31,9 @@ public sealed class StatusFilterListNode : VerticalListNode {
             AddNode(new StatusFilterRowNode(status, () => RemoveStatus(status.RowId)) {
                 X = 18,
                 Height = 32,
-                Width = 300,
+                Width = 320,
                 IsVisible = true,
-                ItemSpacing = 4
+                ItemSpacing = 10
             });
         }
     }

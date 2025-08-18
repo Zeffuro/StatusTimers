@@ -7,6 +7,8 @@ using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Factories;
 using StatusTimers.Models;
+using StatusTimers.Nodes;
+using StatusTimers.Nodes.FilterSection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode<ResNode>> _configScrollingAreas = new();
+    private StatusFilterListNode _statusFilterListNode;
     private TabBarNode _tabBar;
 
     private bool _isRecalculating = false;
@@ -201,19 +204,33 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 )
             );
 
+
             // Sorting Priority Settings
             mainSettingsGroup.AddNode(
                 SortUIFactory.CreateSortPrioritySection(() => overlay.OverlayConfig, kind)
             );
 
             // Filtering Settings
-            mainSettingsGroup.AddNode(FilterUIFactory.CreateFilterSection(() => overlay.OverlayConfig,
-                () => {
+            mainSettingsGroup.AddNode(new FilterSectionNode(() => overlay.OverlayConfig, onChanged: () => {
+                RecalculateAllLayouts(mainSettingsGroup, kind, true);
+            }) {
+                IsVisible = true,
+                Width = 600,
+                Height = 400,
+                ItemSpacing = 4,
+                FitContents = true,
+            });
+            /*
+            mainSettingsGroup.AddNode(FilterUIFactory.CreateFilterSection(
+                getConfig:() => overlay.OverlayConfig,
+                out _statusFilterListNode,
+                onChanged: () => {
                     GlobalServices.Logger.Info("Filter section changed");
                     RecalculateAllLayouts(mainSettingsGroup, kind, true);
                 },
                 onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind, true)
             ));
+            */
 
             _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
             _configLists[kind].AddNode(mainSettingsGroup);

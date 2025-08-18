@@ -24,6 +24,7 @@ public static class VisualSettingsUIFactory
         var node = new VerticalListNode
         {
             IsVisible = true,
+            Width = 600,
             ItemSpacing = 3,
             FitContents = true
         };
