@@ -1,16 +1,16 @@
+// StatusTimers/Nodes/FilterSection/StatusFilterDropdownNode.cs
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
+using StatusTimers.Nodes.FilterSection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GlobalServices = StatusTimers.Services.Services;
+using LuminaStatus = Lumina.Excel.Sheets.Status;
 
-namespace StatusTimers.Nodes.FilterSection;
-
-public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
+public sealed class StatusFilterDropdownNode : HorizontalListNode
 {
-    private readonly Func<List<T>> _optionsProvider;
-    private readonly Func<T, string> _displaySelector;
-    private readonly Func<T, uint>? _iconSelector;
+    private readonly Func<List<LuminaStatus>> _optionsProvider;
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private StatusFilterListNode? _statusListNode;
     private readonly Action? _onChanged;
@@ -18,24 +18,19 @@ public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
     private bool _isUpdating = false;
 
     private IconImageNode? _iconNode;
-    private T? _currentSelection;
+    private LuminaStatus? _currentSelection;
     private TextInputNode _textInputNode;
     private TextDropDownNode _dropdownNode;
     private TextButtonNode _addButtonNode;
 
     public StatusFilterDropdownNode(
-        Func<List<T>> optionsProvider,
-        Func<T, string> displaySelector,
-        Func<T, uint>? iconSelector,
+        Func<List<LuminaStatus>> optionsProvider,
         Func<StatusTimerOverlayConfig> getConfig,
         StatusFilterListNode? statusListNode = null,
         Action? onChanged = null,
         bool allowNoResult = true)
     {
-        Services.Services.Logger.Info("DropdownNode constructed");
         _optionsProvider = optionsProvider;
-        _displaySelector = displaySelector;
-        _iconSelector = iconSelector;
         _getConfig = getConfig;
         _statusListNode = statusListNode;
         _onChanged = onChanged;
@@ -54,26 +49,20 @@ public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
 
         AddDummy(120);
 
-        if (_iconSelector != null)
+        _iconNode = new IconImageNode
         {
-            _iconNode = new IconImageNode
-            {
-                Size = new System.Numerics.Vector2(24, 32),
-                IsVisible = true,
-                IconId = 0
-            };
-            AddNode(_iconNode);
-        }
+            Size = new System.Numerics.Vector2(24, 32),
+            IsVisible = true,
+            IconId = 0
+        };
+        AddNode(_iconNode);
 
         UpdateDropdownOptions(string.Empty);
     }
 
     private void UpdateDropdownOptions(string filter)
     {
-        if (_isUpdating) {
-            return;
-        }
-
+        if (_isUpdating) return;
         _isUpdating = true;
 
         var toRemove = Nodes.Where(n => n is TextDropDownNode || n is TextButtonNode).ToList();
@@ -85,13 +74,13 @@ public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
         var filtered = allOptions
             .Where(opt =>
                 string.IsNullOrEmpty(filter) ||
-                _displaySelector(opt).Contains(filter, StringComparison.OrdinalIgnoreCase)
+                $"{opt.RowId} {opt.Name.ExtractText()}".Contains(filter, StringComparison.OrdinalIgnoreCase)
             )
             .ToList();
 
         var displayOptions = (filtered.Count == 0 && _allowNoResult)
-            ? ["No results found"]
-            : filtered.Select(_displaySelector).ToList();
+            ? new List<string> { "No results found" }
+            : filtered.Select(opt => $"{opt.RowId} {opt.Name.ExtractText()}").ToList();
 
         _dropdownNode = new TextDropDownNode
         {
@@ -119,8 +108,7 @@ public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
 
         if (displayOptions.Count > 0 && displayOptions[0] != "No results found") {
             SetIcon(displayOptions[0], filtered);
-        }
-        else {
+        } else {
             SetIcon("", filtered);
         }
         _isUpdating = false;
@@ -128,24 +116,24 @@ public sealed class StatusFilterDropdownNode<T> : HorizontalListNode
 
     private void OnAddButtonClick()
     {
-        if (_currentSelection != null && _iconSelector != null)
+        if (_currentSelection.HasValue)
         {
-            var id = _iconSelector(_currentSelection);
-            if (_getConfig().FilterList.Add(id))
+            var statusId = _currentSelection.Value.RowId;
+            if (_getConfig().FilterList.Add(statusId))
             {
+                GlobalServices.Logger.Info($"Added status with ID {statusId} to filter list {string.Join(",",_getConfig().FilterList)}");
                 _onChanged?.Invoke();
             }
         }
     }
 
-    private void SetIcon(string selectedOption, List<T> filtered)
+    private void SetIcon(string selectedOption, List<LuminaStatus> filtered)
     {
-        var idx = filtered.FindIndex(opt => _displaySelector(opt) == selectedOption);
-        _currentSelection = idx >= 0 ? filtered[idx] : default;
-        if (_iconNode != null && _currentSelection != null && _iconSelector != null) {
-            _iconNode.IconId = _iconSelector(_currentSelection);
-        }
-        else if (_iconNode != null) {
+        var idx = filtered.FindIndex(opt => $"{opt.RowId} {opt.Name.ExtractText()}" == selectedOption);
+        _currentSelection = idx >= 0 ? filtered[idx] : null;
+        if (_iconNode != null && _currentSelection.HasValue) {
+            _iconNode.IconId = _currentSelection.Value.Icon;
+        } else if (_iconNode != null) {
             _iconNode.IconId = 230402;
         }
     }

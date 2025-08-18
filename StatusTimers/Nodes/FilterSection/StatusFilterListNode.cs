@@ -1,4 +1,5 @@
 using KamiToolKit.Nodes;
+using StatusTimers.Config;
 using System;
 using System.Collections.Generic;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
@@ -7,16 +8,16 @@ namespace StatusTimers.Nodes.FilterSection;
 
 public sealed class StatusFilterListNode : VerticalListNode {
     private readonly List<LuminaStatus> _statusList;
-    private readonly HashSet<uint> _filterList;
+    private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly Action? _onChanged;
 
     private bool _isRefreshing = false;
     private bool _isRemoving = false;
 
-    public StatusFilterListNode(List<LuminaStatus> statusList, HashSet<uint> filterList, Action? onChanged = null) {
+    public StatusFilterListNode(List<LuminaStatus> statusList, Func<StatusTimerOverlayConfig> getConfig, Action? onChanged = null) {
         Services.Services.Logger.Info("ListNode constructed");
         _statusList = statusList;
-        _filterList = filterList;
+        _getConfig = getConfig;
         _onChanged = onChanged;
 
         foreach (var status in statusList) {
@@ -27,7 +28,7 @@ public sealed class StatusFilterListNode : VerticalListNode {
     }
 
     private void AddStatusRow(LuminaStatus status) {
-        if (_filterList.Contains(status.RowId)) {
+        if (_getConfig().FilterList.Contains(status.RowId)) {
             AddNode(new StatusFilterRowNode(status, () => RemoveStatus(status.RowId)) {
                 X = 18,
                 Height = 32,
@@ -44,8 +45,9 @@ public sealed class StatusFilterListNode : VerticalListNode {
         }
 
         _isRemoving = true;
-        _filterList.Remove(statusId);
-        Refresh();
+        if (_getConfig().FilterList.Remove(statusId)) {
+            Refresh();
+        };
         _isRemoving = false;
     }
 

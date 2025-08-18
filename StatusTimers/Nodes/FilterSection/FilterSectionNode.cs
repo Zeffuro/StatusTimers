@@ -15,7 +15,7 @@ public sealed class FilterSectionNode : VerticalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly List<Status> _statusList;
     private readonly Action? _onChanged;
-    private readonly StatusFilterDropdownNode<Status> _dropdownNode;
+    private readonly StatusFilterDropdownNode _dropdownNode;
     private readonly StatusFilterListNode _listNode;
     private readonly SectionHeaderNode _sectionHeaderNode;
     private readonly CheckboxOptionNode _sectionEnabledOptionNode;
@@ -57,20 +57,18 @@ public sealed class FilterSectionNode : VerticalListNode {
         };
         AddNode(_filterButtonGroupNode);
 
-        _listNode = new StatusFilterListNode(_statusList, getConfig().FilterList, OnFilterChanged) {
+        _listNode = new StatusFilterListNode(_statusList, getConfig, OnFilterChanged) {
             Height = 100,
             Width = 300,
             IsVisible = true,
             ItemSpacing = 4,
             FitContents = true,
         };
-        _dropdownNode = new StatusFilterDropdownNode<Status>(
+        _dropdownNode = new StatusFilterDropdownNode(
             () => _statusList,
-            status => $"{status.RowId} {status.Name.ExtractText()}",
-            status => status.Icon,
             getConfig,
-            null,
-            onChanged: OnFilterChanged
+            _listNode,
+            OnFilterChanged
         ) {
             X = 16,
             Width = 600,
