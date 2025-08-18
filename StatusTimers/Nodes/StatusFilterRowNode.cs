@@ -1,0 +1,59 @@
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Nodes;
+using Lumina.Excel.Sheets;
+using Action = System.Action;
+
+namespace StatusTimers.Nodes;
+
+public sealed class StatusFilterRowNode : HorizontalListNode {
+    private readonly Status _status;
+    private readonly IconImageNode _statusIconNode;
+    private readonly TextNode _statusIdTextNode;
+    private readonly TextNode _statusNameTextNode;
+    private readonly TextButtonNode _statusRemoveButtonNode;
+
+    private readonly Action _onRemove;
+
+    public StatusFilterRowNode(Status status, Action onRemove) {
+        _status = status;
+        _onRemove = onRemove;
+
+        _statusIconNode = new IconImageNode
+        {
+            Y = -4,
+            Size = new System.Numerics.Vector2(24, 32),
+            IsVisible = true,
+            IconId = status.Icon
+        };
+        AddNode(_statusIconNode);
+
+        _statusIdTextNode = new TextNode
+        {
+            Text = status.RowId.ToString(),
+            IsVisible = true,
+            Height = 24,
+            Width = 40,
+            AlignmentType = AlignmentType.Right
+        };
+        AddNode(_statusIdTextNode);
+
+        _statusNameTextNode = new TextNode
+        {
+            Text = status.Name.ExtractText(),
+            IsVisible = true,
+            Height = 24,
+            Width = 180,
+            AlignmentType = AlignmentType.Left
+        };
+        AddNode(_statusNameTextNode);
+
+        _statusRemoveButtonNode = new TextButtonNode {
+            Label = "-",
+            Width = 32,
+            Height = 28,
+            IsVisible = true,
+            OnClick = () => _onRemove()
+        };
+        AddNode(_statusRemoveButtonNode);
+    }
+}

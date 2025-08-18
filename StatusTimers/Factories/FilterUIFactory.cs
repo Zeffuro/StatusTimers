@@ -2,6 +2,8 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiNotification;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using System;
 using System.Collections.Generic;
@@ -14,6 +16,7 @@ using StatusTimers.Models;
 using StatusTimers.Windows;
 using Lumina.Excel.Sheets;
 using StatusTimers.Helpers;
+using StatusTimers.Nodes;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
@@ -32,7 +35,7 @@ public static class FilterUIFactory
 
     public static VerticalListNode CreateFilterSection(
         Func<StatusTimerOverlayConfig> getConfig,
-        FilterChangedCallback? onChanged = null,
+        Action? onChanged = null,
         Action? onToggled = null)
     {
         var section = new VerticalListNode
@@ -138,230 +141,28 @@ public static class FilterUIFactory
 
         filterContentGroup.AddNode(horizontalListNode);
 
-        var filteredDropdownNode = CreateFilteredDropdown(
-            () => allStatuses,
-            status => $"{status.RowId} {status.Name.ExtractText()}",
-            status => status.Icon,
-            status =>
-            {
-                if (getConfig().FilterList.Add(status.RowId)) {
-                    onChanged?.Invoke();
-                }
-            });
-
-        filterContentGroup.AddNode(filteredDropdownNode);
-
-        var statusListNode = CreateStatusListNode(
-            getConfig().FilterList,
-            allStatuses,
-            rowId =>
-            {
-                if (getConfig().FilterList.Remove(rowId)) {
-                    onChanged?.Invoke();
-                }
-            }
-        );
-        filterContentGroup.AddNode(statusListNode);
-        section.AddNode(filterContentGroup);
-
-        return section;
-    }
-
-    public static HorizontalListNode CreateFilteredDropdown<T>(
-        Func<List<T>> optionsProvider,
-        Func<T, string> displaySelector,
-        Func<T, uint>? iconSelector,
-        Action<T?> setter,
-        bool allowNoResult = true)
-    {
-        var flexNode = new HorizontalListNode
-        {
-            IsVisible = true,
-            X = ConfigurationUIFactory.OptionOffset,
-            Width = 600,
-            Height = 60
-        };
-
-        TextDropDownNode? textDropDown = null;
-        IconImageNode? iconNode = null;
-        T? currentSelection = default;
-
-        var textInput = new TextInputNode
-        {
-            IsVisible = true,
-            Width = 200,
-            Height = 28
-        };
-
-        var textButton = new TextButtonNode
-        {
-            IsVisible = true,
-            Y = 2,
-            Height = 28,
-            Width = 32,
-            Label = "+",
-            OnClick = () => setter(currentSelection)
-        };
-
-        void ReplaceDropDown(List<T> filtered)
-        {
-            if (textDropDown != null) {
-                flexNode.RemoveNode(textDropDown);
-            }
-
-            if (textButton != null) {
-                flexNode.RemoveNode(textButton);
-            }
-
-            var displayOptions = (filtered.Count == 0 && allowNoResult)
-                ? new List<string> { "No results found" }
-                : filtered.Select(displaySelector).ToList();
-
-            textDropDown = new TextDropDownNode
-            {
-                IsVisible = true,
-                Y = 2,
-                Width = 200,
-                Height = 28,
-                MaxListOptions = 5,
-                Options = displayOptions,
-                OnOptionSelected = s =>
-                {
-                    SetIcon(s, filtered);
-                    if (s == "No results found") {
-                        return;
-                    }
-                },
-                SelectedOption = displayOptions.FirstOrDefault() ?? "No results found"
-            };
-            flexNode.AddNode(textDropDown);
-            flexNode.AddNode(textButton);
-
-            if (displayOptions.Count > 0 && displayOptions[0] != "No results found") {
-                SetIcon(displayOptions[0], filtered);
-            }
-            else {
-                SetIcon("", filtered);
-            }
-        }
-
-        void SetIcon(string selectedOption, List<T> filtered)
-        {
-            var idx = filtered.FindIndex(opt => displaySelector(opt) == selectedOption);
-            currentSelection = idx >= 0 ? filtered[idx] : default;
-            if (iconNode != null && currentSelection != null && iconSelector != null) {
-                iconNode.IconId = iconSelector(currentSelection);
-            }
-            else if (iconNode != null) {
-                iconNode.IconId = 230402;
-            }
-        }
-
-        void UpdateDropdownOptions(string filter)
-        {
-            var allOptions = optionsProvider();
-            var filtered = allOptions
-                .Where(opt =>
-                    string.IsNullOrEmpty(filter) ||
-                    (opt is LuminaStatus s &&
-                        (s.RowId.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                         s.Name.ExtractText()?.Contains(filter, StringComparison.OrdinalIgnoreCase) == true)
-                    )
-                )
-                .ToList();
-            ReplaceDropDown(filtered);
-        }
-
-        textInput.OnInputComplete = input =>
-        {
-            string filter = input.TextValue ?? "";
-            GlobalServices.Framework.RunOnTick(() => UpdateDropdownOptions(filter), delayTicks: 1);
-        };
-
-        flexNode.AddNode(textInput);
-        flexNode.AddDummy(120);
-
-        if (iconSelector != null)
-        {
-            iconNode = new IconImageNode
-            {
-                Size = new System.Numerics.Vector2(24, 32),
-                IsVisible = true,
-                IconId = 0
-            };
-            flexNode.AddNode(iconNode);
-        }
-
-        UpdateDropdownOptions(string.Empty);
-
-        return flexNode;
-    }
-
-    public static VerticalListNode CreateStatusListNode(
-        HashSet<uint> filterList,
-        List<LuminaStatus> allStatuses,
-        Action<uint> onRemove = null)
-    {
-        var statusListNode = new VerticalListNode
-        {
+        var statusListNode = new StatusFilterListNode (allStatuses, getConfig().FilterList, onChanged) {
             Width = 300,
             IsVisible = true,
             ItemSpacing = 4,
             FitContents = true,
         };
 
-        foreach (var rowId in filterList.ToList().Order())
-        {
-            var status = allStatuses.FirstOrDefault(s => s.RowId == rowId);
+        var filteredDropdownNode = new StatusFilterDropdownNode<LuminaStatus>(
+            () => allStatuses,
+            status => $"{status.RowId} {status.Name.ExtractText()}",
+            status => status.Icon,
+            getConfig().FilterList,
+            statusListNode,
+            onChanged: () => statusListNode.Refresh()
+        );
 
-            var row = new HorizontalListNode
-            {
-                X = ConfigurationUIFactory.OptionOffset,
-                Height = 32,
-                Width = 300,
-                IsVisible = true,
-                ItemSpacing = 4
-            };
+        filterContentGroup.AddNode(filteredDropdownNode);
 
-            row.AddNode(new IconImageNode
-            {
-                Y = -4,
-                Size = new System.Numerics.Vector2(24, 32),
-                IsVisible = true,
-                IconId = status.Icon
-            });
+        filterContentGroup.AddNode(statusListNode);
+        section.AddNode(filterContentGroup);
 
-            row.AddNode(new TextNode
-            {
-                Text = status.RowId.ToString() ?? rowId.ToString(),
-                IsVisible = true,
-                Height = 24,
-                Width = 40,
-                AlignmentType = AlignmentType.Right
-            });
-
-            row.AddNode(new TextNode
-            {
-                Text = status.Name.ExtractText() ?? "",
-                IsVisible = true,
-                Height = 24,
-                Width = 180,
-                AlignmentType = AlignmentType.Left
-            });
-
-            row.AddNode(new TextButtonNode
-            {
-                Label = "-",
-                Width = 32,
-                Height = 28,
-                IsVisible = true,
-                OnClick = () => onRemove?.Invoke(rowId)
-            });
-
-            statusListNode.AddNode(row);
-        }
-
-        return statusListNode;
+        return section;
     }
 
     private static void TryExportFilterListToClipboard(HashSet<uint> filterList)
@@ -376,7 +177,7 @@ public static class FilterUIFactory
         GlobalServices.Logger.Info("Filter list exported to clipboard.");
     }
 
-    private static void TryImportFilterListFromClipboard(StatusTimerOverlayConfig config, FilterChangedCallback? onChanged)
+    private static void TryImportFilterListFromClipboard(StatusTimerOverlayConfig config, Action? onChanged)
     {
         if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
             return;

@@ -19,14 +19,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float CheckBoxHeight = 16;
 
     private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
-    private readonly Dictionary<NodeKind, VerticalListNode> _filterSectionNodes = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode<ResNode>> _configScrollingAreas = new();
     private TabBarNode _tabBar;
+
+    private bool _isRecalculating = false;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
         _configScrollingAreas.Clear();
         _configLists.Clear();
-        _filterSectionNodes.Clear();
         _tabBar = null;
 
         SetupOptions();
@@ -207,24 +207,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             );
 
             // Filtering Settings
-            void UpdateFilterSection() {
-                var oldNode = _filterSectionNodes.ContainsKey(kind) ? _filterSectionNodes[kind] : null;
-                var newNode = FilterUIFactory.CreateFilterSection(() => overlay.OverlayConfig,
-                    () => {
-                        GlobalServices.Logger.Info("Filter section changed");
-                        UpdateFilterSection();
-                        RecalculateAllLayouts(mainSettingsGroup, kind, true);
-                    },
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind, true)
-                );
-                _filterSectionNodes[kind] = newNode;
-                if (oldNode != null) {
-                    mainSettingsGroup.RemoveNode(oldNode);
-                }
-
-                mainSettingsGroup.AddNode(newNode);
-            }
-            UpdateFilterSection();
+            mainSettingsGroup.AddNode(FilterUIFactory.CreateFilterSection(() => overlay.OverlayConfig,
+                () => {
+                    GlobalServices.Logger.Info("Filter section changed");
+                    RecalculateAllLayouts(mainSettingsGroup, kind, true);
+                },
+                onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind, true)
+            ));
 
             _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
             _configLists[kind].AddNode(mainSettingsGroup);
@@ -249,12 +238,20 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     private void RecalculateAllLayouts(VerticalListNode group, NodeKind kind, bool scrollToBottom = false) {
+        if (_isRecalculating) {
+            return;
+        }
+
+        _isRecalculating = true;
+
         group.RecalculateLayout();
         _configLists[kind].RecalculateLayout();
         _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
         if (scrollToBottom) {
             _configScrollingAreas[kind].ScrollPosition = (int)_configScrollingAreas[kind].ContentHeight;
         }
+
+        _isRecalculating = false;
     }
 
     private void ToggleEnabled(StatusTimerOverlay<StatusKey>? overlay, VerticalListNode group, NodeKind kind, bool isChecked) {
