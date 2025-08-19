@@ -1,14 +1,15 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.TabBar;
 using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
-using StatusTimers.Factories;
 using StatusTimers.Models;
 using StatusTimers.Nodes;
-using StatusTimers.Nodes.FilterSection;
+using StatusTimers.Nodes.FunctionalNodes;
+using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
     private readonly Dictionary<NodeKind, ScrollingAreaNode<ResNode>> _configScrollingAreas = new();
-    private StatusFilterListNode _statusFilterListNode;
+    private readonly Dictionary<NodeKind, FilterSectionNode> _filterSectionNodes = new();
     private TabBarNode _tabBar;
 
     private bool _isRecalculating = false;
@@ -42,6 +43,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon) {
+        if (_filterSectionNodes.Count > 0) {
+            foreach (var filterNode in _filterSectionNodes.Values) {
+                filterNode.OnUpdate();
+            }
+        }
     }
 
     protected override unsafe void OnHide(AtkUnitBase* addon) {
@@ -102,19 +108,17 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             };
 
             _configLists[kind].AddNode(
-                ImportExportResetUIFactory.Create(() => overlay, () => overlay.OverlayConfig, kind,
-                    onConfigChanged: () => { },
-                    closeWindow: Close)
+                new ImportExportResetNode(() => overlay, () => overlay.OverlayConfig, kind, onConfigChanged: () => { }, closeWindow: Close)
             );
 
-            var enabledCheckbox = ConfigurationUIFactory.CreateCheckboxOption(
-                "Enabled",
-                () => overlay.OverlayConfig.Enabled,
-                isChecked => {
+            var enabledCheckbox = new CheckboxOptionNode {
+                LabelText = "Enabled",
+                IsChecked = overlay.OverlayConfig.Enabled,
+                OnClick = isChecked => {
                     overlay.OverlayConfig.Enabled = isChecked;
                     ToggleEnabled(overlay, mainSettingsGroup, kind, isChecked);
                 }
-            );
+            };
 
             _configLists[kind].AddNode(enabledCheckbox);
 
@@ -122,18 +126,21 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Visual Settings
             mainSettingsGroup.AddNode(
-                VisualSettingsUIFactory.Create(
+                new VisualSectionNode(
                     overlay,
-                    () => overlay.OverlayConfig,
-                    onChanged: () => { },
-                    optionOffset: OptionOffset,
-                    checkBoxHeight: CheckBoxHeight
-                )
+                    () => overlay.OverlayConfig
+                ) {
+                    IsVisible = true,
+                    Height = 250,
+                    Width = 600,
+                    ItemSpacing = 4,
+                    FitContents = true
+                }
             );
 
             // Icon Settings
             mainSettingsGroup.AddNode(
-                NodeLayoutUIFactory.CreateNodeLayoutSection(
+                new NodeLayoutSectionNode(
                     "icon",
                     overlay.OverlayConfig.Icon,
                     overlayManager,
@@ -144,7 +151,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Status Name Settings
             mainSettingsGroup.AddNode(
-                NodeLayoutUIFactory.CreateNodeLayoutSection(
+                new NodeLayoutSectionNode(
                     "status name",
                     overlay.OverlayConfig.Name,
                     overlayManager,
@@ -155,7 +162,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Status Time Remaining Settings
             mainSettingsGroup.AddNode(
-                NodeLayoutUIFactory.CreateNodeLayoutSection(
+                new NodeLayoutSectionNode(
                     "time remaining",
                     overlay.OverlayConfig.Timer,
                     overlayManager,
@@ -166,7 +173,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Progress Bar Settings
             mainSettingsGroup.AddNode(
-                NodeLayoutUIFactory.CreateNodeLayoutSection(
+                new NodeLayoutSectionNode(
                     "progressbar",
                     overlay.OverlayConfig.Progress,
                     overlayManager,
@@ -178,7 +185,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             // Actor Name Settings
             if (kind == NodeKind.MultiDoT) {
                 mainSettingsGroup.AddNode(
-                    NodeLayoutUIFactory.CreateNodeLayoutSection(
+                    new NodeLayoutSectionNode(
                         "enemy name",
                         overlay.OverlayConfig.Actor,
                         overlayManager,
@@ -187,31 +194,36 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     )
                 );
 
-                mainSettingsGroup.AddNode(ConfigurationUIFactory.CreateCheckboxOption("Show enemy letter",
-                    () => overlay.OverlayConfig.ShowActorLetter,
-                    isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked));
+                mainSettingsGroup.AddNode(new CheckboxOptionNode {
+                    LabelText = "Show enemy letter",
+                    IsChecked = overlay.OverlayConfig.ShowActorLetter,
+                    OnClick = isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked
+                });
             }
 
             mainSettingsGroup.AddDummy(CheckBoxHeight);
 
             // Functional Settings
-            mainSettingsGroup.AddNode(
-                FunctionalSettingsUIFactory.Create(
-                    () => overlay.OverlayConfig,
-                    kind,
-                    onChanged: () => { },
-                    checkBoxHeight: CheckBoxHeight
-                )
-            );
-
+            mainSettingsGroup.AddNode(new FunctionalSectionNode(() => overlay.OverlayConfig, kind) {
+                IsVisible = true,
+                Width = 600,
+                Height = 80,
+                ItemSpacing = 3,
+                FitContents = true
+            });
 
             // Sorting Priority Settings
-            mainSettingsGroup.AddNode(
-                SortUIFactory.CreateSortPrioritySection(() => overlay.OverlayConfig, kind)
-            );
+            mainSettingsGroup.AddNode(new SortingSectionNode(() => overlay.OverlayConfig, kind)
+            {
+                IsVisible = true,
+                Width = 600,
+                Height = 100,
+                ItemSpacing = 2,
+                FitContents = true
+            });
 
             // Filtering Settings
-            mainSettingsGroup.AddNode(new FilterSectionNode(() => overlay.OverlayConfig, onChanged: () => {
+            _filterSectionNodes[kind] = new FilterSectionNode(() => overlay.OverlayConfig, onChanged: () => {
                 RecalculateAllLayouts(mainSettingsGroup, kind, true);
             }) {
                 IsVisible = true,
@@ -219,20 +231,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 Height = 400,
                 ItemSpacing = 4,
                 FitContents = true,
-            });
-            /*
-            mainSettingsGroup.AddNode(FilterUIFactory.CreateFilterSection(
-                getConfig:() => overlay.OverlayConfig,
-                out _statusFilterListNode,
-                onChanged: () => {
-                    GlobalServices.Logger.Info("Filter section changed");
-                    RecalculateAllLayouts(mainSettingsGroup, kind, true);
-                },
-                onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind, true)
-            ));
-            */
-
-            _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+            };
+            mainSettingsGroup.AddNode(_filterSectionNodes[kind]);
             _configLists[kind].AddNode(mainSettingsGroup);
 
             mainSettingsGroup.RecalculateLayout();

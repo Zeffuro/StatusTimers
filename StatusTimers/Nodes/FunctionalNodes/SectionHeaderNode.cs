@@ -2,7 +2,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
 
-namespace StatusTimers.Nodes.Parts;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class SectionHeaderNode : TextNode {
     public SectionHeaderNode(string text) {

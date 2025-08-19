@@ -1,14 +1,9 @@
-using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
-using Dalamud.Game.Addon.Lifecycle;
 using KamiToolKit;
-using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
-using System;
 using System.Numerics;
 
-namespace StatusTimers.Nodes;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public class ColorPreviewButtonNode : ButtonBase {
     private ColorPreviewNode _colorPreview;
@@ -42,8 +37,6 @@ public class ColorPreviewButtonNode : ButtonBase {
             _colorPreview.Size = value;
         }
     }
-
-    //public Action? OnClick { get; set; }
 
     private void ClickHandler(AddonEventData data) {
         OnClick?.Invoke();

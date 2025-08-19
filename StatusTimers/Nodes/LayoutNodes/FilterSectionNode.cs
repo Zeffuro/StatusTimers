@@ -1,7 +1,7 @@
 using KamiToolKit.Nodes;
 using Lumina.Excel.Sheets;
 using StatusTimers.Config;
-using StatusTimers.Nodes.Parts;
+using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using Action = System.Action;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 using GlobalServices = StatusTimers.Services.Services;
 
-namespace StatusTimers.Nodes.FilterSection;
+namespace StatusTimers.Nodes.LayoutNodes;
 
 public sealed class FilterSectionNode : VerticalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
@@ -21,7 +21,7 @@ public sealed class FilterSectionNode : VerticalListNode {
     private readonly CheckboxOptionNode _sectionEnabledOptionNode;
     private readonly StatusFilterButtonGroupNode _filterButtonGroupNode;
 
-    public FilterSectionNode(Func<StatusTimerOverlayConfig> getConfig, Action? onChanged = null) {
+    public FilterSectionNode(Func<StatusTimerOverlayConfig> getConfig, Action onChanged) {
         _statusList = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
             .Where(status => status.RowId != 0).ToList();
         _getConfig = getConfig;
@@ -30,18 +30,12 @@ public sealed class FilterSectionNode : VerticalListNode {
         _sectionHeaderNode = new SectionHeaderNode("Filter Settings");
         AddNode(_sectionHeaderNode);
 
-        _sectionEnabledOptionNode = new CheckboxOptionNode("Enabled") {
+        _sectionEnabledOptionNode = new CheckboxOptionNode {
+            LabelText = "Enabled",
             IsChecked = getConfig().FilterEnabled,
             OnClick = isChecked => {
                 getConfig().FilterEnabled = isChecked;
                 ToggleVisibility(isChecked);
-                if (_listNode != null) {
-                    _listNode.IsVisible = isChecked;
-                    _listNode.Height = isChecked ? 400 : 16;
-                    _listNode.FitContents = isChecked;
-                    _listNode.RecalculateLayout();
-                }
-
                 onChanged?.Invoke();
             }
         };
@@ -49,7 +43,7 @@ public sealed class FilterSectionNode : VerticalListNode {
 
         AddDummy(16);
 
-        _filterButtonGroupNode = new StatusFilterButtonGroupNode(_getConfig) {
+        _filterButtonGroupNode = new StatusFilterButtonGroupNode(_getConfig, OnFilterChanged) {
             X = 18,
             IsVisible = true,
             Width = 600,
@@ -79,6 +73,8 @@ public sealed class FilterSectionNode : VerticalListNode {
 
         AddNode(_dropdownNode);
         AddNode(_listNode);
+        _listNode.RecalculateLayout();
+        RecalculateLayout();
     }
 
     private void ToggleVisibility(bool isVisible) {
@@ -87,14 +83,18 @@ public sealed class FilterSectionNode : VerticalListNode {
         _filterButtonGroupNode.IsVisible = isVisible;
         Height = isVisible ? 400 : 30;
         FitContents = isVisible;
+        _listNode.RecalculateLayout();
+        RecalculateLayout();
     }
 
     private void OnFilterChanged() {
         _listNode.Refresh();
+        _listNode.RecalculateLayout();
+        RecalculateLayout();
         _onChanged?.Invoke();
     }
 
-    public void Refresh() {
-        _listNode.Refresh();
+    public void OnUpdate() {
+        _listNode.OnUpdate();
     }
 }

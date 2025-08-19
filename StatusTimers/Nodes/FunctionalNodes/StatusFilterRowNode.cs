@@ -3,10 +3,9 @@ using KamiToolKit.Nodes;
 using Lumina.Excel.Sheets;
 using Action = System.Action;
 
-namespace StatusTimers.Nodes.FilterSection;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class StatusFilterRowNode : HorizontalListNode {
-    private readonly Status _status;
     private readonly IconImageNode _statusIconNode;
     private readonly TextNode _statusIdTextNode;
     private readonly TextNode _statusNameTextNode;
@@ -15,7 +14,7 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
     private readonly Action _onRemove;
 
     public StatusFilterRowNode(Status status, Action onRemove) {
-        _status = status;
+        Status = status;
         _onRemove = onRemove;
 
         _statusIconNode = new IconImageNode
@@ -52,8 +51,17 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             Width = 32,
             Height = 28,
             IsVisible = true,
-            OnClick = () => _onRemove()
+            OnClick = () => {
+                _onRemove();
+            }
         };
         AddNode(_statusRemoveButtonNode);
+    }
+
+    public Status Status { get; }
+
+    public void RemoveButtonNodeOnClick() {
+        _statusRemoveButtonNode.OnClick = null;
+        RemoveNode(_statusRemoveButtonNode);
     }
 }

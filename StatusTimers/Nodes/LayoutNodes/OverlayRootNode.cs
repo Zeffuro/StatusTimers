@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace StatusTimers.Nodes;
+namespace StatusTimers.Nodes.LayoutNodes;
 
 public class OverlayRootNode : SimpleOverlayNode
 {

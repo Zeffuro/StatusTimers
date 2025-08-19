@@ -5,15 +5,16 @@ using System;
 using System.IO;
 using GlobalServices = StatusTimers.Services.Services;
 
-namespace StatusTimers.Nodes.FilterSection;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class StatusFilterButtonGroupNode : HorizontalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
+    private readonly Action? _onChanged;
     private RadioButtonGroupNode _radioButtonGroup;
     private ImGuiIconButtonNode _exportButtonNode;
     private ImGuiIconButtonNode _importButtonNode;
 
-    public StatusFilterButtonGroupNode(Func<StatusTimerOverlayConfig> getConfig) {
+    public StatusFilterButtonGroupNode(Func<StatusTimerOverlayConfig> getConfig, Action onChanged) {
         _getConfig = getConfig;
 
         _radioButtonGroup = new RadioButtonGroupNode {
@@ -51,7 +52,7 @@ public sealed class StatusFilterButtonGroupNode : HorizontalListNode {
             IsVisible = true,
             TooltipString = "     Import Filter List \n(hold shift to confirm)",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
-            OnClick = () => FilterListHelper.TryImportFilterListFromClipboard(getConfig(), () => { })
+            OnClick = () => FilterListHelper.TryImportFilterListFromClipboard(getConfig(), onChanged)
         };
         AddNode(_importButtonNode);
 

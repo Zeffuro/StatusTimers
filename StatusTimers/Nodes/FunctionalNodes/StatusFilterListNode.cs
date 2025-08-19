@@ -1,10 +1,13 @@
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 
-namespace StatusTimers.Nodes.FilterSection;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class StatusFilterListNode : VerticalListNode {
     private readonly List<LuminaStatus> _statusList;
@@ -12,24 +15,20 @@ public sealed class StatusFilterListNode : VerticalListNode {
     private readonly Action? _onChanged;
 
     private bool _isRefreshing = false;
-    private bool _isRemoving = false;
+    private bool _shouldRefresh = false;
 
     public StatusFilterListNode(List<LuminaStatus> statusList, Func<StatusTimerOverlayConfig> getConfig, Action? onChanged = null) {
-        Services.Services.Logger.Info("ListNode constructed");
         _statusList = statusList;
         _getConfig = getConfig;
         _onChanged = onChanged;
 
-        foreach (var status in statusList) {
-            AddStatusRow(status);
-        }
-
-        RecalculateLayout();
+        Refresh();
     }
 
     private void AddStatusRow(LuminaStatus status) {
         if (_getConfig().FilterList.Contains(status.RowId)) {
             AddNode(new StatusFilterRowNode(status, () => RemoveStatus(status.RowId)) {
+                NodeId = status.RowId,
                 X = 18,
                 Height = 32,
                 Width = 320,
@@ -40,25 +39,36 @@ public sealed class StatusFilterListNode : VerticalListNode {
     }
 
     public void RemoveStatus(uint statusId) {
-        if (_isRefreshing || _isRemoving) {
+        if (_isRefreshing) {
             return;
         }
-
-        _isRemoving = true;
-        if (_getConfig().FilterList.Remove(statusId)) {
-            Refresh();
-        };
-        _isRemoving = false;
+        if (_getConfig().FilterList.Contains(statusId) && _getConfig().FilterList.Remove(statusId)) {
+            _shouldRefresh = true;
+        }
     }
 
-    public void Refresh() {
-        Services.Services.Logger.Info("ListNode.Refresh called");
+    public void OnUpdate() {
+        if (_shouldRefresh && !_isRefreshing) {
+            Refresh();
+            _onChanged?.Invoke();
+            _shouldRefresh = false;
+        }
+    }
+
+    public unsafe void Refresh() {
         if (_isRefreshing) {
             return;
         }
 
         _isRefreshing = true;
-        Clear();
+        foreach (var node in GetNodes<StatusFilterRowNode>().ToList()) {
+            RaptureAtkModule.Instance()->ClearFocus();
+            AtkStage.Instance()->ClearFocus();
+            node.RemoveButtonNodeOnClick();
+            //var teste = (AtkUnitBase*)node.ComponentBase;
+
+            RemoveNode(node);
+        }
         foreach (var status in _statusList) {
             AddStatusRow(status);
         }

@@ -49,6 +49,16 @@ public class Util
         }
     }
 
+    public static TKey? FindKeyByValue<TKey, TValue>(Dictionary<TKey, TValue> dict, TValue value)
+        where TKey : struct {
+        foreach (var kvp in dict.Where(kvp => EqualityComparer<TValue>.Default.Equals(kvp.Value, value)))
+        {
+            return kvp.Key;
+        }
+
+        return null;
+    }
+
     public static string SerializeConfig(StatusTimerOverlayConfig config)
     {
         var json = JsonConvert.SerializeObject(config);

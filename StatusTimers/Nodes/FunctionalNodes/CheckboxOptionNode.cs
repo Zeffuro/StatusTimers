@@ -1,14 +1,12 @@
 using KamiToolKit.Nodes;
-using System;
 
-namespace StatusTimers.Nodes.Parts;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class CheckboxOptionNode : CheckboxNode {
-    public CheckboxOptionNode(string label) {
+    public CheckboxOptionNode() {
         X = 18;
         Width = 300;
         Height = 16;
         IsVisible = true;
-        LabelText = label;
     }
 }

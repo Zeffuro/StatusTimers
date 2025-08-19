@@ -1,12 +1,13 @@
 // StatusTimers/Nodes/FilterSection/StatusFilterDropdownNode.cs
+
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
-using StatusTimers.Nodes.FilterSection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GlobalServices = StatusTimers.Services.Services;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
+
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class StatusFilterDropdownNode : HorizontalListNode
 {
@@ -62,7 +63,10 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
 
     private void UpdateDropdownOptions(string filter)
     {
-        if (_isUpdating) return;
+        if (_isUpdating) {
+            return;
+        }
+
         _isUpdating = true;
 
         var toRemove = Nodes.Where(n => n is TextDropDownNode || n is TextButtonNode).ToList();
@@ -121,7 +125,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             var statusId = _currentSelection.Value.RowId;
             if (_getConfig().FilterList.Add(statusId))
             {
-                GlobalServices.Logger.Info($"Added status with ID {statusId} to filter list {string.Join(",",_getConfig().FilterList)}");
+                _statusListNode?.Refresh();
                 _onChanged?.Invoke();
             }
         }

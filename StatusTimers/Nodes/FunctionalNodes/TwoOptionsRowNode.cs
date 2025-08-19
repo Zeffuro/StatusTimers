@@ -1,0 +1,21 @@
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes;
+using KamiToolKit.System;
+
+namespace StatusTimers.Nodes.FunctionalNodes;
+
+public sealed class TwoOptionsRowNode : HorizontalFlexNode
+{
+    public TwoOptionsRowNode(NodeBase first, NodeBase second, float height)
+    {
+        IsVisible = true;
+        X = 18;
+        Width = 600;
+        Height = height;
+        AlignmentFlags = FlexFlags.FitHeight;
+        FitPadding = 4;
+
+        AddNode(first);
+        AddNode(second);
+    }
+}

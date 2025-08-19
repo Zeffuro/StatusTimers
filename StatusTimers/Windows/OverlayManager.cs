@@ -3,8 +3,8 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using StatusTimers.Factories;
 using StatusTimers.Nodes;
+using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Numerics;
 

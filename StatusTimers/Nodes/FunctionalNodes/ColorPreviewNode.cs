@@ -1,11 +1,10 @@
 using Dalamud.Interface;
 using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
 using System.Drawing;
 using System.Numerics;
 
-namespace StatusTimers.Nodes;
+namespace StatusTimers.Nodes.FunctionalNodes;
 
 public class ColorPreviewNode : ResNode {
     private readonly BackgroundImageNode _colorBackground;

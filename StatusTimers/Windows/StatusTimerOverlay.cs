@@ -44,6 +44,8 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         _source = source;
         OverlayConfig = new StatusTimerOverlayConfig(_nodeKind);
 
+        OverlayConfigRegistry.Register(_nodeKind, OverlayConfig);
+
         _layoutManager = new StatusOverlayLayoutManager<TKey>(
             this,
             () => OverlayConfig
