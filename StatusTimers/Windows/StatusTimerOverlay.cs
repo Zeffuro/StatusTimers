@@ -205,6 +205,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         Load(configPath);
 
         if (OverlayConfig != null) {
+            StatusTimerOverlayConfigHelper.MigrateLegacyConfig(OverlayConfig);
             Helpers.Util.ApplyConfigProps(OverlayConfig, this);
         }
 
@@ -254,6 +255,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
 
         _isSetupCompleted = false;
+    }
+
+    public void RestartOverlay() {
+        OnDispose();
+        Setup();
     }
 
     private void AddLabelTimeLine(NodeBase node) {

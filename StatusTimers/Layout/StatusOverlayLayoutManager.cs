@@ -143,7 +143,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
             Width = CalculatedOverlaySize.X,
             Height = CalculatedOverlaySize.Y,
             IsVisible = true,
-            ItemSpacing = config.FillRowsFirst ? config.StatusVerticalPadding : config.StatusHorizontalPadding,
+            HorizontalPadding = config.StatusHorizontalPadding,
+            VerticalPadding = config.StatusVerticalPadding,
             GrowDirection = (FlexGrowDirection)config.GrowDirection,
             ItemsPerLine = config.ItemsPerLine,
             FillRowsFirst = config.FillRowsFirst
@@ -180,7 +181,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
             _rootContainer.GrowDirection = (FlexGrowDirection)config.GrowDirection;
             _rootContainer.ItemsPerLine = config.ItemsPerLine;
             _rootContainer.FillRowsFirst = config.FillRowsFirst;
-            _rootContainer.ItemSpacing = config.FillRowsFirst ? config.StatusVerticalPadding : config.StatusHorizontalPadding;
+            _rootContainer.HorizontalPadding = config.StatusHorizontalPadding;
+            _rootContainer.VerticalPadding = config.StatusVerticalPadding;
 
             CalculatedOverlaySize = CalculateOverlaySize();
             _rootContainer.Width = CalculatedOverlaySize.X;

@@ -16,8 +16,34 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         _sectionHeaderNode = new SectionHeaderNode("Functional Settings");
         AddNode(_sectionHeaderNode);
 
+        // Hide statuses above a certain max duration
+        var secondsNode = new LabeledNumericOptionNode("",
+            () => getConfig().HideStatusAboveSeconds,
+            value => { getConfig().HideStatusAboveSeconds = value; }
+        ) {
+            IsVisible = getConfig().HideStatusAboveSecondsEnabled,
+            Y = -4,
+        };
+
+        // Hide statuses above a certain max enabled
+        AddNode(new TwoOptionsRowNode(new CheckboxOptionNode {
+            LabelText = "Hide statuses above a certain max duration",
+            IsChecked = getConfig().HideStatusAboveSecondsEnabled,
+            OnClick = isChecked => {
+                getConfig().HideStatusAboveSecondsEnabled = isChecked;
+                secondsNode.IsVisible = isChecked;
+            }
+        }, secondsNode, 16));
+
         if (kind == NodeKind.Combined)
         {
+            // Hide statuses that are not applied by the player
+            AddNode(new CheckboxOptionNode {
+                LabelText = "Show self applied statuses only",
+                IsChecked = getConfig().SelfAppliedStatusesOnly,
+                OnClick = isChecked => getConfig().SelfAppliedStatusesOnly = isChecked
+            });
+
             // Hide permanent statuses
             AddNode(new CheckboxOptionNode {
                 LabelText = "Hide permanent statuses",

@@ -3,6 +3,7 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using StatusTimers.Models;
 using StatusTimers.Nodes;
 using StatusTimers.Nodes.LayoutNodes;
 using System;
@@ -112,6 +113,14 @@ public unsafe class OverlayManager : IDisposable {
 
         _playerCombinedOverlay?.OnUpdate();
         _enemyMultiDoTOverlay?.OnUpdate();
+    }
+
+    public void RestartOverlay<TOverlay>(ref TOverlay overlayInstance, Func<TOverlay> creator)
+        where TOverlay : StatusTimerOverlay<StatusKey>
+    {
+        overlayInstance?.OnDispose();
+        overlayInstance = creator();
+        overlayInstance.Setup();
     }
 
     public void ToggleConfig() {

@@ -102,6 +102,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             var mainSettingsGroup = new VerticalListNode {
                 IsVisible = overlay.IsVisible,
+                Height = 100,
                 Width = _configScrollingAreas[kind].ContentNode.Width,
                 FitContents = true,
                 ItemSpacing = 3
@@ -131,7 +132,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     () => overlay.OverlayConfig
                 ) {
                     IsVisible = true,
-                    Height = 250,
+                    Height = 280,
                     Width = 600,
                     ItemSpacing = 4,
                     FitContents = true
@@ -207,9 +208,9 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(new FunctionalSectionNode(() => overlay.OverlayConfig, kind) {
                 IsVisible = true,
                 Width = 600,
-                Height = 80,
-                ItemSpacing = 3,
-                FitContents = true
+                Height = 120,
+                ItemSpacing = 4,
+                FitContents = true,
             });
 
             // Sorting Priority Settings
@@ -228,16 +229,18 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             }) {
                 IsVisible = true,
                 Width = 600,
-                Height = 400,
+                Height = 100,
                 ItemSpacing = 4,
                 FitContents = true,
             };
             mainSettingsGroup.AddNode(_filterSectionNodes[kind]);
             _configLists[kind].AddNode(mainSettingsGroup);
 
-            mainSettingsGroup.RecalculateLayout();
+            //mainSettingsGroup.RecalculateLayout();
             _configLists[kind].RecalculateLayout();
             _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+
+            RecalculateAllLayouts(mainSettingsGroup, kind, false);
         }
 
         AttachNode(_tabBar);
@@ -261,8 +264,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
         _isRecalculating = true;
 
+        foreach (var node in group.Nodes) {
+            if(node is LayoutListNode layoutNode) {
+                layoutNode.RecalculateLayout();
+            }
+        }
+
         group.RecalculateLayout();
         _configLists[kind].RecalculateLayout();
+
         _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
         if (scrollToBottom) {
             _configScrollingAreas[kind].ScrollPosition = (int)_configScrollingAreas[kind].ContentHeight;

@@ -1,3 +1,4 @@
+using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using Newtonsoft.Json;
@@ -6,6 +7,7 @@ using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Numerics;
 
 namespace StatusTimers.Config;
@@ -51,7 +53,8 @@ public class StatusTimerOverlayConfig
             Alignment = AnchorAlignment.Left,
             Width = 48,
             Height = 64
-        }
+        },
+        StyleKind = NodePartStyleKind.Icon
     };
 
     [JsonProperty]
@@ -75,7 +78,8 @@ public class StatusTimerOverlayConfig
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge
-        }
+        },
+        StyleKind = NodePartStyleKind.Text
     };
 
     [JsonProperty]
@@ -99,7 +103,8 @@ public class StatusTimerOverlayConfig
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(53),
             TextFlags = TextFlags.Edge
-        }
+        },
+        StyleKind = NodePartStyleKind.Text
     };
 
     [JsonProperty]
@@ -123,7 +128,8 @@ public class StatusTimerOverlayConfig
             TextColor = ColorHelper.GetColor(50),
             TextOutlineColor = ColorHelper.GetColor(54),
             TextFlags = TextFlags.Edge
-        }
+        },
+        StyleKind = NodePartStyleKind.Text
     };
 
     [JsonProperty]
@@ -139,8 +145,13 @@ public class StatusTimerOverlayConfig
             Alignment = AnchorAlignment.Bottom,
             Height = 20,
             Width = 200
-        }
-        // No TextStyle for progress bar
+        },
+        StyleBar = new BarStyle
+        {
+            BackgroundColor = KnownColor.White.Vector(),
+            ProgressColor = KnownColor.Yellow.Vector(),
+        },
+        StyleKind = NodePartStyleKind.Bar
     };
 
     [JsonProperty]
@@ -513,12 +524,80 @@ public class StatusTimerOverlayConfig
         }
     } = true;
 
+    [JsonProperty]
+    public bool HideStatusAboveSecondsEnabled
+    {
+        get => field;
+        set
+        {
+            if (HideStatusAboveSecondsEnabled != value)
+            {
+                field = value;
+                Notify(nameof(HideStatusAboveSecondsEnabled));
+            }
+        }
+    } = false;
+
+    [JsonProperty]
+    public int HideStatusAboveSeconds
+    {
+        get => field;
+        set
+        {
+            if (HideStatusAboveSeconds != value)
+            {
+                field = value;
+                Notify(nameof(HideStatusAboveSeconds));
+            }
+        }
+    } = 30;
+
+    [JsonProperty]
+    public bool SelfAppliedStatusesOnly
+    {
+        get => field;
+        set
+        {
+            if (SelfAppliedStatusesOnly != value)
+            {
+                field = value;
+                Notify(nameof(SelfAppliedStatusesOnly));
+            }
+        }
+    } = true;
+
     public class NodePartConfig
     {
         public bool IsVisible { get; set; }
         public bool? BackgroundEnabled { get; set; }
         public StatusNodeAnchorConfig Anchor { get; set; }
         public TextStyle? Style { get; set; } // Only set for nodes with text
+        public BarStyle? StyleBar { get; set; } // Only set for nodes with progress bar
+        public NodePartStyleKind StyleKind { get; set; } = NodePartStyleKind.None;
+
+        public void EnsureStyleConsistency()
+        {
+            switch (StyleKind)
+            {
+                case NodePartStyleKind.Text:
+                    Style ??= new TextStyle();
+                    StyleBar = null;
+                    break;
+                case NodePartStyleKind.Bar:
+                    StyleBar ??= new BarStyle();
+                    Style = null;
+                    break;
+                case NodePartStyleKind.Icon:
+                    Style = null;
+                    StyleBar = null;
+                    break;
+                case NodePartStyleKind.None:
+                default:
+                    Style = null;
+                    StyleBar = null;
+                    break;
+            }
+        }
     }
 
     public class StatusNodeAnchorConfig
@@ -529,6 +608,55 @@ public class StatusTimerOverlayConfig
         public AnchorAlignment Alignment { get; set; }
         public float Width { get; set; }
         public float Height { get; set; }
+    }
+
+    public class BarStyle : IEquatable<BarStyle>
+    {
+        public event Action? Changed;
+
+        public Vector4 ProgressColor {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public Vector4 BackgroundColor {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public BarStyle Clone() => new() {
+            ProgressColor = ProgressColor,
+            BackgroundColor = BackgroundColor
+        };
+
+        public override bool Equals(object? obj) => Equals(obj as BarStyle);
+
+        public bool Equals(BarStyle? other)
+        {
+            if (other is null) {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other)) {
+                return true;
+            }
+
+            return ProgressColor.Equals(other.ProgressColor)
+                   && BackgroundColor.Equals(other.BackgroundColor);
+        }
+
+        public override int GetHashCode()
+            => HashCode.Combine(ProgressColor, BackgroundColor);
     }
 
     public class TextStyle : IEquatable<TextStyle>
@@ -584,6 +712,14 @@ public class StatusTimerOverlayConfig
                 }
             }
         }
+
+        public TextStyle Clone() => new() {
+            FontSize = FontSize,
+            FontType = FontType,
+            TextColor = TextColor,
+            TextOutlineColor = TextOutlineColor,
+            TextFlags = TextFlags
+        };
 
         public override bool Equals(object? obj) => Equals(obj as TextStyle);
 

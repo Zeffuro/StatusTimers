@@ -128,6 +128,10 @@ public static class StatusManager {
             return null;
         }
 
+        if(config.HideStatusAboveSecondsEnabled && maxSeconds > config.HideStatusAboveSeconds) {
+            return null;
+        }
+
         if (stacks > 0 && status.Param > 0 && !gameData.IsFcBuff) {
             iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
         }
@@ -137,7 +141,11 @@ public static class StatusManager {
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
 
-        bool selfInflicted = player.GameObjectId == sourceObjectId;
+        bool selfInflicted = player.GameObjectId == status.SourceObject;
+
+        if (config.SelfAppliedStatusesOnly && !selfInflicted) {
+            return null;
+        }
 
         if (battleChar is not null && player != null && objectId != player.GameObjectId) {
             actorName = battleChar->NameString;

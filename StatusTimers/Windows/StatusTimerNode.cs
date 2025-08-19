@@ -1,8 +1,10 @@
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
+using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
+using KamiToolKit.Extensions;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
@@ -13,6 +15,7 @@ using StatusTimers.Layout;
 using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -65,6 +68,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         // Progress
         _progressNode = new CastBarProgressBarNode { NodeId = 4 };
         ApplyNodeSettings(_progressNode, config.Progress);
+        ApplyBarStyle(_progressNode, config.Progress.StyleBar);
+        if (config.Progress.StyleBar != null) {
+            config.Progress.StyleBar.Changed += OnProgressBarStyleChanged;
+        }
         GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
 
         // Actor Name
@@ -164,6 +171,15 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 ngn.TextFlags = style.TextFlags;
                 break;
         }
+    }
+
+    private void ApplyBarStyle(CastBarProgressBarNode node, StatusTimerOverlayConfig.BarStyle style) {
+        if (style == null) {
+            return;
+        }
+
+        node.BackgroundColor = style.BackgroundColor;
+        node.BarColor = style.ProgressColor;
     }
 
     private void ApplyNodeSettings(NodeBase node, StatusTimerOverlayConfig.NodePartConfig partConfig) {
@@ -385,6 +401,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void OnStatusNameTextStyleChanged() => ApplyTextStyle(_statusName, _getOverlayConfig().Name.Style);
     private void OnActorNameTextStyleChanged() => ApplyTextStyle(_actorName, _getOverlayConfig().Actor.Style);
     private void OnStatusRemainingTextStyleChanged() => ApplyTextStyle(_statusRemaining, _getOverlayConfig().Timer.Style);
+    private void OnProgressBarStyleChanged() => ApplyBarStyle(_progressNode, _getOverlayConfig().Progress.StyleBar);
 
     private unsafe void OnIconClicked(AddonEventData eventData) {
         var config = _getOverlayConfig();
@@ -467,6 +484,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _getOverlayConfig().Name.Style.Changed -= OnStatusNameTextStyleChanged;
             _getOverlayConfig().Timer.Style.Changed -= OnStatusRemainingTextStyleChanged;
             _getOverlayConfig().Actor.Style.Changed -= OnActorNameTextStyleChanged;
+            _getOverlayConfig().Progress.StyleBar.Changed -= OnProgressBarStyleChanged;
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();

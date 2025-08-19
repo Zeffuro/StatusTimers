@@ -40,6 +40,22 @@ namespace StatusTimers.Nodes
             }
         } = true;
 
+        public float HorizontalPadding {
+            get;
+            set {
+                field = value;
+                RecalculateLayout();
+            }
+        } = 1;
+
+        public float VerticalPadding {
+            get;
+            set {
+                field = value;
+                RecalculateLayout();
+            }
+        } = 1;
+
         public override void RecalculateLayout()
         {
             int visibleCount = NodeList.Count(n => n.IsVisible);
@@ -59,9 +75,8 @@ namespace StatusTimers.Nodes
             float startY = alignBottom ? Height : 0f;
 
             int idx = 0;
-            for (int i = 0; i < NodeList.Count; i++)
+            foreach (var node in NodeList)
             {
-                var node = NodeList[i];
                 if (!node.IsVisible) {
                     continue;
                 }
@@ -79,12 +94,12 @@ namespace StatusTimers.Nodes
                 }
 
                 float x = alignRight
-                    ? startX - (col + 1) * nodeWidth - col * ItemSpacing
-                    : startX + col * (nodeWidth + ItemSpacing);
+                    ? startX - (col + 1) * nodeWidth - col * HorizontalPadding
+                    : startX + col * (nodeWidth + HorizontalPadding);
 
                 float y = alignBottom
-                    ? startY - (row + 1) * nodeHeight - row * ItemSpacing
-                    : startY + row * (nodeHeight + ItemSpacing);
+                    ? startY - (row + 1) * nodeHeight - row * VerticalPadding
+                    : startY + row * (nodeHeight + VerticalPadding);
 
                 node.X = x;
                 node.Y = y;

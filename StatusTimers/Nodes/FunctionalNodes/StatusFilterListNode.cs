@@ -62,11 +62,10 @@ public sealed class StatusFilterListNode : VerticalListNode {
 
         _isRefreshing = true;
         foreach (var node in GetNodes<StatusFilterRowNode>().ToList()) {
+            //TODO: Temporary fix for crashing issues
             RaptureAtkModule.Instance()->ClearFocus();
             AtkStage.Instance()->ClearFocus();
             node.RemoveButtonNodeOnClick();
-            //var teste = (AtkUnitBase*)node.ComponentBase;
-
             RemoveNode(node);
         }
         foreach (var status in _statusList) {

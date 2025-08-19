@@ -25,12 +25,14 @@ public sealed class VisualSectionNode : VerticalListNode
             new CheckboxOptionNode {
                 LabelText = "Locked",
                 IsChecked = overlay.IsLocked,
-                OnClick = isChecked => { overlay.IsLocked = isChecked; }
+                OnClick = isChecked => { overlay.IsLocked = isChecked; },
+                Tooltip = "When locked, the overlay cannot be moved or resized."
             },
             new CheckboxOptionNode {
                 LabelText = "Preview Mode",
                 IsChecked = overlay.IsPreviewEnabled,
-                OnClick = isChecked => { overlay.IsPreviewEnabled = isChecked; }
+                OnClick = isChecked => { overlay.IsPreviewEnabled = isChecked; },
+                Tooltip = "When enabled, will show random statuses to test with."
             },
             16
         ));
@@ -202,8 +204,6 @@ public sealed class VisualSectionNode : VerticalListNode
                 getConfig().AnimationsEnabled = value;
             }
         });
-
-        AddDummy(16);
 
         RecalculateLayout();
     }

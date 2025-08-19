@@ -23,6 +23,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
     {
         X = 18;
         Width = 600;
+        Height = 16;
         ItemSpacing = 0;
         IsVisible = true;
         FitContents = true;
@@ -42,8 +43,6 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 if (settingsGroup != null)
                 {
                     settingsGroup.IsVisible = isChecked;
-                    Height = isChecked ? 220 : 16;
-                    FitContents = isChecked;
                     RecalculateLayout();
                 }
                 onChanged?.Invoke();
@@ -57,8 +56,9 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             X = 18,
             Height = 220,
             Width = 600,
-            ItemSpacing = 0,
-            IsVisible = nodePart.IsVisible
+            ItemSpacing = 2,
+            IsVisible = nodePart.IsVisible,
+            FitContents = true,
         };
 
         // Background row
@@ -86,6 +86,36 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             }
         };
         backgroundRow.AddNode(backgroundCheckbox);
+
+        if (nodePart.StyleKind == NodePartStyleKind.Bar && nodePart.StyleBar != null && overlayManager != null)
+        {
+            var barStyleRow = new HorizontalFlexNode
+            {
+                IsVisible = true,
+                Width = 562,
+                Height = 32,
+                FitPadding = 4
+            };
+            settingsGroup.AddNode(barStyleRow);
+
+            barStyleRow.AddNode(new ColorPreviewOptionNode(
+                "Progress Color",
+                () => nodePart.StyleBar.ProgressColor,
+                c => { nodePart.StyleBar.ProgressColor = c; onChanged?.Invoke(); },
+                overlayManager,
+                onChanged,
+                32
+            ));
+
+            barStyleRow.AddNode(new ColorPreviewOptionNode(
+                "Background Color",
+                () => nodePart.StyleBar.BackgroundColor,
+                c => { nodePart.StyleBar.BackgroundColor = c; onChanged?.Invoke(); },
+                overlayManager,
+                onChanged,
+                32
+            ));
+        }
 
         // Style rows
         if (nodePart.Style != null && overlayManager != null)
@@ -201,6 +231,8 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         ));
 
         AddNode(settingsGroup);
+
+        RecalculateLayout();
     }
 
     private static readonly Dictionary<FontType, string> FontMap = new() {

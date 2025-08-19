@@ -26,9 +26,10 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         _onChanged = onChanged;
 
         X = OptionOffset;
-        ItemSpacing = 0;
+        ItemSpacing = 4;
         IsVisible = true;
         Width = 600;
+        FitContents = true;
 
         AddNode(new TextNode
         {
@@ -45,7 +46,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             X = OptionOffset,
             Width = 600,
-            Height = 28,
+            Height = 18,
             ItemSpacing = 8,
             IsVisible = true
         };

@@ -32,10 +32,15 @@ public class ImportExportResetHelper {
                 }
                 overlay.IsVisible = imported.Enabled;
                 overlay.Position = imported.Position;
+                StatusTimerOverlayConfigHelper.MigrateLegacyConfig(currentOverlayConfig);
                 Services.Services.Logger.Info("Configuration imported from clipboard.");
                 currentOverlayConfig.Notify("Config", updateNodes: true);
+                overlay.OnUpdate();
                 onConfigChanged?.Invoke();
                 closeWindow?.Invoke();
+
+                // Restart overlay
+                overlay.RestartOverlay();
             } else {
                 notification.Content = "Clipboard data was invalid or could not be imported.";
                 notification.Type = NotificationType.Error;

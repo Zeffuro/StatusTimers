@@ -1,6 +1,7 @@
 using Dalamud.Interface;
 using KamiToolKit.Classes;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Numerics;
 
 namespace StatusTimers.Enums;
@@ -16,5 +17,6 @@ public static class CommonUIColor
         { "Quest Title Yellow", ColorHelper.GetColor(54) },
         { "Quest Description Blue", ColorHelper.GetColor(53) },
         { "Yellow Configuration Option", ColorHelper.GetColor(8) },
+        { "Default Yellow Progress Bar", KnownColor.Yellow.Vector() },
     };
 }
