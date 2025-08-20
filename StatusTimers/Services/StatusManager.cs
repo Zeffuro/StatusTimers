@@ -112,6 +112,7 @@ public static class StatusManager {
         uint id = status.StatusId;
         uint iconId = gameData.Icon;
         string name = gameData.Name.ExtractText();
+        string description = gameData.Description.ExtractText();
         float remainingSeconds = status.RemainingTime;
         ulong sourceObjectId = objectId;
         uint stacks = gameData.MaxStacks;
@@ -170,7 +171,7 @@ public static class StatusManager {
             }
         }
 
-        return new StatusInfo(id, iconId, name, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks,
+        return new StatusInfo(id, iconId, name, description, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks,
             partyPrio, isPerma,
             actorName, enemyLetter, statusType);
     }

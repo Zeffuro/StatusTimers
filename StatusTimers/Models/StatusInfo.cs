@@ -6,6 +6,7 @@ public readonly record struct StatusInfo(
     uint Id,
     uint IconId,
     string Name,
+    string Description,
     float RemainingSeconds,
     float MaxSeconds,
     ulong GameObjectId,

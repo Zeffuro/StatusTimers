@@ -138,7 +138,7 @@ public class StatusDataSourceManager<TKey> {
             else {
                 updatedList.Add(new StatusInfo(
                     status.Id, status.IconId, status.Name,
-                    newRemaining, status.MaxSeconds, status.GameObjectId,
+                    status.Description, newRemaining, status.MaxSeconds, status.GameObjectId,
                     status.SelfInflicted, status.Stacks, status.PartyPriority,
                     status.IsPermanent, status.ActorName, status.EnemyLetter, status.StatusType
                 ));
@@ -153,6 +153,7 @@ public class StatusDataSourceManager<TKey> {
         uint dummyId;
         uint dummyIconId;
         string dummyName;
+        string dummyDescription;
         float maxSeconds;
         bool isPermanent;
         bool selfInflicted;
@@ -216,13 +217,14 @@ public class StatusDataSourceManager<TKey> {
         dummyId = selectedTemplate.Id;
         dummyIconId = selectedTemplate.IconId;
         dummyName = selectedTemplate.Name;
+        dummyDescription = $"Dummy description for {dummyName}";
         maxSeconds = selectedTemplate.MaxSeconds;
         selfInflicted = _rand.Next(100) < 50;
 
         float remainingSeconds = maxSeconds * (float)(_rand.NextDouble() * 0.8 + 0.1);
 
         return new StatusInfo(
-            dummyId, dummyIconId, dummyName, remainingSeconds, maxSeconds,
+            dummyId, dummyIconId, dummyName, dummyDescription, remainingSeconds, maxSeconds,
             gameObjectIdToUse, selfInflicted, dummyStacks, 0, // PartyPriority defaults to 0 for dummies
             isPermanent, actorName, enemyLetter, statusCategory
         );
