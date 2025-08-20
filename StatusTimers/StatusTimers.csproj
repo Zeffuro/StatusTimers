@@ -1,7 +1,7 @@
 <Project Sdk="Dalamud.NET.Sdk/13.0.0">
     <PropertyGroup>
         <PackageProjectUrl>https://github.com/Zeffuro/StatusTimers.git</PackageProjectUrl>
-        <Version>1.0.0.0</Version>
+        <Version>1.0.0.1</Version>
         <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
@@ -15,6 +15,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Content Include="changelog.md" />
         <Content Include="Media\*.*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>
