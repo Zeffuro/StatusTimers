@@ -38,6 +38,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private Dictionary<string, NodeBase> _nodeMap = new();
 
+    private bool _isDisposed = false;
+
     public StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
         _getOverlayConfig = getOverlayConfig;
 
@@ -343,11 +345,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     public void UpdateValues() {
+        if (_isDisposed) {
+            return;
+        }
         var config = _getOverlayConfig();
 
-        if (_statusInfo.Id != 0) {
-            _iconNode.IconId = _statusInfo.IconId;
-        }
+        _iconNode.IconId = _statusInfo.Id > 0 ? _statusInfo.IconId : 0;
         if (_statusInfo.Id == 0) {
             _iconNode.IsVisible = false;
             _statusName.IsVisible = false;
@@ -480,6 +483,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     protected override void Dispose(bool disposing) {
+        if (_isDisposed) {
+            return;
+        }
+
+        _isDisposed = true;
+
         if (disposing) {
             _getOverlayConfig().Name.Style.Changed -= OnStatusNameTextStyleChanged;
             _getOverlayConfig().Timer.Style.Changed -= OnStatusRemainingTextStyleChanged;
@@ -491,8 +500,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _actorName.Dispose();
             _progressNode.Dispose();
             _containerResNode.Dispose();
-
-            base.Dispose(disposing);
         }
+        base.Dispose(disposing);
     }
+
+    public bool IsDisposed => _isDisposed;
 }
