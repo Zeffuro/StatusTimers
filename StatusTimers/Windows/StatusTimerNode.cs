@@ -387,10 +387,16 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 _actorName.SetText("");
             }
 
-            float max = Math.Max(_statusInfo.MaxSeconds, 1f);
-            float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
-            float ratio = remaining / max;
-            _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
+            if (_statusInfo.MaxSeconds > 0)
+            {
+                float max = Math.Max(_statusInfo.MaxSeconds, 1f);
+                float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
+                float ratio = remaining / max;
+                _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
+            }
+            else {
+                _progressNode.Progress = 0.06f;
+            }
 
             if (_statusRemaining is TextNode textNode) {
                 textNode.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
