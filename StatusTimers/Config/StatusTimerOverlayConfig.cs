@@ -553,6 +553,34 @@ public class StatusTimerOverlayConfig
     } = 30;
 
     [JsonProperty]
+    public bool HideStatusUnderSecondsEnabled
+    {
+        get => field;
+        set
+        {
+            if (HideStatusUnderSecondsEnabled != value)
+            {
+                field = value;
+                Notify(nameof(HideStatusUnderSecondsEnabled));
+            }
+        }
+    } = false;
+
+    [JsonProperty]
+    public int HideStatusUnderSeconds
+    {
+        get => field;
+        set
+        {
+            if (HideStatusUnderSeconds != value)
+            {
+                field = value;
+                Notify(nameof(HideStatusUnderSeconds));
+            }
+        }
+    } = 15;
+
+    [JsonProperty]
     public bool SelfAppliedStatusesOnly
     {
         get => field;

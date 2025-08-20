@@ -35,6 +35,25 @@ public sealed class FunctionalSectionNode : VerticalListNode {
             }
         }, secondsNode, 16));
 
+        // Hide statuses under a certain max duration
+        var underSecondsNode = new LabeledNumericOptionNode("",
+            () => getConfig().HideStatusUnderSeconds,
+            value => { getConfig().HideStatusUnderSeconds = value; }
+        ) {
+            IsVisible = getConfig().HideStatusUnderSecondsEnabled,
+            Y = -4,
+        };
+
+        // Hide statuses above a certain max enabled
+        AddNode(new TwoOptionsRowNode(new CheckboxOptionNode {
+            LabelText = "Hide statuses under a certain max duration",
+            IsChecked = getConfig().HideStatusUnderSecondsEnabled,
+            OnClick = isChecked => {
+                getConfig().HideStatusUnderSecondsEnabled = isChecked;
+                underSecondsNode.IsVisible = isChecked;
+            }
+        }, underSecondsNode, 16));
+
         if (kind == NodeKind.Combined)
         {
             // Hide statuses that are not applied by the player

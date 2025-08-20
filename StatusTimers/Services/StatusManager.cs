@@ -132,6 +132,10 @@ public static class StatusManager {
             return null;
         }
 
+        if(config.HideStatusUnderSecondsEnabled && maxSeconds < config.HideStatusUnderSeconds) {
+            return null;
+        }
+
         if (stacks > 0 && status.Param > 0 && !gameData.IsFcBuff) {
             iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
         }
