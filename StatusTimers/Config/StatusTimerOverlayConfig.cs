@@ -157,6 +157,34 @@ public class StatusTimerOverlayConfig
     };
 
     [JsonProperty]
+    public NodePartConfig Background { get; set; } = new()
+    {
+        IsVisible = false,
+        BackgroundEnabled = null,
+        Anchor = new StatusNodeAnchorConfig
+        {
+            AnchorTo = AnchorTarget.ContainerLeft,
+            OffsetX = 0,
+            OffsetY = 0,
+            Alignment = AnchorAlignment.Left,
+            Height = 60,
+            Width = 300
+        },
+        StyleKind = NodePartStyleKind.Background
+    };
+
+    [JsonProperty]
+    public string TimerFormat {
+        get;
+        set {
+            if (field != value) {
+                field = value;
+                Notify(nameof(TimerFormat), updateNodes: true);
+            }
+        }
+    } = "{S.0}s";
+
+    [JsonProperty]
     public int RowWidth {
         get;
         set

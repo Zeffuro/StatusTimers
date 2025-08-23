@@ -139,6 +139,17 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 }
             );
 
+            // Background Settings
+            mainSettingsGroup.AddNode(
+                new NodeLayoutSectionNode(
+                    "background",
+                    overlay.OverlayConfig.Background,
+                    overlayManager,
+                    onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Background), updateNodes: true),
+                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                )
+            );
+
             // Icon Settings
             mainSettingsGroup.AddNode(
                 new NodeLayoutSectionNode(
@@ -162,15 +173,24 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             );
 
             // Status Time Remaining Settings
+            var timerFormatNode = new StatusTimerFormatRowNode(() => overlay.OverlayConfig,
+                onChanged: (changed) =>
+                    overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Icon), updateNodes: true)
+            );
+
             mainSettingsGroup.AddNode(
                 new NodeLayoutSectionNode(
                     "time remaining",
                     overlay.OverlayConfig.Timer,
                     overlayManager,
                     onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Timer), updateNodes: true),
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
-                )
+                    onToggled: () => {
+                        timerFormatNode.IsVisible = overlay.OverlayConfig.Timer.IsVisible;
+                        RecalculateAllLayouts(mainSettingsGroup, kind);
+                    })
             );
+
+            mainSettingsGroup.AddNode(timerFormatNode);
 
             // Progress Bar Settings
             mainSettingsGroup.AddNode(

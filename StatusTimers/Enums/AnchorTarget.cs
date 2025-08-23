@@ -30,5 +30,9 @@ public enum AnchorTarget
     ActorNameLeft,
     ActorNameRight,
     ActorNameTop,
-    ActorNameBottom
+    ActorNameBottom,
+    BackgroundLeft,
+    BackgroundRight,
+    BackgroundTop,
+    BackgroundBottom
 }

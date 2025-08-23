@@ -13,6 +13,7 @@ using StatusTimers.Enums;
 using StatusTimers.Extensions;
 using StatusTimers.Layout;
 using StatusTimers.Models;
+using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -29,6 +30,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private readonly Func<StatusTimerOverlayConfig> _getOverlayConfig;
 
+    private SimpleNineGridNode _statusBackgroundNode;
     private StatusInfo _statusInfo;
     private IconImageNode _iconNode;
     private CastBarProgressBarNode _progressNode;
@@ -52,6 +54,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             Height = config.RowHeight,
         };
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
+
+        // Background
+        _statusBackgroundNode = new NineGridBackgroundNode {
+            NodeId = 6,
+        };
+        ApplyNodeSettings(_statusBackgroundNode, config.Background);
+        GlobalServices.NativeController.AttachNode(_statusBackgroundNode, _containerResNode);
 
         // Icon
         _iconNode = new IconImageNode { NodeId = 1 };
@@ -135,6 +144,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             RebuildNodes(config, needsRebuildName, needsRebuildActor, needsRebuildTimer);
         }
 
+        ApplyNodeSettings(_statusBackgroundNode, config.Background);
         ApplyNodeSettings(_iconNode, config.Icon);
         ApplyNodeSettings(_statusName, config.Name);
         ApplyTextStyle(_statusName, config.Name.Style);
@@ -196,6 +206,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     private void RegisterNodeMap() {
+        _nodeMap["Background"] = _statusBackgroundNode;
         _nodeMap["Icon"] = _iconNode;
         _nodeMap["Name"] = _statusName;
         _nodeMap["ActorName"] = _actorName;
@@ -213,6 +224,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private void UpdateLayoutOffsets() {
         var config = _getOverlayConfig();
+        _nodeMap["Background"] = _statusBackgroundNode;
         _nodeMap["Icon"] = _iconNode;
         _nodeMap["Name"] = _statusName;
         _nodeMap["ActorName"] = _actorName;
@@ -221,6 +233,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _nodeMap["Timer"] = _statusRemaining;
         }
 
+        LayoutNode(_statusBackgroundNode, config.Background.Anchor, "Background");
         LayoutNode(_iconNode, config.Icon.Anchor, "Icon");
         LayoutNode(_statusName, config.Name.Anchor, "Name");
         LayoutNode(_actorName, config.Actor.Anchor, "ActorName");
@@ -365,6 +378,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         _statusName.SetText(_statusInfo.Name);
 
+        _statusBackgroundNode.IsVisible = config.Background.IsVisible;
         _iconNode.IsVisible = config.Icon.IsVisible;
         _statusRemaining.IsVisible = config.Timer.IsVisible;
         _statusName.IsVisible = config.Name.IsVisible;
@@ -401,12 +415,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 _progressNode.Progress = 0.06f;
             }
 
-            if (_statusRemaining is TextNode textNode) {
-                textNode.String = $"{_statusInfo.RemainingSeconds:0.0}s";
-            }
-            else if (_statusRemaining is TextNineGridNode textNineGridNode) {
-                textNineGridNode.SeString = $"{_statusInfo.RemainingSeconds:0.0}s";
-            }
+
+            _statusRemaining.SetText(Helpers.Util.SafeFormatTime(_statusInfo.RemainingSeconds, config.TimerFormat));
         }
     }
 

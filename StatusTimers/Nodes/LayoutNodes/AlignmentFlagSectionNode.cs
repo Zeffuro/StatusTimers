@@ -65,7 +65,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         horizontalRow.AddNode(new CheckboxNode
         {
             LabelText = "Left",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Left),
@@ -74,7 +74,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         horizontalRow.AddNode(new CheckboxNode
         {
             LabelText = "Right",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Right),
@@ -83,7 +83,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         horizontalRow.AddNode(new CheckboxNode
         {
             LabelText = "HCenter",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.HorizontalCenter),
@@ -92,7 +92,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         horizontalRow.AddNode(new CheckboxNode
         {
             LabelText = "Center",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Center),
@@ -124,7 +124,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         verticalRow.AddNode(new CheckboxNode
         {
             LabelText = "Top",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Top),
@@ -133,7 +133,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         verticalRow.AddNode(new CheckboxNode
         {
             LabelText = "Bottom",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Bottom),
@@ -142,7 +142,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         verticalRow.AddNode(new CheckboxNode
         {
             LabelText = "VCenter",
-            Width = 100,
+            Width = 90,
             Height = 18,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.VerticalCenter),

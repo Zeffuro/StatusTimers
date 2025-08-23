@@ -8,16 +8,16 @@ using System.Linq;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
 
-public sealed class LabeledDropdownOptionNode<TEnum> : HorizontalFlexNode where TEnum : Enum
+public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
 {
     private TextDropDownNode _dropDownNode;
     private OptionLabelNode _labelNode;
 
     public LabeledDropdownOptionNode(
         string labelText,
-        Func<TEnum> getter,
-        Action<TEnum> setter,
-        IReadOnlyDictionary<TEnum, string> enumToDisplayNameMap)
+        Func<T> getter,
+        Action<T> setter,
+        IReadOnlyDictionary<T, string> displayMap)
     {
         IsVisible = true;
         X = 18;
@@ -37,13 +37,12 @@ public sealed class LabeledDropdownOptionNode<TEnum> : HorizontalFlexNode where 
             Width = 140,
             Height = 24,
             MaxListOptions = 5,
-            Options = enumToDisplayNameMap.Values.ToList(),
-            OnOptionSelected = selectedDisplayName => {
-                TEnum selectedEnum = enumToDisplayNameMap
-                    .FirstOrDefault(pair => pair.Value == selectedDisplayName).Key;
-                setter(selectedEnum);
+            Options = displayMap.Values.ToList(),
+            OnOptionSelected = selected => {
+                T? selectedKey = displayMap.FirstOrDefault(x => x.Value == selected).Key;
+                setter(selectedKey);
             },
-            SelectedOption = enumToDisplayNameMap.TryGetValue(getter(), out var sel) ? sel : enumToDisplayNameMap.Values.First()
+            SelectedOption = displayMap[getter()]
         };
 
         AddNode(_dropDownNode);

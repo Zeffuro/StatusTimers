@@ -4,5 +4,6 @@ public enum NodePartStyleKind {
     None,
     Text,
     Bar,
-    Icon
+    Icon,
+    Background
 }

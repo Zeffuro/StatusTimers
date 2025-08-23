@@ -10,6 +10,8 @@ namespace StatusTimers.Helpers;
 
 public class Util
 {
+    private static readonly Dictionary<string, TimeFormatTemplate> TemplateCache = new();
+
     public static string SerializeUIntSet(HashSet<uint> set)
         => string.Join(",", set.OrderBy(x => x));
 
@@ -76,6 +78,25 @@ public class Util
         catch
         {
             return null;
+        }
+    }
+
+    public static string FormatTime(double seconds, string template)
+    {
+        if (!TemplateCache.TryGetValue(template, out var fmt))
+        {
+            fmt = new TimeFormatTemplate(template);
+            TemplateCache[template] = fmt;
+        }
+        return fmt.Format(seconds);
+    }
+
+    public static string SafeFormatTime(double seconds, string template)
+    {
+        try {
+            return FormatTime(seconds, template);
+        } catch {
+            return FormatTime(seconds, "{S.0}s");
         }
     }
 
