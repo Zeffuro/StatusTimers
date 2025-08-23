@@ -33,7 +33,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
 
         AddNode(new TextNode
         {
-            Text = "Alignment",
+            String = "Alignment",
             IsVisible = true,
             Height = 20,
             Width = 120,
@@ -53,7 +53,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
 
         horizontalRow.AddNode(new TextNode
         {
-            Text = "Horizontal:",
+            String = "Horizontal:",
             IsVisible = true,
             Height = 18,
             Width = 114,
@@ -112,7 +112,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
 
         verticalRow.AddNode(new TextNode
         {
-            Text = "Vertical:",
+            String = "Vertical:",
             IsVisible = true,
             Height = 18,
             Width = 114,

@@ -140,6 +140,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         ApplyTextStyle(_statusName, config.Name.Style);
 
         ApplyNodeSettings(_progressNode, config.Progress);
+        ApplyBarStyle(_progressNode, config.Progress.StyleBar);
 
         ApplyNodeSettings(_actorName, config.Actor);
         ApplyTextStyle(_actorName, config.Actor.Style);
@@ -182,6 +183,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         node.BackgroundColor = style.BackgroundColor;
         node.BarColor = style.ProgressColor;
+        node.BorderColor = style.BorderColor;
+        node.BorderVisible = style.BorderVisible;
     }
 
     private void ApplyNodeSettings(NodeBase node, StatusTimerOverlayConfig.NodePartConfig partConfig) {
@@ -399,10 +402,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             }
 
             if (_statusRemaining is TextNode textNode) {
-                textNode.Text = $"{_statusInfo.RemainingSeconds:0.0}s";
+                textNode.String = $"{_statusInfo.RemainingSeconds:0.0}s";
             }
             else if (_statusRemaining is TextNineGridNode textNineGridNode) {
-                textNineGridNode.Label = $"{_statusInfo.RemainingSeconds:0.0}s";
+                textNineGridNode.SeString = $"{_statusInfo.RemainingSeconds:0.0}s";
             }
         }
     }

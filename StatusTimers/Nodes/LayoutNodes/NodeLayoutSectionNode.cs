@@ -98,7 +98,34 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             };
             settingsGroup.AddNode(barStyleRow);
 
+            barStyleRow.AddNode(new CheckboxOptionNode {
+                LabelText = "Show Border",
+                IsChecked = nodePart.StyleBar.BorderVisible,
+                OnClick = isChecked => {
+                    nodePart.StyleBar.BorderVisible = isChecked;
+                    onChanged?.Invoke();
+                }
+            });
+
             barStyleRow.AddNode(new ColorPreviewOptionNode(
+                "Border Color",
+                () => nodePart.StyleBar.BorderColor,
+                c => { nodePart.StyleBar.BorderColor = c; onChanged?.Invoke(); },
+                overlayManager,
+                onChanged,
+                32
+            ));
+
+            var barStyleRow2 = new HorizontalFlexNode
+            {
+                IsVisible = true,
+                Width = 562,
+                Height = 32,
+                FitPadding = 4
+            };
+            settingsGroup.AddNode(barStyleRow2);
+
+            barStyleRow2.AddNode(new ColorPreviewOptionNode(
                 "Progress Color",
                 () => nodePart.StyleBar.ProgressColor,
                 c => { nodePart.StyleBar.ProgressColor = c; onChanged?.Invoke(); },
@@ -107,7 +134,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 32
             ));
 
-            barStyleRow.AddNode(new ColorPreviewOptionNode(
+            barStyleRow2.AddNode(new ColorPreviewOptionNode(
                 "Background Color",
                 () => nodePart.StyleBar.BackgroundColor,
                 c => { nodePart.StyleBar.BackgroundColor = c; onChanged?.Invoke(); },

@@ -52,7 +52,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
             AlignmentType = AlignmentType.Left,
-            Text = labelText
+            String = labelText
         });
 
         var colorPreviewButton = new ColorPreviewButtonNode(Services.Services.NativeController)

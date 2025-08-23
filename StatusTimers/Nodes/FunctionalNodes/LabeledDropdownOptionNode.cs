@@ -51,8 +51,8 @@ public sealed class LabeledDropdownOptionNode<TEnum> : HorizontalFlexNode where 
 
     public SeString LabelText
     {
-        get => _labelNode.Text;
-        set => _labelNode.Text = value;
+        get => _labelNode.SeString;
+        set => _labelNode.SeString = value;
     }
 
     public Action<string>? OnOptionSelected

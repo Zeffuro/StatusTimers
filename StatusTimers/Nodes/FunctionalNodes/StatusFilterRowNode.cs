@@ -28,7 +28,7 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
 
         _statusIdTextNode = new TextNode
         {
-            Text = status.RowId.ToString(),
+            String = status.RowId.ToString(),
             IsVisible = true,
             Height = 24,
             Width = 60,
@@ -38,7 +38,7 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
 
         _statusNameTextNode = new TextNode
         {
-            Text = status.Name.ExtractText(),
+            ReadOnlySeString = status.Name,
             IsVisible = true,
             Height = 24,
             Width = 180,

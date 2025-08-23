@@ -148,8 +148,10 @@ public class StatusTimerOverlayConfig
         },
         StyleBar = new BarStyle
         {
-            BackgroundColor = KnownColor.White.Vector(),
-            ProgressColor = KnownColor.Yellow.Vector(),
+            BackgroundColor = KnownColor.Black.Vector(),
+            ProgressColor = KnownColor.Green.Vector(),
+            BorderColor = KnownColor.Black.Vector(),
+            BorderVisible = true
         },
         StyleKind = NodePartStyleKind.Bar
     };
@@ -662,10 +664,50 @@ public class StatusTimerOverlayConfig
             }
         }
 
+        public Vector4 BorderColor {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
+        public bool BorderVisible {
+            get;
+            set {
+                if (field != value) {
+                    field = value;
+                    Changed?.Invoke();
+                }
+            }
+        }
+
         public BarStyle Clone() => new() {
             ProgressColor = ProgressColor,
-            BackgroundColor = BackgroundColor
+            BackgroundColor = BackgroundColor,
+            BorderColor = BorderColor,
+            BorderVisible = BorderVisible
         };
+
+        public void CopyMissingFrom(BarStyle defaults) {
+            if (BorderColor == default) {
+                BorderColor = defaults.BorderColor;
+            }
+
+            if (!BorderVisible && defaults.BorderVisible) {
+                BorderVisible = true;
+            }
+
+            if (ProgressColor == default) {
+                ProgressColor = defaults.ProgressColor;
+            }
+
+            if (BackgroundColor == default) {
+                BackgroundColor = defaults.BackgroundColor;
+            }
+        }
 
         public override bool Equals(object? obj) => Equals(obj as BarStyle);
 
@@ -680,11 +722,13 @@ public class StatusTimerOverlayConfig
             }
 
             return ProgressColor.Equals(other.ProgressColor)
-                   && BackgroundColor.Equals(other.BackgroundColor);
+                   && BackgroundColor.Equals(other.BackgroundColor)
+                   && BorderColor.Equals(other.BorderColor)
+                   && BorderVisible.Equals(other.BorderVisible);
         }
 
         public override int GetHashCode()
-            => HashCode.Combine(ProgressColor, BackgroundColor);
+            => HashCode.Combine(ProgressColor, BackgroundColor, BorderColor, BorderVisible);
     }
 
     public class TextStyle : IEquatable<TextStyle>
@@ -748,6 +792,24 @@ public class StatusTimerOverlayConfig
             TextOutlineColor = TextOutlineColor,
             TextFlags = TextFlags
         };
+
+        public void CopyMissingFrom(TextStyle defaults) {
+            if (FontSize == default) {
+                FontSize = defaults.FontSize;
+            }
+            if (FontType == default) {
+                FontType = defaults.FontType;
+            }
+            if (TextColor == default) {
+                TextColor = defaults.TextColor;
+            }
+            if (TextOutlineColor == default) {
+                TextOutlineColor = defaults.TextOutlineColor;
+            }
+            if (TextFlags == default) {
+                TextFlags = defaults.TextFlags;
+            }
+        }
 
         public override bool Equals(object? obj) => Equals(obj as TextStyle);
 

@@ -13,6 +13,6 @@ public sealed class OptionLabelNode : TextNode {
         TextOutlineColor = TextStyles.Defaults.OutlineColor;
         TextFlags = TextStyles.Defaults.Flags;
         IsVisible = true;
-        Text = label;
+        String = label;
     }
 }

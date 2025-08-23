@@ -48,12 +48,18 @@ public static class StatusTimerOverlayConfigHelper
                 if (nodePart.Style == null && defaultNodePart.Style != null) {
                     nodePart.Style = defaultNodePart.Style.Clone();
                 }
+                else if (nodePart.Style != null && defaultNodePart.Style != null) {
+                    nodePart.Style.CopyMissingFrom(defaultNodePart.Style);
+                }
 
                 nodePart.StyleBar = null;
                 break;
             case NodePartStyleKind.Bar:
                 if (nodePart.StyleBar == null && defaultNodePart.StyleBar != null) {
                     nodePart.StyleBar = defaultNodePart.StyleBar.Clone();
+                }
+                else if (nodePart.StyleBar != null && defaultNodePart.StyleBar != null) {
+                    nodePart.StyleBar.CopyMissingFrom(defaultNodePart.StyleBar);
                 }
 
                 nodePart.Style = null;

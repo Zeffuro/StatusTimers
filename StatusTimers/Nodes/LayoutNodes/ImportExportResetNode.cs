@@ -28,6 +28,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
         IsVisible = true;
 
         AddNode(new ImGuiIconButtonNode {
+            Y = 3,
             Height = 30,
             Width = 30,
             IsVisible = true,
@@ -38,6 +39,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
         });
 
         AddNode(new ImGuiIconButtonNode {
+            Y = 3,
             Height = 30,
             Width = 30,
             IsVisible = true,
@@ -48,7 +50,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
 
         AddNode(new HoldButtonNode {
             IsVisible = true,
-            Y = -3,
+            Y = 0,
             Height = 32,
             Width = 100,
             Label = "Reset",

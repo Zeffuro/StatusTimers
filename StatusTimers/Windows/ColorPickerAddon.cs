@@ -267,7 +267,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Width = 64,
             Height = TextStyles.OptionLabel.Height,
-            Text = "Current",
+            String = "Current",
             TextColor = TextStyles.OptionLabel.TextColor,
             FontSize = TextStyles.Defaults.FontSize,
             AlignmentType = AlignmentType.Center
@@ -284,7 +284,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Width = 64,
             Height = TextStyles.OptionLabel.Height,
-            Text = "Original",
+            String = "Original",
             TextColor = TextStyles.OptionLabel.TextColor,
             FontSize = TextStyles.Defaults.FontSize,
             AlignmentType = AlignmentType.Center
@@ -463,7 +463,7 @@ public class ColorPickerAddon : NativeAddon
 
         TextNode labelNode = new TextNode
         {
-            Text = label,
+            String = label,
             IsVisible = true,
             Y = 3,
             Width = 14,

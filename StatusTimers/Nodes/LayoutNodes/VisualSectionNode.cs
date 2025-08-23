@@ -80,7 +80,7 @@ public sealed class VisualSectionNode : VerticalListNode
                 TextOutlineColor = TextStyles.Defaults.OutlineColor,
                 TextFlags = TextStyles.Defaults.Flags,
                 AlignmentType = AlignmentType.Left,
-                Text = "Scale"
+                String = "Scale"
             },
             new ResNode {
                 IsVisible = true,
@@ -123,7 +123,7 @@ public sealed class VisualSectionNode : VerticalListNode
             TextOutlineColor = TextStyles.Defaults.OutlineColor,
             TextFlags = TextStyles.Defaults.Flags,
             AlignmentType = AlignmentType.Left,
-            Text = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}"
+            String = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}"
         };
 
         AddNode(new TwoOptionsRowNode(
@@ -139,7 +139,7 @@ public sealed class VisualSectionNode : VerticalListNode
                 TextOutlineColor = TextStyles.Defaults.OutlineColor,
                 TextFlags = TextStyles.Defaults.Flags,
                 AlignmentType = AlignmentType.Left,
-                Text = "Max statuses displayed"
+                String = "Max statuses displayed"
             },
             TextStyles.OptionLabel.Height
         ));
@@ -178,7 +178,7 @@ public sealed class VisualSectionNode : VerticalListNode
                 IsChecked = !getConfig().FillRowsFirst,
                 OnClick = isChecked => {
                     getConfig().FillRowsFirst = !isChecked;
-                    statusPerLineNode.Text = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}";
+                    statusPerLineNode.String = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}";
                 }
             },
             new LabeledDropdownOptionNode<GrowDirection>(

@@ -14,6 +14,6 @@ public sealed class SectionHeaderNode : TextNode {
         TextOutlineColor = TextStyles.Defaults.OutlineColor;
         TextFlags = TextStyles.Defaults.Flags;
         AlignmentType = AlignmentType.Left;
-        Text = text;
+        String = text;
     }
 }

@@ -30,7 +30,7 @@ public sealed class LabeledNumericOptionNode : HorizontalFlexNode
             Value = getter(),
             OnValueUpdate = setter
         };
-        numericNode.ValueTextNode.Text = getter().ToString();
+        numericNode.ValueTextNode.String = getter().ToString();
         AddNode(numericNode);
     }
 }
