@@ -2,6 +2,7 @@ using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
+using StatusTimers.Helpers;
 using StatusTimers.Models;
 using StatusTimers.Nodes;
 using StatusTimers.Windows;
@@ -46,7 +47,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
     }
 
     public void InitializeLayout() {
-        CalculatedOverlaySize = CalculateOverlaySize();
+        var config = _getOverlayConfig();
+        CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
 
         _backgroundNode = new NineGridNode {
             NodeId = 2,
@@ -77,63 +79,12 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         BuildContainers();
     }
 
-    public Vector2 CalculateOverlaySize() {
-        var config = _getOverlayConfig();
-
-        float totalWidth;
-        float totalHeight;
-
-        int maxItems = config.MaxStatuses;
-        int itemsPerLine = Math.Min(config.ItemsPerLine, maxItems);
-
-        if (config.FillRowsFirst) {
-            int numRows = (int)Math.Ceiling(maxItems / (double)itemsPerLine);
-
-            int itemsInLastRow = maxItems % itemsPerLine;
-            if (itemsInLastRow == 0 && maxItems > 0) {
-                itemsInLastRow = itemsPerLine;
-            }
-
-            float widestRowWidth = Math.Max(
-                itemsPerLine * config.RowWidth + (itemsPerLine - 1) * config.StatusHorizontalPadding,
-                itemsInLastRow * config.RowWidth + Math.Max(0, (itemsInLastRow - 1)) * config.StatusHorizontalPadding
-            );
-
-            float allRowsHeight = numRows * config.RowHeight +
-                                  (numRows - 1) * config.StatusVerticalPadding;
-
-            totalWidth = widestRowWidth;
-            totalHeight = allRowsHeight;
-        }
-        else {
-            int numCols = (int)Math.Ceiling(maxItems / (double)itemsPerLine);
-
-            int itemsInLastCol = maxItems % itemsPerLine;
-            if (itemsInLastCol == 0 && maxItems > 0) {
-                itemsInLastCol = itemsPerLine;
-            }
-
-            float tallestColHeight = Math.Max(
-                itemsPerLine * config.RowHeight + (itemsPerLine - 1) * config.StatusVerticalPadding,
-                itemsInLastCol * config.RowHeight + Math.Max(0, (itemsInLastCol - 1)) * config.StatusVerticalPadding
-            );
-
-            float allColsWidth = numCols * config.RowWidth +
-                                 (numCols - 1) * config.StatusHorizontalPadding;
-
-            totalWidth = allColsWidth;
-            totalHeight = tallestColHeight;
-        }
-
-        return new Vector2(Math.Max(0, totalWidth), Math.Max(0, totalHeight));
-    }
-
     public void BuildContainers()
     {
         _allNodes.Clear();
 
         var config = _getOverlayConfig();
-        CalculatedOverlaySize = CalculateOverlaySize();
+        CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
 
         _rootContainer = new HybridDirectionalFlexNode
         {
@@ -184,7 +135,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
             _rootContainer.HorizontalPadding = config.StatusHorizontalPadding;
             _rootContainer.VerticalPadding = config.StatusVerticalPadding;
 
-            CalculatedOverlaySize = CalculateOverlaySize();
+            CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
             _rootContainer.Width = CalculatedOverlaySize.X;
             _rootContainer.Height = CalculatedOverlaySize.Y;
             _backgroundNode.Size = CalculatedOverlaySize;
