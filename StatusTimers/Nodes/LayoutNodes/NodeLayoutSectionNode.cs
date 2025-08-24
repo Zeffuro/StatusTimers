@@ -264,6 +264,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
     private static readonly Dictionary<FontType, string> FontMap = new() {
         { FontType.Axis, "Axis" },
+        { FontType.MiedingerMed, "Miedinger Med" },
         { FontType.Miedinger, "Miedinger" },
         { FontType.TrumpGothic, "Trump Gothic" },
         { FontType.Jupiter, "Jupiter" },
