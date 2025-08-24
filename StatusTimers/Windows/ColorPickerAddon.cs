@@ -77,18 +77,6 @@ public class ColorPickerAddon : NativeAddon
         mainList.AddNode(CreateHexAndDropdownSection());
         mainList.AddNode(CreateButtonRow());
         UpdateAllFields();
-
-        mainList.AddNode(new NumericInputNode {
-            IsVisible = true,
-            Width = 200,
-            Height = 28,
-            Min = 0,
-            Max = 100,
-            Value = 50,
-            OnValueUpdate = (i => {
-                GlobalServices.Logger.Info("MonkaS");
-            }),
-        });
     }
 
     private VerticalListNode CreateMainList()
