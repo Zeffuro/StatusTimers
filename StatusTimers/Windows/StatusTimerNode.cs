@@ -366,7 +366,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
         var config = _getOverlayConfig();
 
-        _iconNode.IconId = _statusInfo.Id > 0 ? _statusInfo.IconId : 0;
         if (_statusInfo.Id == 0) {
             _iconNode.IsVisible = false;
             _statusName.IsVisible = false;
@@ -375,6 +374,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _actorName.IsVisible = false;
             return;
         }
+        _iconNode.IconId = _statusInfo.Id > 0 ? _statusInfo.IconId : 0;
 
         _statusName.SetText(_statusInfo.Name);
 

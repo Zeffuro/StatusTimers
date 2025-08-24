@@ -141,6 +141,8 @@ public static class StatusManager {
             iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
         }
 
+
+
         string? actorName = null;
         char? enemyLetter = null;
 
@@ -170,6 +172,9 @@ public static class StatusManager {
                     break;
             }
         }
+
+        // Extra safeguard in case the icon is missing or texture wrap is invalid
+        iconId = ValidateIconId(iconId);
 
         return new StatusInfo(id, iconId, name, description, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks,
             partyPrio, isPerma,
@@ -209,5 +214,15 @@ public static class StatusManager {
         }
 
         return !_itemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ExtractText(), item.Icon);
+    }
+
+    private static uint ValidateIconId(uint iconId) {
+        if (Services.TextureProvider.TryGetFromGameIcon(iconId, out var texture) &&
+            texture.TryGetWrap(out var tw, out _)) {
+            tw.Dispose();
+            return iconId;
+        }
+
+        return 0;
     }
 }
