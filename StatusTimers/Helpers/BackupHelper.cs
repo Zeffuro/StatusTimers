@@ -31,6 +31,7 @@ public static class BackupHelper {
             }
 
             var latestFile = new FileInfo(Path.Join(backupDir, "StatusTimers.latest.zip"));
+            var tempFile = Path.Join(backupDir, "StatusTimers.tmp.zip");
 
             var needsBackup = false;
 
@@ -48,6 +49,7 @@ public static class BackupHelper {
                 return;
             }
 
+            ZipFile.CreateFromDirectory(configDirectory.FullName, tempFile);
             if (latestFile.Exists) {
                 var t = latestFile.LastWriteTime;
                 string archiveName = $"StatusTimers.{t.Year}{t.Month:00}{t.Day:00}{t.Hour:00}{t.Minute:00}{t.Second:00}.zip";
@@ -68,9 +70,13 @@ public static class BackupHelper {
                 }
             }
 
-            ZipFile.CreateFromDirectory(configDirectory.FullName, latestFile.FullName);
+            if (File.Exists(latestFile.FullName)) {
+                File.Delete(latestFile.FullName);
+            }
+            File.Move(tempFile, latestFile.FullName);
 
-            var allBackups = dir.GetFiles().Where(f => f.Name.StartsWith("StatusTimers.2") && f.Name.EndsWith(".zip")).OrderBy(f => f.LastWriteTime.Ticks).ToList();
+            var allBackups = dir.GetFiles().Where(f => f.Name.StartsWith("StatusTimers.2") && f.Name.EndsWith(".zip"))
+                .OrderBy(f => f.LastWriteTime.Ticks).ToList();
             if (allBackups.Count > 10) {
                 GlobalServices.Logger.Debug($"Removing Oldest Backup: {allBackups[0].FullName}");
                 File.Delete(allBackups[0].FullName);
@@ -97,7 +103,9 @@ public static class BackupHelper {
         );
 
     private static string ZipJsonHash(string zipPath) {
-        using var zip = ZipFile.OpenRead(zipPath);
+        byte[] zipBytes = File.ReadAllBytes(zipPath);
+        using var msZip = new MemoryStream(zipBytes);
+        using var zip = new ZipArchive(msZip, ZipArchiveMode.Read);
         var files = zip.Entries
             .Where(e => e.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && !e.FullName.Contains("/"))
             .Select(e => {
