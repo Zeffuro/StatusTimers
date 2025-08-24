@@ -1,5 +1,11 @@
+# 1.0.0.4
+- Imported overlays are now always placed within the visible screen area.
+- Fixed a potential font issue when editing settings manually.
+- Improved internal config backup.
+- Fixed color picker number fields not updating the color everywhere when changed.
+
 # 1.0.0.3
-- Added another safeguard against against crashes.
+- Added another safeguard against crashes.
 
 # 1.0.0.2
 - Fixed the close button not being clickable in some cases.
