@@ -1,3 +1,6 @@
+# 1.0.0.3
+- Added another safeguard against against crashes.
+
 # 1.0.0.2
 - Fixed the close button not being clickable in some cases.
 - Added timer formatting options.
