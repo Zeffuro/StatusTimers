@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
+namespace StatusTimers.Helpers;
+
 public class TimeFormatTemplate
 {
     private static readonly Dictionary<string, TimeFormatTemplate>
@@ -41,28 +43,17 @@ public class TimeFormatTemplate
         string GetValue(int h, int m, int s, int ms, double totalSeconds);
     }
 
-    private class TextToken : IToken
-    {
-        private readonly string _text;
-        public TextToken(string text) { _text = text; }
-        public string GetValue(int h, int m, int s, int ms, double totalSeconds) => _text;
+    private class TextToken(string text) : IToken {
+        public string GetValue(int h, int m, int s, int ms, double totalSeconds) => text;
     }
 
-    private class ValueToken : IToken
-    {
-        private readonly string _component;
-        private readonly string? _format;
-
+    private class ValueToken(string component, string? format) : IToken {
         private static readonly HashSet<string> ValidComponents =
             ["h", "hh", "H", "HH", "m", "mm", "M", "MM", "s", "ss", "S", "SS", "ms", "auto"];
         public static bool IsValidComponent(string component) => ValidComponents.Contains(component);
-        public ValueToken(string component, string? format)
-        {
-            _component = component;
-            _format = format;
-        }
+
         public string GetValue(int h, int m, int s, int ms, double totalSeconds) {
-            return _component switch {
+            return component switch {
                 "h" => h.ToString(),
                 "hh" => h.ToString("D2"),
                 "H" => Math.Floor(totalSeconds / 3600).ToString(CultureInfo.InvariantCulture),
@@ -73,7 +64,7 @@ public class TimeFormatTemplate
                 "MM" => ((int)Math.Floor(totalSeconds / 60)).ToString("D2"),
                 "s" => s.ToString(),
                 "ss" => s.ToString("D2"),
-                "S" => totalSeconds.ToString(_format ?? "G", CultureInfo.InvariantCulture),
+                "S" => totalSeconds.ToString(format ?? "G", CultureInfo.InvariantCulture),
                 "SS" => ((int)totalSeconds).ToString("D2"),
                 "ms" => ms.ToString("D3"),
                 "auto" => new AutoToken().GetValue(h, m, s, ms, totalSeconds),
@@ -108,8 +99,9 @@ public class TimeFormatTemplate
             int nextClose = template.IndexOf('}', i);
 
             // If a '}' appears before a '{', it's invalid
-            if (nextClose >= 0 && (start < 0 || nextClose < start))
+            if (nextClose >= 0 && (start < 0 || nextClose < start)) {
                 return false;
+            }
 
             if (start < 0)
             {

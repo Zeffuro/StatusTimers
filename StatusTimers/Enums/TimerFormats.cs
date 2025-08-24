@@ -9,7 +9,7 @@ public static class TimerFormats {
         { "Minutes (0:00)", "{m}:{ss}" },
         { "Minutes (0m 0s)", "{m}m {ss}s" },
         { "Hours:Minutes:Seconds (0:00:00)", "{H}:{mm}:{ss}" },
-        { "Hours:Minutes:Seconds (0h:0m:0s)", "{H}h {mm}m {ss}s" },
+        { "Hours:Minutes:Seconds (0h:0m:0s)", "{H}h {mm}m {ss}s" }
     };
 }
 

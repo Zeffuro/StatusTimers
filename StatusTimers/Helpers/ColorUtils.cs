@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace StatusTimers.Helpers;
 
-public class ColorUtils {
+public abstract class ColorUtils {
     public static Vector4 HSVToColor(float h, float s, float v, float a)
     {
         // h, s, v: 0-1

@@ -166,7 +166,7 @@ public static class StatusManager {
                     FoodParams? resolved = ResolveFoodParam(status.Param);
                     if (resolved != null) {
                         name = resolved.Name;
-                        //iconId = iconIdResolved;
+                        //iconId = resolved.IconId;
                     }
 
                     break;
