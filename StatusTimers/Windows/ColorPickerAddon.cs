@@ -33,7 +33,7 @@ public class ColorPickerAddon : NativeAddon
     private float _hue, _saturation, _value; // HSV representation
     private ColorPreviewNode? _colorPreview;
     private TextInputNode? _hexInput;
-    private NumericInputNode? _redInput, _greenInput, _blueInput, _alphaInput, _hueInput, _saturationInput, _valueInput;
+    private ColorInputRowNode? _redInput, _greenInput, _blueInput, _alphaInput, _hueInput, _saturationInput, _valueInput;
     private ImGuiImageNode? _svSquareNode, _svSquareNode2, _svSquareNode3, _hueBarNode, _alphaBarNode;
     private SimpleComponentNode? _svContainer, _hueContainer, _alphaContainer;
     private NodeBase? _svCrosshair, _hueCrosshair, _alphaCrosshair;
@@ -77,6 +77,18 @@ public class ColorPickerAddon : NativeAddon
         mainList.AddNode(CreateHexAndDropdownSection());
         mainList.AddNode(CreateButtonRow());
         UpdateAllFields();
+
+        mainList.AddNode(new NumericInputNode {
+            IsVisible = true,
+            Width = 200,
+            Height = 28,
+            Min = 0,
+            Max = 100,
+            Value = 50,
+            OnValueUpdate = (i => {
+                GlobalServices.Logger.Info("MonkaS");
+            }),
+        });
     }
 
     private VerticalListNode CreateMainList()
@@ -310,21 +322,45 @@ public class ColorPickerAddon : NativeAddon
             AlignmentFlags = FlexFlags.CenterVertically
         };
 
-        _redInput = AddColorInput(rgbaInputRow, "R", (int)(_workingColor.X * 255), val => {
-            SetComponent(0, ColorUtils.ClampMax(val));
-        });
+        _redInput = new ColorInputRowNode
+        {
+            Label = "R",
+            Value = (int)(_workingColor.X * 255),
+            Min = 0,
+            Max = 255,
+            OnValueUpdate = val => SetComponent(0, ColorUtils.ClampMax(val))
+        };
+        rgbaInputRow.AddNode(_redInput);
 
-        _greenInput = AddColorInput(rgbaInputRow, "G", (int)(_workingColor.Y * 255), val => {
-            SetComponent(1, ColorUtils.ClampMax(val));
-        });
+        _greenInput = new ColorInputRowNode
+        {
+            Label = "G",
+            Value = (int)(_workingColor.Y * 255),
+            Min = 0,
+            Max = 255,
+            OnValueUpdate = val => SetComponent(1, ColorUtils.ClampMax(val))
+        };
+        rgbaInputRow.AddNode(_greenInput);
 
-        _blueInput = AddColorInput(rgbaInputRow, "B", (int)(_workingColor.Z * 255), val => {
-            SetComponent(2, ColorUtils.ClampMax(val));
-        });
+        _blueInput = new ColorInputRowNode
+        {
+            Label = "B",
+            Value = (int)(_workingColor.Z * 255),
+            Min = 0,
+            Max = 255,
+            OnValueUpdate = val => SetComponent(2, ColorUtils.ClampMax(val))
+        };
+        rgbaInputRow.AddNode(_blueInput);
 
-        _alphaInput = AddColorInput(rgbaInputRow, "A", (int)(_workingColor.W * 255), val => {
-            SetComponent(3, ColorUtils.ClampMax(val));
-        });
+        _alphaInput = new ColorInputRowNode
+        {
+            Label = "A",
+            Value = (int)(_workingColor.W * 255),
+            Min = 0,
+            Max = 255,
+            OnValueUpdate = val => SetComponent(3, ColorUtils.ClampMax(val))
+        };
+        rgbaInputRow.AddNode(_alphaInput);
 
         return rgbaInputRow;
     }
@@ -340,35 +376,59 @@ public class ColorPickerAddon : NativeAddon
             AlignmentFlags = FlexFlags.CenterVertically
         };
 
-        _hueInput = AddColorInput(hsvInputRow, "H", (int)(_hue * 360), val => {
-            if (_isUpdating) {
-                return;
+        _hueInput = new ColorInputRowNode
+        {
+            Label = "H",
+            Value = (int)(_hue * 360),
+            Min = 0,
+            Max = 360,
+            OnValueUpdate = val => {
+                if (_isUpdating) {
+                    return;
+                }
+
+                _hue = ColorUtils.ClampMin(val / 360f);
+                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
+                UpdateAllFields();
             }
+        };
+        hsvInputRow.AddNode(_hueInput);
 
-            _hue = ColorUtils.ClampMin(val / 360f);
-            _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-            UpdateAllFields();
-        }, 0, 360);
+        _saturationInput = new ColorInputRowNode
+        {
+            Label = "S",
+            Value = (int)(_saturation * 100),
+            Min = 0,
+            Max = 100,
+            OnValueUpdate = val => {
+                if (_isUpdating) {
+                    return;
+                }
 
-        _saturationInput = AddColorInput(hsvInputRow, "S", (int)(_saturation * 100), val => {
-            if (_isUpdating) {
-                return;
+                _saturation = ColorUtils.ClampMin(val / 100f);
+                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
+                UpdateAllFields();
             }
+        };
+        hsvInputRow.AddNode(_saturationInput);
 
-            _saturation = ColorUtils.ClampMin(val / 100f);
-            _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-            UpdateAllFields();
-        }, 0, 100);
+        _valueInput = new ColorInputRowNode
+        {
+            Label = "V",
+            Value = (int)(_value * 100),
+            Min = 0,
+            Max = 100,
+            OnValueUpdate = val => {
+                if (_isUpdating) {
+                    return;
+                }
 
-        _valueInput = AddColorInput(hsvInputRow, "V", (int)(_value * 100), val => {
-            if (_isUpdating) {
-                return;
+                _value = ColorUtils.ClampMin(val / 100f);
+                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
+                UpdateAllFields();
             }
-
-            _value = ColorUtils.ClampMin(val / 100f);
-            _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-            UpdateAllFields();
-        }, 0, 100);
+        };
+        hsvInputRow.AddNode(_valueInput);
 
         return hsvInputRow;
     }
@@ -454,10 +514,10 @@ public class ColorPickerAddon : NativeAddon
 
     private NumericInputNode AddColorInput(HorizontalFlexNode row, string label, int value, Action<int> onChanged, int min = 0, int max = 255)
     {
-        ResNode resNode = new ResNode {
+        HorizontalListNode resNode = new HorizontalListNode {
             IsVisible = true,
             Width = 80,
-            Height = 28
+            Height = 28,
         };
         row.AddNode(resNode);
 
@@ -481,7 +541,9 @@ public class ColorPickerAddon : NativeAddon
             Min = min,
             Max = max,
             Value = value,
-            OnValueUpdate = onChanged
+            OnValueUpdate = val => {
+                onChanged(val);
+            }
         };
         NativeController.AttachNode(node, resNode);
 
