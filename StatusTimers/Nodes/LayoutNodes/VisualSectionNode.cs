@@ -43,11 +43,13 @@ public sealed class VisualSectionNode : VerticalListNode
         AddNode(new TwoOptionsRowNode(
             new LabeledNumericOptionNode("Container Width",
                 () => getConfig().RowWidth,
-                value => { getConfig().RowWidth = value; }
+                value => { getConfig().RowWidth = value; },
+                false
             ),
             new LabeledNumericOptionNode("Container Height",
                 () => getConfig().RowHeight,
-                value => { getConfig().RowHeight = value; }
+                value => { getConfig().RowHeight = value; },
+                false
             ),
             20
         ));
@@ -56,11 +58,13 @@ public sealed class VisualSectionNode : VerticalListNode
         AddNode(new TwoOptionsRowNode(
             new LabeledNumericOptionNode("Horizontal Padding",
                 () => getConfig().StatusHorizontalPadding,
-                value => { getConfig().StatusHorizontalPadding = value; }
+                value => { getConfig().StatusHorizontalPadding = value; },
+                false
             ),
             new LabeledNumericOptionNode("Vertical Padding",
                 () => getConfig().StatusVerticalPadding,
-                value => { getConfig().StatusVerticalPadding = value; }
+                value => { getConfig().StatusVerticalPadding = value; },
+                false
             ),
             20
         ));

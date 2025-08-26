@@ -460,18 +460,19 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private void AddKeyFrameTimeline(NodeBase node) {
         // Future Zeff, this always goes on a child
-        Timeline keyFrames = new TimelineBuilder()
-            .BeginFrameSet(1, 30)
+        var timeLineBuilder = new TimelineBuilder();
+        var scaleAnimation = new FrameSetBuilder(timeLineBuilder, 1, 30)
             .AddFrame(1, scale: new Vector2(1.4f, 1.4f))
-            .AddFrame(1, alpha: 175)
             .AddFrame(10, scale: new Vector2(0.9f, 0.9f))
-            .AddFrame(20, alpha: 255)
-            .AddFrame(30, scale: Vector2.One)
-            .AddFrame(30, alpha: 255)
-            .EndFrameSet()
-            .Build();
+            .AddFrame(30, scale: Vector2.One);
 
-        node.AddTimeline(keyFrames);
+        var fadeAnimation = scaleAnimation
+            .AddFrame(1, alpha: 175)
+            .AddFrame(20, alpha: 255)
+            .AddFrame(30, alpha: 255)
+            .EndFrameSet();
+
+        node.AddTimeline(fadeAnimation.Build());
     }
 
     private StatusTimerOverlayConfig.TextStyle? GetCurrentTextStyle(NodeBase node)

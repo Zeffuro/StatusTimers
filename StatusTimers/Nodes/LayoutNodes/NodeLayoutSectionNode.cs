@@ -225,11 +225,11 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
         sizeRow.AddNode(new LabeledNumericOptionNode("Width",
             () => (int)nodePart.Anchor.Width,
-            v => { nodePart.Anchor.Width = v; onChanged?.Invoke(); }));
+            v => { nodePart.Anchor.Width = v; onChanged?.Invoke(); }, false));
 
         sizeRow.AddNode(new LabeledNumericOptionNode("Height",
             () => (int)nodePart.Anchor.Height,
-            v => { nodePart.Anchor.Height = v; onChanged?.Invoke(); }));
+            v => { nodePart.Anchor.Height = v; onChanged?.Invoke(); }, false));
 
         // Anchor target row
         var anchorTargetDict = ((AnchorTarget[])Enum.GetValues(typeof(AnchorTarget)))

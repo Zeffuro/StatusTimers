@@ -8,7 +8,7 @@ namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class LabeledNumericOptionNode : HorizontalFlexNode
 {
-    public LabeledNumericOptionNode(string labelText, Func<int> getter, Action<int> setter)
+    public LabeledNumericOptionNode(string labelText, Func<int> getter, Action<int> setter, bool allowNegative = true)
     {
         IsVisible = true;
         X = 18;
@@ -25,7 +25,7 @@ public sealed class LabeledNumericOptionNode : HorizontalFlexNode
             Width = 140,
             Height = 16,
             IsVisible = true,
-            Min = -99999,
+            Min = allowNegative ? -99999 : 0,
             Max = 99999,
             Value = getter(),
             OnValueUpdate = setter
