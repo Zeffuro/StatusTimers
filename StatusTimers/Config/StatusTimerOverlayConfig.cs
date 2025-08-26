@@ -669,15 +669,30 @@ public class StatusTimerOverlayConfig
         public float Height { get; set; }
     }
 
-    public class BarStyle : IEquatable<BarStyle>
+    public class BarStyle
     {
         public event Action? Changed;
+
+        [JsonIgnore]
+        private bool _isDirty;
+
+        [JsonIgnore]
+        public bool IsDirty
+        {
+            get
+            {
+                var wasDirty = _isDirty;
+                _isDirty = false;
+                return wasDirty;
+            }
+        }
 
         public Vector4 ProgressColor {
             get;
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -688,6 +703,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -698,6 +714,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -708,6 +725,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -737,40 +755,32 @@ public class StatusTimerOverlayConfig
                 BackgroundColor = defaults.BackgroundColor;
             }
         }
-
-        public override bool Equals(object? obj) => Equals(obj as BarStyle);
-
-        public bool Equals(BarStyle? other)
-        {
-            if (other is null) {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other)) {
-                return true;
-            }
-
-            return ProgressColor.Equals(other.ProgressColor)
-                   && BackgroundColor.Equals(other.BackgroundColor)
-                   && BorderColor.Equals(other.BorderColor)
-                   && BorderVisible.Equals(other.BorderVisible);
-        }
-
-        // ReSharper disable NonReadonlyMemberInGetHashCode
-        public override int GetHashCode()
-            => HashCode.Combine(ProgressColor, BackgroundColor, BorderColor, BorderVisible);
-        // ReSharper restore NonReadonlyMemberInGetHashCode
     }
 
-    public class TextStyle : IEquatable<TextStyle>
+    public class TextStyle
     {
         public event Action? Changed;
+
+        [JsonIgnore]
+        private bool _isDirty;
+
+        [JsonIgnore]
+        public bool IsDirty
+        {
+            get
+            {
+                var wasDirty = _isDirty;
+                _isDirty = false;
+                return wasDirty;
+            }
+        }
 
         public int FontSize {
             get;
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -781,6 +791,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -791,6 +802,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -801,6 +813,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -811,6 +824,7 @@ public class StatusTimerOverlayConfig
             set {
                 if (field != value) {
                     field = value;
+                    _isDirty = true;
                     Changed?.Invoke();
                 }
             }
@@ -841,31 +855,5 @@ public class StatusTimerOverlayConfig
                 TextFlags = defaults.TextFlags;
             }
         }
-
-        public override bool Equals(object? obj) => Equals(obj as TextStyle);
-
-        public bool Equals(TextStyle? other)
-        {
-            if (other is null) {
-                return false;
-            }
-
-            if (ReferenceEquals(this, other)) {
-                return true;
-            }
-
-            return FontSize == other.FontSize
-                   && FontType == other.FontType
-                   && TextColor.Equals(other.TextColor)
-                   && TextOutlineColor.Equals(other.TextOutlineColor)
-                   && TextFlags == other.TextFlags;
-        }
-
-        // ReSharper disable NonReadonlyMemberInGetHashCode
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(FontSize, FontType, TextColor, TextOutlineColor, TextFlags);
-        }
-        // ReSharper restore NonReadonlyMemberInGetHashCode
     }
 }
