@@ -3,6 +3,7 @@
         <PackageProjectUrl>https://github.com/Zeffuro/StatusTimers.git</PackageProjectUrl>
         <Version>1.0.0.4</Version>
         <LangVersion>preview</LangVersion>
+        <DebugType>portable</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

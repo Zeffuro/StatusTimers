@@ -161,17 +161,17 @@ public class StatusOverlayLayoutManager<TKey>(
             StatusInfo status = finalSortedList[i];
             StatusTimerNode<TKey> node = _allNodes[i];
 
-            node.StatusInfo = status;
             node.Kind = nodeKind;
-            if (!node.IsVisible) {
-                node.IsVisible = true;
-            }
-
-            node.UpdateValues();
+            node.IsVisible = true;
+            node.StatusInfo = status;
         }
 
         for (; i < _allNodes.Count; i++) {
-            _allNodes[i].IsVisible = false;
+            StatusTimerNode<TKey> node = _allNodes[i];
+            if (node.IsVisible) {
+                node.IsVisible = false;
+                node.StatusInfo = default!;
+            }
         }
     }
 
