@@ -12,6 +12,8 @@ namespace StatusTimers.Helpers;
 // Taken and adapted for StatusTimers using zips from https://github.com/Caraxi/SimpleHeels/blob/0a0fe3c02a0a2c5a7c96b3304952d5078cd338aa/Plugin.cs#L392
 // Thanks Caraxi
 public static class BackupHelper {
+    private const int MaxBackups = 10;
+    private const string Name = "StatusTimers";
     public static void DoConfigBackup(IDalamudPluginInterface pluginInterface) {
         GlobalServices.Logger.Debug("Backup configuration start.");
         try {
@@ -20,7 +22,7 @@ public static class BackupHelper {
                 return;
             }
 
-            var backupDir = Path.Join(configDirectory.Parent!.Parent!.FullName, "backups", "StatusTimers");
+            var backupDir = Path.Join(configDirectory.Parent!.Parent!.FullName, "backups", Name);
             var dir = new DirectoryInfo(backupDir);
             if (!dir.Exists) {
                 dir.Create();
@@ -30,8 +32,8 @@ public static class BackupHelper {
                 throw new Exception("Backup Directory does not exist");
             }
 
-            var latestFile = new FileInfo(Path.Join(backupDir, "StatusTimers.latest.zip"));
-            var tempFile = Path.Join(backupDir, "StatusTimers.tmp.zip");
+            var latestFile = new FileInfo(Path.Join(backupDir, $"{Name}.latest.zip"));
+            var tempFile = Path.Join(backupDir, $"{Name}.tmp.zip");
 
             var needsBackup = false;
 
@@ -52,7 +54,7 @@ public static class BackupHelper {
             ZipFile.CreateFromDirectory(configDirectory.FullName, tempFile);
             if (latestFile.Exists) {
                 var t = latestFile.LastWriteTime;
-                string archiveName = $"StatusTimers.{t.Year}{t.Month:00}{t.Day:00}{t.Hour:00}{t.Minute:00}{t.Second:00}.zip";
+                string archiveName = $"{Name}.{t.Year}{t.Month:00}{t.Day:00}{t.Hour:00}{t.Minute:00}{t.Second:00}.zip";
                 string archivePath = Path.Join(backupDir, archiveName);
 
                 bool moved = false;
@@ -75,9 +77,9 @@ public static class BackupHelper {
             }
             File.Move(tempFile, latestFile.FullName);
 
-            var allBackups = dir.GetFiles().Where(f => f.Name.StartsWith("StatusTimers.2") && f.Name.EndsWith(".zip"))
+            var allBackups = dir.GetFiles().Where(f => f.Name.StartsWith($"{Name}.2") && f.Name.EndsWith(".zip"))
                 .OrderBy(f => f.LastWriteTime.Ticks).ToList();
-            if (allBackups.Count > 10) {
+            if (allBackups.Count > MaxBackups) {
                 GlobalServices.Logger.Debug($"Removing Oldest Backup: {allBackups[0].FullName}");
                 File.Delete(allBackups[0].FullName);
             }

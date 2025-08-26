@@ -52,6 +52,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             IsVisible = true,
             Width = config.RowWidth,
             Height = config.RowHeight,
+            Origin = new Vector2(15.0f, 30.0f)
         };
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
 
@@ -454,9 +455,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void AddLabelTimeLine(NodeBase node) {
         // Future Zeff, this always goes on a parent
         Timeline labels = new TimelineBuilder()
-            .BeginFrameSet(1, 20)
+            .BeginFrameSet(1, 30)
             .AddLabel(1, 10, AtkTimelineJumpBehavior.Start, 0)
-            .AddLabel(20, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
+            .AddLabel(30, 0, AtkTimelineJumpBehavior.PlayOnce, 0)
             .EndFrameSet()
             .Build();
 
@@ -466,10 +467,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void AddKeyFrameTimeline(NodeBase node) {
         // Future Zeff, this always goes on a child
         Timeline keyFrames = new TimelineBuilder()
-            .BeginFrameSet(1, 20)
+            .BeginFrameSet(1, 30)
             .AddFrame(1, scale: new Vector2(1.4f, 1.4f))
+            .AddFrame(1, alpha: 175)
             .AddFrame(10, scale: new Vector2(0.9f, 0.9f))
-            .AddFrame(20, scale: Vector2.One)
+            .AddFrame(20, alpha: 255)
+            .AddFrame(30, scale: Vector2.One)
+            .AddFrame(30, alpha: 255)
             .EndFrameSet()
             .Build();
 
