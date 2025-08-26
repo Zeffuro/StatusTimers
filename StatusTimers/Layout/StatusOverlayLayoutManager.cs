@@ -13,32 +13,22 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Layout;
 
-public class StatusOverlayLayoutManager<TKey> : IDisposable {
-    private bool isDisposed = false;
-
+public class StatusOverlayLayoutManager<TKey>(
+    StatusTimerOverlay<TKey> ownerOverlay,
+    Func<StatusTimerOverlayConfig> getOverlayConfig)
+    : IDisposable
+    where TKey : notnull {
     private readonly List<StatusTimerNode<TKey>> _allNodes = new();
-    private readonly List<VerticalListNode> _columns = new();
-    private readonly Func<StatusTimerOverlayConfig?> _getOverlayConfig;
 
-    private readonly StatusTimerOverlay<TKey> _ownerOverlay;
-    private readonly List<HorizontalListNode> _rows = new();
+    private NineGridNode? _backgroundNode;
 
-    private NineGridNode _backgroundNode;
-
-    private StatusTimerNode<TKey>.StatusNodeActionHandler _onNodeActionTriggered;
-    private HybridDirectionalFlexNode _rootContainer;
-
-    public StatusOverlayLayoutManager(
-        StatusTimerOverlay<TKey> ownerOverlay,
-        Func<StatusTimerOverlayConfig?> getOverlayConfig) {
-        _ownerOverlay = ownerOverlay;
-        _getOverlayConfig = getOverlayConfig;
-    }
+    private StatusTimerNode<TKey>.StatusNodeActionHandler? _onNodeActionTriggered;
+    private HybridDirectionalFlexNode? _rootContainer;
 
     public Vector2 CalculatedOverlaySize { get; private set; }
 
-    public HybridDirectionalFlexNode RootContainer => _rootContainer;
-    public NineGridNode BackgroundNode => _backgroundNode;
+    public HybridDirectionalFlexNode? RootContainer => _rootContainer;
+    public NineGridNode? BackgroundNode => _backgroundNode;
 
     public IReadOnlyList<StatusTimerNode<TKey>> AllNodes => _allNodes;
 
@@ -47,7 +37,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
     }
 
     public void InitializeLayout() {
-        var config = _getOverlayConfig();
+        var config = getOverlayConfig();
+
         CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
 
         _backgroundNode = new NineGridNode {
@@ -74,7 +65,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
             TextureCoordinates = new Vector2(0, 24)
         });
 
-        GlobalServices.NativeController.AttachNode(_backgroundNode, _ownerOverlay);
+        GlobalServices.NativeController.AttachNode(_backgroundNode, ownerOverlay);
 
         BuildContainers();
     }
@@ -83,7 +74,8 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
     {
         _allNodes.Clear();
 
-        var config = _getOverlayConfig();
+        var config = getOverlayConfig();
+
         CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
 
         _rootContainer = new HybridDirectionalFlexNode
@@ -103,7 +95,7 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
         for (int i = 0; i < config.MaxStatuses; i++)
         {
-            var node = new StatusTimerNode<TKey>(_getOverlayConfig)
+            var node = new StatusTimerNode<TKey>(getOverlayConfig)
             {
                 Height = config.RowHeight,
                 Width = config.RowWidth,
@@ -119,35 +111,36 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
 
         _rootContainer.RecalculateLayout();
 
-        GlobalServices.NativeController.AttachNode(_rootContainer, _ownerOverlay);
-        _ownerOverlay.Size = CalculatedOverlaySize;
-        ToggleBackground(_ownerOverlay.IsLocked);
+        GlobalServices.NativeController.AttachNode(_rootContainer, ownerOverlay);
+        ownerOverlay.Size = CalculatedOverlaySize;
+        ToggleBackground(ownerOverlay.IsLocked);
     }
 
     public void RecalculateLayout()
     {
-        var config = _getOverlayConfig();
-        if (_rootContainer != null)
-        {
-            _rootContainer.GrowDirection = (FlexGrowDirection)config.GrowDirection;
-            _rootContainer.ItemsPerLine = config.ItemsPerLine;
-            _rootContainer.FillRowsFirst = config.FillRowsFirst;
-            _rootContainer.HorizontalPadding = config.StatusHorizontalPadding;
-            _rootContainer.VerticalPadding = config.StatusVerticalPadding;
-
-            CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
-            _rootContainer.Width = CalculatedOverlaySize.X;
-            _rootContainer.Height = CalculatedOverlaySize.Y;
-            _backgroundNode.Size = CalculatedOverlaySize;
-
-            foreach (var node in _allNodes)
-            {
-                node.Width = config.RowWidth;
-                node.Height = config.RowHeight;
-            }
-
-            _rootContainer.RecalculateLayout();
+        var config = getOverlayConfig();
+        if (_rootContainer == null || _backgroundNode == null) {
+            return;
         }
+
+        _rootContainer.GrowDirection = (FlexGrowDirection)config.GrowDirection;
+        _rootContainer.ItemsPerLine = config.ItemsPerLine;
+        _rootContainer.FillRowsFirst = config.FillRowsFirst;
+        _rootContainer.HorizontalPadding = config.StatusHorizontalPadding;
+        _rootContainer.VerticalPadding = config.StatusVerticalPadding;
+
+        CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
+        _rootContainer.Width = CalculatedOverlaySize.X;
+        _rootContainer.Height = CalculatedOverlaySize.Y;
+        _backgroundNode.Size = CalculatedOverlaySize;
+
+        foreach (var node in _allNodes)
+        {
+            node.Width = config.RowWidth;
+            node.Height = config.RowHeight;
+        }
+
+        _rootContainer.RecalculateLayout();
     }
 
     public void ToggleBackground(bool isLocked) {
@@ -182,23 +175,11 @@ public class StatusOverlayLayoutManager<TKey> : IDisposable {
         }
     }
 
-    public void SetNodeNull(bool isBackground) {
-        if (isBackground) {
-            _backgroundNode = null;
-        }
-        else {
-            _rootContainer = null;
-        }
-    }
-
     public void UnsubscribeFromNodeActions() {
-        if (_onNodeActionTriggered != null) {
-            foreach (StatusTimerNode<TKey> node in _allNodes) {
-                node.OnStatusNodeActionTriggered -= _onNodeActionTriggered;
-            }
+        foreach (StatusTimerNode<TKey> node in _allNodes) {
+            node.OnStatusNodeActionTriggered -= _onNodeActionTriggered;
         }
     }
     public void Dispose() {
-        isDisposed = true;
     }
 }

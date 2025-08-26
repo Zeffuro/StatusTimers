@@ -23,8 +23,7 @@ public unsafe class OverlayManager : IDisposable {
         Services.Services.NameplateAddonController.OnAttach += AttachNodes;
         Services.Services.NameplateAddonController.OnDetach += DetachNodes;
     }
-
-    public SimpleComponentNode StatusTimerRootNode => _statusTimerRootNode;
+    
     public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
     public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
     public ColorPickerAddon? ColorPickerInstance => _colorPickerAddon;

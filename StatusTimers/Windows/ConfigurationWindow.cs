@@ -18,13 +18,12 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers.Windows;
 
 public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
-    private const float OptionOffset = 18;
     private const float CheckBoxHeight = 16;
 
     private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
-    private readonly Dictionary<NodeKind, ScrollingAreaNode<ResNode>> _configScrollingAreas = new();
+    private readonly Dictionary<NodeKind, ScrollingAreaNode<ResNode>?> _configScrollingAreas = new();
     private readonly Dictionary<NodeKind, FilterSectionNode> _filterSectionNodes = new();
-    private TabBarNode _tabBar;
+    private TabBarNode? _tabBar;
 
     private bool _isRecalculating = false;
 
@@ -37,8 +36,10 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, ScrollingAreaNode<ResNode> node) in _configScrollingAreas) {
-            node.IsVisible = k == kind;
+        foreach ((NodeKind k, ScrollingAreaNode<ResNode>? node) in _configScrollingAreas) {
+            if (node != null) {
+                node.IsVisible = k == kind;
+            }
         }
     }
 
@@ -89,21 +90,27 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 ScrollSpeed = 50,
                 IsVisible = false
             };
-            AttachNode(_configScrollingAreas[kind]);
+
+            var configScrollingArea = _configScrollingAreas[kind];
+            if (configScrollingArea == null) {
+                return;
+            }
+            
+            AttachNode(configScrollingArea);
 
             _configLists[kind] = new VerticalListNode {
                 Height = 0,
-                Width = _configScrollingAreas[kind].ContentNode.Width,
+                Width = configScrollingArea.Width,
                 IsVisible = true,
                 FitContents = true,
                 ItemSpacing = 3
             };
-            NativeController.AttachNode(_configLists[kind], _configScrollingAreas[kind].ContentNode);
+            NativeController.AttachNode(_configLists[kind], configScrollingArea.ContentNode);
 
             var mainSettingsGroup = new VerticalListNode {
                 IsVisible = overlay.IsVisible,
                 Height = 100,
-                Width = _configScrollingAreas[kind].ContentNode.Width,
+                Width = configScrollingArea.ContentNode.Width,
                 FitContents = true,
                 ItemSpacing = 3
             };
@@ -174,7 +181,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Status Time Remaining Settings
             var timerFormatNode = new StatusTimerFormatRowNode(() => overlay.OverlayConfig,
-                onChanged: (changed) =>
+                onChanged: _ =>
                     overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Icon), updateNodes: true)
             );
 
@@ -256,23 +263,25 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             mainSettingsGroup.AddNode(_filterSectionNodes[kind]);
             _configLists[kind].AddNode(mainSettingsGroup);
 
-            //mainSettingsGroup.RecalculateLayout();
             _configLists[kind].RecalculateLayout();
-            _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+            configScrollingArea.ContentHeight = _configLists[kind].Height;
 
-            RecalculateAllLayouts(mainSettingsGroup, kind, false);
+            RecalculateAllLayouts(mainSettingsGroup, kind);
         }
 
         AttachNode(_tabBar);
-        _configScrollingAreas.First().Value.IsVisible = true;
+        var scrollingAreaNode = _configScrollingAreas.First().Value;
+        if (scrollingAreaNode != null) {
+            scrollingAreaNode.IsVisible = true;
+        }
     }
 
     #region Helper Methods
 
     private StatusTimerOverlay<StatusKey>? GetOverlayByKind(NodeKind kind) {
         return (kind switch {
-            NodeKind.Combined => overlayManager?.PlayerCombinedOverlayInstance,
-            NodeKind.MultiDoT => overlayManager?.EnemyMultiDoTOverlayInstance,
+            NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
+            NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported NodeKind")
         });
     }
@@ -293,9 +302,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         group.RecalculateLayout();
         _configLists[kind].RecalculateLayout();
 
-        _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+        var configScrollingArea = _configScrollingAreas[kind];
+        if (configScrollingArea == null) {
+            _isRecalculating = false;
+            return;
+        }
+
+        configScrollingArea.ContentHeight = _configLists[kind].Height;
         if (scrollToBottom) {
-            _configScrollingAreas[kind].ScrollPosition = (int)_configScrollingAreas[kind].ContentHeight;
+            configScrollingArea.ScrollPosition = (int)configScrollingArea.ContentHeight;
         }
 
         _isRecalculating = false;
@@ -308,7 +323,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             group.Height = isChecked ? -1 : 0;
             group.RecalculateLayout();
             _configLists[kind].RecalculateLayout();
-            _configScrollingAreas[kind].ContentHeight = _configLists[kind].Height;
+            var configScrollingArea = _configScrollingAreas[kind];
+            if (configScrollingArea == null) {
+                return;
+            }
+            configScrollingArea.ContentHeight = _configLists[kind].Height;
         }
     }
 

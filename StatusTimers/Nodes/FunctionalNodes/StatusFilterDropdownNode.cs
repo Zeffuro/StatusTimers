@@ -21,8 +21,8 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
     private IconImageNode? _iconNode;
     private LuminaStatus? _currentSelection;
     private TextInputNode _textInputNode;
-    private TextDropDownNode _dropdownNode;
-    private TextButtonNode _addButtonNode;
+    private TextDropDownNode? _dropdownNode;
+    private TextButtonNode? _addButtonNode;
 
     public StatusFilterDropdownNode(
         Func<List<LuminaStatus>> optionsProvider,

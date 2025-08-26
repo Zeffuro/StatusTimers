@@ -67,6 +67,10 @@ public class ColorPickerAddon : NativeAddon
     private void CreateAdvancedColorPicker()
     {
         var mainList = CreateMainList();
+        if (mainList == null) {
+            return;
+        }
+
         var pickerRow = CreateSVSection();
         pickerRow.AddNode(CreateHueSection());
         pickerRow.AddNode(CreateAlphaSection());
@@ -79,7 +83,7 @@ public class ColorPickerAddon : NativeAddon
         UpdateAllFields();
     }
 
-    private VerticalListNode CreateMainList()
+    private VerticalListNode? CreateMainList()
     {
         var mainList = new VerticalListNode
         {

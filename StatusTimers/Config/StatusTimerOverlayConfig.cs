@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
+// ReSharper disable InconsistentNaming
 
 namespace StatusTimers.Config;
 
@@ -628,7 +629,7 @@ public class StatusTimerOverlayConfig
     {
         public bool IsVisible { get; set; }
         public bool? BackgroundEnabled { get; set; }
-        public StatusNodeAnchorConfig Anchor { get; set; }
+        public required StatusNodeAnchorConfig Anchor { get; set; }
         public TextStyle? Style { get; set; } // Only set for nodes with text
         public BarStyle? StyleBar { get; set; } // Only set for nodes with progress bar
         public NodePartStyleKind StyleKind { get; set; } = NodePartStyleKind.None;
@@ -755,8 +756,10 @@ public class StatusTimerOverlayConfig
                    && BorderVisible.Equals(other.BorderVisible);
         }
 
+        // ReSharper disable NonReadonlyMemberInGetHashCode
         public override int GetHashCode()
             => HashCode.Combine(ProgressColor, BackgroundColor, BorderColor, BorderVisible);
+        // ReSharper restore NonReadonlyMemberInGetHashCode
     }
 
     public class TextStyle : IEquatable<TextStyle>
@@ -822,7 +825,7 @@ public class StatusTimerOverlayConfig
         };
 
         public void CopyMissingFrom(TextStyle defaults) {
-            if (FontSize == default) {
+            if (FontSize == 0) {
                 FontSize = defaults.FontSize;
             }
             if (FontType == default) {
@@ -858,9 +861,11 @@ public class StatusTimerOverlayConfig
                    && TextFlags == other.TextFlags;
         }
 
+        // ReSharper disable NonReadonlyMemberInGetHashCode
         public override int GetHashCode()
         {
             return HashCode.Combine(FontSize, FontType, TextColor, TextOutlineColor, TextFlags);
         }
+        // ReSharper restore NonReadonlyMemberInGetHashCode
     }
 }

@@ -20,7 +20,7 @@ public class Util
             .Split([','], StringSplitOptions.RemoveEmptyEntries)
             .Select(s => uint.TryParse(s, out var val) ? val : (uint?)null)
             .Where(v => v.HasValue)
-            .Select(v => v.Value)
+            .Select(v => v!.Value)
             .ToHashSet();
 
     public static string CompressToBase64(string str)
@@ -100,20 +100,14 @@ public class Util
         }
     }
 
-    public static void ApplyConfigProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
-    {
-        if (config != null && overlay != null) {
-            overlay.IsVisible = config.Enabled;
-            overlay.Position = config.Position;
-        }
+    public static void ApplyConfigProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay) {
+        overlay.IsVisible = config.Enabled;
+        overlay.Position = config.Position;
     }
 
-    public static void SaveOverlayProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay)
-    {
-        if (config != null && overlay != null) {
-            config.Enabled = overlay.IsVisible;
-            config.Position = overlay.Position;
-        }
+    public static void SaveOverlayProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay) {
+        config.Enabled = overlay.IsVisible;
+        config.Position = overlay.Position;
     }
 
     public static void ResetConfig(StatusTimerOverlayConfig config, NodeKind nodeKind)

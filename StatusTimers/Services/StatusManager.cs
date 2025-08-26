@@ -22,9 +22,9 @@ using LuminaStatus = Lumina.Excel.Sheets.Status;
 namespace StatusTimers.Services;
 
 public static class StatusManager {
-    private static readonly ExcelSheet<Item> _itemSheet = Services.DataManager.GetExcelSheet<Item>();
-    private static readonly ExcelSheet<LuminaStatus> _statusSheet = Services.DataManager.GetExcelSheet<LuminaStatus>();
-    private static FrozenDictionary<uint, uint> _itemFoodToItemLut;
+    private static readonly ExcelSheet<Item> ItemSheet = Services.DataManager.GetExcelSheet<Item>();
+    private static readonly ExcelSheet<LuminaStatus> StatusSheet = Services.DataManager.GetExcelSheet<LuminaStatus>();
+    private static FrozenDictionary<uint, uint>? _itemFoodToItemLut;
     private static readonly Dictionary<uint, float> StatusDurations = new();
 
     private static readonly FrozenSet<uint> HarmfulStatusIds = Services.DataManager
@@ -33,7 +33,7 @@ public static class StatusManager {
         .Select(s => s.RowId)
         .ToFrozenSet();
 
-    private static readonly List<StatusInfo> _hostileStatusBuffer = new(64);
+    private static readonly List<StatusInfo> HostileStatusBuffer = new(64);
 
     static StatusManager() {
         PopulateDictionaries();
@@ -66,11 +66,11 @@ public static class StatusManager {
     }
 
     public static unsafe IReadOnlyList<StatusInfo> GetHostilePlayerStatuses(StatusTimerOverlayConfig? config) {
-        _hostileStatusBuffer.Clear();
+        HostileStatusBuffer.Clear();
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
         if (player == null) {
-            return _hostileStatusBuffer;
+            return HostileStatusBuffer;
         }
 
         foreach (BattleChara* battleChara in CharacterManager.Instance()->BattleCharas)
@@ -96,16 +96,16 @@ public static class StatusManager {
 
                 StatusInfo? transformedStatus = TransformStatus(ref status, battleChara->GetGameObjectId(), config, battleChara);
                 if (transformedStatus.HasValue) {
-                    _hostileStatusBuffer.Add(transformedStatus.Value);
+                    HostileStatusBuffer.Add(transformedStatus.Value);
                 }
             }
         }
 
-        return _hostileStatusBuffer;
+        return HostileStatusBuffer;
     }
 
     private static unsafe StatusInfo? TransformStatus(ref Status status, ulong objectId, StatusTimerOverlayConfig? config, BattleChara* battleChar = null) {
-        if (!_statusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData)) {
+        if (!StatusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData) || config == null) {
             return null;
         };
 
@@ -148,7 +148,7 @@ public static class StatusManager {
 
         IPlayerCharacter? player = Services.ClientState.LocalPlayer;
 
-        bool selfInflicted = player.GameObjectId == status.SourceObject;
+        bool selfInflicted = player != null && player.GameObjectId == status.SourceObject;
 
         if (config.SelfAppliedStatusesOnly && !selfInflicted) {
             return null;
@@ -181,7 +181,7 @@ public static class StatusManager {
     // Thanks Craftimizer for the info on food: https://github.com/WorkingRobot/Craftimizer/blob/main/Craftimizer/Utils/FoodStatus.cs#L23
     private static void PopulateDictionaries() {
         Dictionary<uint, uint> lut = new();
-        foreach (Item item in from item in _itemSheet
+        foreach (Item item in from item in ItemSheet
                  let isFood = item.ItemUICategory.RowId == 46
                  let isMedicine = item.ItemUICategory.RowId == 44
                  where isFood || isMedicine
@@ -206,10 +206,11 @@ public static class StatusManager {
     }
 
     private static FoodParams? ResolveFoodParam(ushort param) {
-        if (!_itemFoodToItemLut.TryGetValue((uint)(param - 10000), out uint itemId)) {
+        uint itemId = 0;
+        if (_itemFoodToItemLut != null && !_itemFoodToItemLut.TryGetValue((uint)(param - 10000), out itemId)) {
             return null;
         }
 
-        return !_itemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ExtractText(), item.Icon);
+        return !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ExtractText(), item.Icon);
     }
 }

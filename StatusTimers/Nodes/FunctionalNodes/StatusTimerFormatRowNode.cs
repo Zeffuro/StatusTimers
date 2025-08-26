@@ -10,7 +10,7 @@ public sealed class StatusTimerFormatRowNode : HorizontalListNode
 {
     public StatusTimerFormatRowNode(
         Func<StatusTimerOverlayConfig> getConfig,
-        Action<string> onChanged = null) {
+        Action<string>? onChanged = null) {
         X = 36;
         Width = 600 - 18;
         Height = 32;

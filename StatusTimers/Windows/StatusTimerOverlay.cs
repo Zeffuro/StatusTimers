@@ -23,7 +23,7 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
-public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
+public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey : notnull {
     private bool isDisposed = false;
 
     private NodeKind _nodeKind;
@@ -117,16 +117,20 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
             ToggleDrag(IsLocked);
         }
 
-        Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
+        if (OverlayConfig != null) {
+            Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
+        }
 
         OnMoveComplete = SaveConfig;
         _isSetupCompleted = true;
     }
 
     public void OnUpdate() {
-        List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
+        if (OverlayConfig != null) {
+            List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
 
-        _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
+            _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
+        }
 
         Active.Clear();
         foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes) {
@@ -161,12 +165,15 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         if (nodeKind == NodeKind.MultiDoT && allowTarget) {
             GlobalServices.TargetManager.Target =
                 GlobalServices.ObjectTable.FirstOrDefault(gameObject =>
-                    gameObject is not null && gameObject.GameObjectId == gameObjectToTargetId);
+                    gameObject is not null && gameObject.GameObjectId == gameObjectToTargetId, null);
         }
     }
 
     private void OnPropertyChanged(string property, bool updateNodes = false) {
         if (!_isConfigLoading) {
+            if (OverlayConfig == null) {
+                return;
+            }
             if (property == "ScaleInt") {
                 Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
             }
@@ -184,6 +191,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
 
     private void SetSortDefaults(NodeKind nodeKind)
     {
+        if (OverlayConfig == null) {
+            return;
+        }
         switch (nodeKind) {
             case NodeKind.MultiDoT:
                 OverlayConfig.PrimarySort   = SortCriterion.EnemyLetter;
@@ -237,22 +247,12 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode {
         SaveConfig();
         _layoutManager.UnsubscribeFromNodeActions();
 
-        foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes)
-        {
-            if (node != null) {
-                GlobalServices.NativeController.DetachNode(node);
-            }
+        foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes) {
+            GlobalServices.NativeController.DetachNode(node);
         }
 
-        if (_layoutManager.RootContainer != null) {
-            GlobalServices.NativeController.DetachNode(_layoutManager.RootContainer);
-            _layoutManager.SetNodeNull(false);
-        }
-        if (_layoutManager.BackgroundNode != null) {
-            GlobalServices.NativeController.DetachNode(_layoutManager.BackgroundNode);
-            _layoutManager.SetNodeNull(true);
-        }
-
+        GlobalServices.NativeController.DetachNode(_layoutManager.RootContainer);
+        GlobalServices.NativeController.DetachNode(_layoutManager.BackgroundNode);
 
         _isSetupCompleted = false;
     }

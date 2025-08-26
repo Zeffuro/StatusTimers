@@ -118,7 +118,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     public NodeKind Kind { get; set; }
-    public NodeBase OuterContainer { get; set; }
+    public NodeBase? OuterContainer { get; set; }
 
     public StatusInfo StatusInfo {
         get => _statusInfo;
@@ -163,7 +163,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         UpdateValues();
     }
 
-    private void ApplyTextStyle(NodeBase node, StatusTimerOverlayConfig.TextStyle style) {
+    private void ApplyTextStyle(NodeBase node, StatusTimerOverlayConfig.TextStyle? style) {
         if (style == null) {
             return;
         }
@@ -187,7 +187,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void ApplyBarStyle(CastBarProgressBarNode node, StatusTimerOverlayConfig.BarStyle style) {
+    private void ApplyBarStyle(CastBarProgressBarNode node, StatusTimerOverlayConfig.BarStyle? style) {
         if (style == null) {
             return;
         }
@@ -212,9 +212,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _nodeMap["Name"] = _statusName;
         _nodeMap["ActorName"] = _actorName;
         _nodeMap["Progress"] = _progressNode;
-        if (_statusRemaining != null) {
-            _nodeMap["Timer"] = _statusRemaining;
-        }
+        _nodeMap["Timer"] = _statusRemaining;
 
         var config = _getOverlayConfig();
         if (config.ShowActorLetter || config.AllowTargetActor) {
@@ -230,18 +228,14 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _nodeMap["Name"] = _statusName;
         _nodeMap["ActorName"] = _actorName;
         _nodeMap["Progress"] = _progressNode;
-        if (_statusRemaining != null) {
-            _nodeMap["Timer"] = _statusRemaining;
-        }
+        _nodeMap["Timer"] = _statusRemaining;
 
         LayoutNode(_statusBackgroundNode, config.Background.Anchor, "Background");
         LayoutNode(_iconNode, config.Icon.Anchor, "Icon");
         LayoutNode(_statusName, config.Name.Anchor, "Name");
         LayoutNode(_actorName, config.Actor.Anchor, "ActorName");
         LayoutNode(_progressNode, config.Progress.Anchor, "Progress");
-        if (_statusRemaining != null) {
-            LayoutNode(_statusRemaining, config.Timer.Anchor, "Timer");
-        }
+        LayoutNode(_statusRemaining, config.Timer.Anchor, "Timer");
     }
 
     private (float x, float y) GetAnchorBasePosition(
@@ -322,7 +316,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void RebuildNodes(StatusTimerOverlayConfig config, bool rebuildName, bool rebuildActor, bool rebuildTimer)
     {
         // Remove and dispose old nodes if necessary
-        if (rebuildName && _statusName != null) {
+        if (rebuildName) {
             GlobalServices.NativeController.DetachNode(_statusName);
             _statusName.Dispose();
             _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 2 } : new TextNode{ NodeId = 2 };
@@ -334,7 +328,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
             GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
         }
-        if (rebuildActor && _actorName != null) {
+        if (rebuildActor) {
             GlobalServices.NativeController.DetachNode(_actorName);
             _actorName.Dispose();
             _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 3 } : new TextNode{ NodeId = 3 };
@@ -346,7 +340,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
             GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
         }
-        if (rebuildTimer && _statusRemaining != null) {
+        if (rebuildTimer) {
             GlobalServices.NativeController.DetachNode(_statusRemaining);
             _statusRemaining.Dispose();
             _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
@@ -513,10 +507,18 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         _isDisposed = true;
 
         if (disposing) {
-            _getOverlayConfig().Name.Style.Changed -= OnStatusNameTextStyleChanged;
-            _getOverlayConfig().Timer.Style.Changed -= OnStatusRemainingTextStyleChanged;
-            _getOverlayConfig().Actor.Style.Changed -= OnActorNameTextStyleChanged;
-            _getOverlayConfig().Progress.StyleBar.Changed -= OnProgressBarStyleChanged;
+            if (_getOverlayConfig().Name.Style is { } style) {
+                style.Changed -= OnStatusNameTextStyleChanged;
+            }
+            if (_getOverlayConfig().Actor.Style is { } actorStyle) {
+                actorStyle.Changed -= OnActorNameTextStyleChanged;
+            }
+            if (_getOverlayConfig().Progress.StyleBar is { } barStyle) {
+                barStyle.Changed -= OnProgressBarStyleChanged;
+            }
+            if (_getOverlayConfig().Timer.Style is { } timerStyle) {
+                timerStyle.Changed -= OnStatusRemainingTextStyleChanged;
+            }
             _iconNode.Dispose();
             _statusName.Dispose();
             _statusRemaining.Dispose();

@@ -12,14 +12,14 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
 {
     private readonly Func<AnchorAlignment> _getAlignment;
     private readonly Action<AnchorAlignment> _setAlignment;
-    private readonly Action _onChanged;
+    private readonly Action? _onChanged;
 
     private const float OptionOffset = 18;
 
     public AlignmentFlagSectionNode(
         Func<AnchorAlignment> getAlignment,
         Action<AnchorAlignment> setAlignment,
-        Action onChanged = null)
+        Action? onChanged = null)
     {
         _getAlignment = getAlignment;
         _setAlignment = setAlignment;

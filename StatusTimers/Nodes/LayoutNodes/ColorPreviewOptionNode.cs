@@ -16,7 +16,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
     private readonly Func<Vector4> _getColor;
     private readonly Action<Vector4> _setColor;
     private readonly OverlayManager _overlayManager;
-    private readonly Action _onChanged;
+    private readonly Action? _onChanged;
     private readonly float _size;
 
     public ColorPreviewOptionNode(
@@ -24,7 +24,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
         Func<Vector4> getColor,
         Action<Vector4> setColor,
         OverlayManager overlayManager,
-        Action onChanged = null,
+        Action? onChanged = null,
         float size = 32f)
     {
         _getColor = getColor;

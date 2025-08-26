@@ -17,28 +17,29 @@ public static class StatusSorter {
         SortOrder tertiaryOrder) {
         IOrderedEnumerable<StatusInfo>? orderedList = null;
 
+        IEnumerable<StatusInfo> statusInfos = statuses as StatusInfo[] ?? statuses.ToArray();
         if (primarySort != SortCriterion.None) {
-            orderedList = ApplySingleSort(statuses, primarySort, primaryOrder);
+            orderedList = ApplySingleSort(statusInfos, primarySort, primaryOrder);
         }
         else {
-            orderedList = statuses.OrderBy(status => 0);
+            orderedList = statusInfos.OrderBy(status => 0);
         }
 
-        if (secondarySort != SortCriterion.None && orderedList != null) {
+        if (secondarySort != SortCriterion.None) {
             orderedList = ApplyThenBySort(orderedList, secondarySort, secondaryOrder);
         }
 
-        if (tertiarySort != SortCriterion.None && orderedList != null) {
+        if (tertiarySort != SortCriterion.None) {
             orderedList = ApplyThenBySort(orderedList, tertiarySort, tertiaryOrder);
         }
 
-        return orderedList ?? statuses.OrderBy(status => 0); // Fallback if somehow still null
+        return orderedList; // Fallback if somehow still null
     }
 
     private static IOrderedEnumerable<StatusInfo> ApplySingleSort(IEnumerable<StatusInfo> list, SortCriterion criterion,
         SortOrder order) {
         // Get the key selector function for the specified criterion.
-        Func<StatusInfo, object> keySelector = GetKeySelector(criterion);
+        Func<StatusInfo, object?> keySelector = GetKeySelector(criterion);
 
         return order == SortOrder.Ascending
             ? list.OrderBy(keySelector) // Directly pass the keySelector Func
@@ -48,14 +49,14 @@ public static class StatusSorter {
     private static IOrderedEnumerable<StatusInfo> ApplyThenBySort(IOrderedEnumerable<StatusInfo> orderedList,
         SortCriterion criterion, SortOrder order) {
         // Get the key selector function for the specified criterion.
-        Func<StatusInfo, object> keySelector = GetKeySelector(criterion);
+        Func<StatusInfo, object?> keySelector = GetKeySelector(criterion);
 
         return order == SortOrder.Ascending
             ? orderedList.ThenBy(keySelector) // Directly pass the keySelector Func
             : orderedList.ThenByDescending(keySelector); // Directly pass the keySelector Func
     }
 
-    private static Func<StatusInfo, object> GetKeySelector(SortCriterion criterion) {
+    private static Func<StatusInfo, object?> GetKeySelector(SortCriterion criterion) {
         return status => criterion switch {
             SortCriterion.StatusType => status.StatusType,
             SortCriterion.TimeRemaining => status.RemainingSeconds,

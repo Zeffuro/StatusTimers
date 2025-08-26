@@ -21,8 +21,6 @@ public sealed class FilterSectionNode : VerticalListNode {
     private readonly CheckboxOptionNode _sectionEnabledOptionNode;
     private readonly StatusFilterButtonGroupNode _filterButtonGroupNode;
 
-    private bool _layoutFixed = false;
-
     public FilterSectionNode(Func<StatusTimerOverlayConfig> getConfig, Action onChanged) {
         _statusList = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
             .Where(status => status.RowId != 0).ToList();

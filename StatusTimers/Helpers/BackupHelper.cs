@@ -94,7 +94,7 @@ public static class BackupHelper {
             sha256.TransformBlock(file.contents, 0, file.contents.Length, null, 0);
         }
         sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-        return BitConverter.ToString(sha256.Hash).Replace("-", "");
+        return sha256.Hash != null ? BitConverter.ToString(sha256.Hash).Replace("-", "") : string.Empty;
     }
 
     private static string DirJsonHash(string dirPath) =>

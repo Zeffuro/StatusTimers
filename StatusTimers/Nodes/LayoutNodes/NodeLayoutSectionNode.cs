@@ -18,8 +18,8 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         string label,
         StatusTimerOverlayConfig.NodePartConfig nodePart,
         OverlayManager? overlayManager,
-        Action onChanged = null,
-        Action onToggled = null)
+        Action? onChanged = null,
+        Action? onToggled = null)
     {
         X = 18;
         Width = 600;
@@ -28,8 +28,9 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         IsVisible = true;
         FitContents = true;
 
-        VerticalListNode settingsGroup = null;
+        VerticalListNode settingsGroup = new();
 
+        var group = settingsGroup;
         var enabledCheckbox = new CheckboxNode
         {
             LabelText = $"Show {label}",
@@ -40,11 +41,8 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             OnClick = isChecked =>
             {
                 nodePart.IsVisible = isChecked;
-                if (settingsGroup != null)
-                {
-                    settingsGroup.IsVisible = isChecked;
-                    RecalculateLayout();
-                }
+                group.IsVisible = isChecked;
+                RecalculateLayout();
                 onChanged?.Invoke();
                 onToggled?.Invoke();
             }

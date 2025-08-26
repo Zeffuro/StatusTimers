@@ -9,7 +9,6 @@ namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class StatusFilterButtonGroupNode : HorizontalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
-    private readonly Action? _onChanged;
     private RadioButtonGroupNode _radioButtonGroup;
     private ImGuiIconButtonNode _exportButtonNode;
     private ImGuiIconButtonNode _importButtonNode;
