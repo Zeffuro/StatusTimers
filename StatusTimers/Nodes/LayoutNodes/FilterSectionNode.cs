@@ -31,7 +31,7 @@ public sealed class FilterSectionNode : VerticalListNode {
         AddNode(_sectionHeaderNode);
 
         _sectionEnabledOptionNode = new CheckboxOptionNode {
-            LabelText = "Enabled",
+            String = "Enabled",
             IsChecked = getConfig().FilterEnabled,
             OnClick = isChecked => {
                 getConfig().FilterEnabled = isChecked;

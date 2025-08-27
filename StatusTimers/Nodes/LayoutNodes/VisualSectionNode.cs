@@ -23,13 +23,13 @@ public sealed class VisualSectionNode : VerticalListNode
         // Locked and Preview Mode
         AddNode(new TwoOptionsRowNode(
             new CheckboxOptionNode {
-                LabelText = "Locked",
+                String = "Locked",
                 IsChecked = overlay.IsLocked,
                 OnClick = isChecked => { overlay.IsLocked = isChecked; },
                 Tooltip = "When locked, the overlay cannot be moved or resized."
             },
             new CheckboxOptionNode {
-                LabelText = "Preview Mode",
+                String = "Preview Mode",
                 IsChecked = overlay.IsPreviewEnabled,
                 OnClick = isChecked => { overlay.IsPreviewEnabled = isChecked; },
                 Tooltip = "When enabled, will show random statuses to test with."
@@ -178,7 +178,7 @@ public sealed class VisualSectionNode : VerticalListNode
         // Fill columns first + Grow direction dropdown
         AddNode(new TwoOptionsRowNode(
             new CheckboxOptionNode {
-                LabelText = "Fill columns first",
+                String = "Fill columns first",
                 IsChecked = !getConfig().FillRowsFirst,
                 OnClick = isChecked => {
                     getConfig().FillRowsFirst = !isChecked;
@@ -202,7 +202,7 @@ public sealed class VisualSectionNode : VerticalListNode
 
         // Animations
         AddNode(new CheckboxOptionNode {
-            LabelText = "Animations enabled",
+            String = "Animations enabled",
             IsChecked = getConfig().AnimationsEnabled,
             OnClick = value => {
                 getConfig().AnimationsEnabled = value;

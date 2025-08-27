@@ -53,7 +53,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Y = 0,
             Height = 32,
             Width = 100,
-            Label = "Reset",
+            String = "Reset",
             Tooltip = "   Reset configuration\n(hold button to confirm)",
             OnClick = () => ImportExportResetHelper.TryResetConfig(
                 getConfig(), kind, onConfigChanged, closeWindow)

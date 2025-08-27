@@ -105,7 +105,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             Y = 2,
             Height = 28,
             Width = 32,
-            Label = "+",
+            String = "+",
             OnClick = OnAddButtonClick
         };
         AddNode(_addButtonNode);

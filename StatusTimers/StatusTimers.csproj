@@ -1,4 +1,4 @@
-<Project Sdk="Dalamud.NET.Sdk/13.0.0">
+<Project Sdk="Dalamud.NET.Sdk/13.1.0">
     <PropertyGroup>
         <PackageProjectUrl>https://github.com/Zeffuro/StatusTimers.git</PackageProjectUrl>
         <Version>1.0.0.4</Version>

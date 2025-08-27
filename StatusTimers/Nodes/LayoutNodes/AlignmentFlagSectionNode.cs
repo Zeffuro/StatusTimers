@@ -64,7 +64,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
 
         horizontalRow.AddNode(new CheckboxNode
         {
-            LabelText = "Left",
+            String = "Left",
             Width = 90,
             Height = 18,
             IsVisible = true,
@@ -73,7 +73,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         });
         horizontalRow.AddNode(new CheckboxNode
         {
-            LabelText = "Right",
+            String = "Right",
             Width = 90,
             Height = 18,
             IsVisible = true,
@@ -82,7 +82,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         });
         horizontalRow.AddNode(new CheckboxNode
         {
-            LabelText = "HCenter",
+            String = "HCenter",
             Width = 90,
             Height = 18,
             IsVisible = true,
@@ -91,7 +91,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         });
         horizontalRow.AddNode(new CheckboxNode
         {
-            LabelText = "Center",
+            String = "Center",
             Width = 90,
             Height = 18,
             IsVisible = true,
@@ -123,7 +123,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
 
         verticalRow.AddNode(new CheckboxNode
         {
-            LabelText = "Top",
+            String = "Top",
             Width = 90,
             Height = 18,
             IsVisible = true,
@@ -132,7 +132,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         });
         verticalRow.AddNode(new CheckboxNode
         {
-            LabelText = "Bottom",
+            String = "Bottom",
             Width = 90,
             Height = 18,
             IsVisible = true,
@@ -141,7 +141,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         });
         verticalRow.AddNode(new CheckboxNode
         {
-            LabelText = "VCenter",
+            String = "VCenter",
             Width = 90,
             Height = 18,
             IsVisible = true,

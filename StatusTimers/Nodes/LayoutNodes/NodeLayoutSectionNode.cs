@@ -33,7 +33,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         var group = settingsGroup;
         var enabledCheckbox = new CheckboxNode
         {
-            LabelText = $"Show {label}",
+            String = $"Show {label}",
             Width = 180,
             Height = 22,
             IsVisible = true,
@@ -71,7 +71,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
         var backgroundCheckbox = new CheckboxNode
         {
-            LabelText = $"Show {label} background",
+            String = $"Show {label} background",
             Width = 180,
             Height = 22,
             IsVisible = nodePart.BackgroundEnabled != null,
@@ -97,7 +97,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             settingsGroup.AddNode(barStyleRow);
 
             barStyleRow.AddNode(new CheckboxOptionNode {
-                LabelText = "Show Border",
+                String = "Show Border",
                 IsChecked = nodePart.StyleBar.BorderVisible,
                 OnClick = isChecked => {
                     nodePart.StyleBar.BorderVisible = isChecked;

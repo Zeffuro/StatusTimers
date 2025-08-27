@@ -47,7 +47,7 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
         AddNode(_statusNameTextNode);
 
         _statusRemoveButtonNode = new TextButtonNode {
-            Label = "-",
+            String = "-",
             Width = 32,
             Height = 28,
             IsVisible = true,

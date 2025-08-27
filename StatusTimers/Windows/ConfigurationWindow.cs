@@ -95,7 +95,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             if (configScrollingArea == null) {
                 return;
             }
-            
+
             AttachNode(configScrollingArea);
 
             _configLists[kind] = new VerticalListNode {
@@ -120,7 +120,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             );
 
             var enabledCheckbox = new CheckboxOptionNode {
-                LabelText = "Enabled",
+                String = "Enabled",
                 IsChecked = overlay.OverlayConfig.Enabled,
                 OnClick = isChecked => {
                     overlay.OverlayConfig.Enabled = isChecked;
@@ -223,7 +223,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 );
 
                 mainSettingsGroup.AddNode(new CheckboxOptionNode {
-                    LabelText = "Show enemy letter",
+                    String = "Show enemy letter",
                     IsChecked = overlay.OverlayConfig.ShowActorLetter,
                     OnClick = isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked
                 });

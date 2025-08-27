@@ -27,7 +27,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
 
         // Hide statuses above a certain max enabled
         AddNode(new TwoOptionsRowNode(new CheckboxOptionNode {
-            LabelText = "Hide statuses above a certain max duration",
+            String = "Hide statuses above a certain max duration",
             IsChecked = getConfig().HideStatusAboveSecondsEnabled,
             OnClick = isChecked => {
                 getConfig().HideStatusAboveSecondsEnabled = isChecked;
@@ -46,7 +46,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
 
         // Hide statuses above a certain max enabled
         AddNode(new TwoOptionsRowNode(new CheckboxOptionNode {
-            LabelText = "Hide statuses under a certain max duration",
+            String = "Hide statuses under a certain max duration",
             IsChecked = getConfig().HideStatusUnderSecondsEnabled,
             OnClick = isChecked => {
                 getConfig().HideStatusUnderSecondsEnabled = isChecked;
@@ -58,28 +58,28 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         {
             // Hide statuses that are not applied by the player
             AddNode(new CheckboxOptionNode {
-                LabelText = "Show self applied statuses only",
+                String = "Show self applied statuses only",
                 IsChecked = getConfig().SelfAppliedStatusesOnly,
                 OnClick = isChecked => getConfig().SelfAppliedStatusesOnly = isChecked
             });
 
             // Hide permanent statuses
             AddNode(new CheckboxOptionNode {
-                LabelText = "Hide permanent statuses",
+                String = "Hide permanent statuses",
                 IsChecked = !getConfig().ShowPermaIcons,
                 OnClick = isChecked => getConfig().ShowPermaIcons = !isChecked
             });
 
             // Show food/potion name
             AddNode(new CheckboxOptionNode {
-                LabelText = "Show food or potion name instead of Well Fed/Medicated",
+                String = "Show food or potion name instead of Well Fed/Medicated",
                 IsChecked = getConfig().StatusAsItemName,
                 OnClick = isChecked => getConfig().StatusAsItemName = isChecked
             });
 
             // Allow dismissing status by right-clicking the status icon
             AddNode(new CheckboxOptionNode {
-                LabelText = "Allow dismissing status by right-clicking the status icon.",
+                String = "Allow dismissing status by right-clicking the status icon.",
                 IsChecked = getConfig().AllowDismissStatus,
                 OnClick = isChecked => getConfig().AllowDismissStatus = isChecked
             });
@@ -90,7 +90,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         {
             // Allow targeting the enemy by clicking the status icon
             AddNode(new CheckboxOptionNode {
-                LabelText = "Allow targeting the enemy by clicking the status icon.",
+                String = "Allow targeting the enemy by clicking the status icon.",
                 IsChecked = getConfig().AllowTargetActor,
                 OnClick = isChecked => getConfig().AllowTargetActor = isChecked
             });

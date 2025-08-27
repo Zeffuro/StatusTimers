@@ -487,7 +487,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Height = 28,
             Width = 70,
-            Label = "OK",
+            String = "OK",
             OnClick = OnOk
         });
         buttonRow.AddNode(new TextButtonNode
@@ -495,7 +495,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Height = 28,
             Width = 70,
-            Label = "Cancel",
+            String = "Cancel",
             OnClick = OnCancel
         });
 
