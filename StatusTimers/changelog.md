@@ -1,3 +1,9 @@
+# 1.0.0.5
+- Improved settings to only allow appropriate values.
+- Refactored status display logic to improve stability and reduce potential crashes.
+- Various minor bug fixes and performance improvements.
+- Slightly tweaked the animations.
+
 # 1.0.0.4
 - Imported overlays are now always placed within the visible screen area.
 - Fixed a potential font issue when editing settings manually.
