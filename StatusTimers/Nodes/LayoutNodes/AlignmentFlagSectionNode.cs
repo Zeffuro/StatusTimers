@@ -55,7 +55,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Horizontal:",
             IsVisible = true,
-            Height = 18,
+            Height = 20,
             Width = 114,
             FontSize = 14,
             AlignmentType = AlignmentType.Left,
@@ -66,7 +66,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Left",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Left),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.Left)
@@ -75,7 +75,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Right",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Right),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.Right)
@@ -84,7 +84,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "HCenter",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.HorizontalCenter),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.HorizontalCenter)
@@ -93,7 +93,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Center",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Center),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.Center)
@@ -114,7 +114,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Vertical:",
             IsVisible = true,
-            Height = 18,
+            Height = 20,
             Width = 114,
             FontSize = 14,
             AlignmentType = AlignmentType.Left,
@@ -125,7 +125,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Top",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Top),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.Top)
@@ -134,7 +134,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "Bottom",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.Bottom),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.Bottom)
@@ -143,7 +143,7 @@ public sealed class AlignmentFlagSectionNode : VerticalListNode
         {
             String = "VCenter",
             Width = 90,
-            Height = 18,
+            Height = 20,
             IsVisible = true,
             IsChecked = _getAlignment().HasFlag(AnchorAlignment.VerticalCenter),
             OnClick = isChecked => ToggleFlag(isChecked, AnchorAlignment.VerticalCenter)

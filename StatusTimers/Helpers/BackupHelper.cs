@@ -101,6 +101,7 @@ public static class BackupHelper {
         ComputeCombinedJsonHash(
             new DirectoryInfo(dirPath)
                 .GetFiles("*.json", SearchOption.TopDirectoryOnly)
+                .Where(f => !f.Name.EndsWith(".addon.json", StringComparison.OrdinalIgnoreCase))
                 .Select(f => (f.Name, File.ReadAllBytes(f.FullName)))
         );
 
@@ -109,7 +110,9 @@ public static class BackupHelper {
         using var msZip = new MemoryStream(zipBytes);
         using var zip = new ZipArchive(msZip, ZipArchiveMode.Read);
         var files = zip.Entries
-            .Where(e => e.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) && !e.FullName.Contains("/"))
+            .Where(e => e.FullName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+                        && !e.FullName.EndsWith(".addon.json", StringComparison.OrdinalIgnoreCase)
+                        && !e.FullName.Contains("/"))
             .Select(e => {
                 using var ms = new MemoryStream();
                 using (var s = e.Open()) {

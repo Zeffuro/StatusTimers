@@ -121,9 +121,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     public NodeBase? OuterContainer { get; set; }
 
     public StatusInfo StatusInfo {
-        get => _statusInfo;
+        get;
         set {
-            _statusInfo = value;
+            field = value;
             UpdateValues();
         }
     }

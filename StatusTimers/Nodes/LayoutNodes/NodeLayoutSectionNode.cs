@@ -35,7 +35,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         {
             String = $"Show {label}",
             Width = 180,
-            Height = 22,
+            Height = 20,
             IsVisible = true,
             IsChecked = nodePart.IsVisible,
             OnClick = isChecked =>
@@ -73,7 +73,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         {
             String = $"Show {label} background",
             Width = 180,
-            Height = 22,
+            Height = 20,
             IsVisible = nodePart.BackgroundEnabled != null,
             IsChecked = nodePart.BackgroundEnabled ?? false,
             OnClick = isChecked =>

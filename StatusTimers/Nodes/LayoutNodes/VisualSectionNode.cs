@@ -34,7 +34,7 @@ public sealed class VisualSectionNode : VerticalListNode
                 OnClick = isChecked => { overlay.IsPreviewEnabled = isChecked; },
                 Tooltip = "When enabled, will show random statuses to test with."
             },
-            16
+            20
         ));
 
         AddDummy(16);
@@ -197,7 +197,7 @@ public sealed class VisualSectionNode : VerticalListNode
                     { GrowDirection.UpLeft,    "Up and Left" }
                 }
             ),
-            16
+            20
         ));
 
         // Animations

@@ -6,7 +6,7 @@ public sealed class CheckboxOptionNode : CheckboxNode {
     public CheckboxOptionNode() {
         X = 18;
         Width = 300;
-        Height = 16;
+        Height = 20;
         IsVisible = true;
     }
 }

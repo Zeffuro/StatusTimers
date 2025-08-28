@@ -33,7 +33,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
                 getConfig().HideStatusAboveSecondsEnabled = isChecked;
                 secondsNode.IsVisible = isChecked;
             }
-        }, secondsNode, 16));
+        }, secondsNode, 20));
 
         // Hide statuses under a certain max duration
         var underSecondsNode = new LabeledNumericOptionNode("",
@@ -52,7 +52,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
                 getConfig().HideStatusUnderSecondsEnabled = isChecked;
                 underSecondsNode.IsVisible = isChecked;
             }
-        }, underSecondsNode, 16));
+        }, underSecondsNode, 20));
 
         if (kind == NodeKind.Combined)
         {
