@@ -26,9 +26,16 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         IsVisible = true;
         FitContents = true;
 
-        VerticalListNode settingsGroup = new();
+        var settingsGroup = new VerticalListNode
+        {
+            X = 18,
+            Height = 220,
+            Width = 600,
+            ItemSpacing = 2,
+            IsVisible = nodePart.IsVisible,
+            FitContents = true,
+        };
 
-        var group = settingsGroup;
         var enabledCheckbox = new CheckboxNode
         {
             String = $"Show {label}",
@@ -39,23 +46,13 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             OnClick = isChecked =>
             {
                 nodePart.IsVisible = isChecked;
-                group.IsVisible = isChecked;
+                settingsGroup.IsVisible = isChecked;
                 RecalculateLayout();
                 onChanged?.Invoke();
                 onToggled?.Invoke();
             }
         };
         AddNode(enabledCheckbox);
-
-        settingsGroup = new VerticalListNode
-        {
-            X = 18,
-            Height = 220,
-            Width = 600,
-            ItemSpacing = 2,
-            IsVisible = nodePart.IsVisible,
-            FitContents = true,
-        };
 
         // Background row
         var backgroundRow = new HorizontalFlexNode

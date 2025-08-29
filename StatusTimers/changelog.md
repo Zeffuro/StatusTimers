@@ -1,5 +1,6 @@
 # 1.0.0.6
 - The configuration window now remembers its last position and size.
+- Fixed missing options when "Show [element]" was enabled.
 
 # 1.0.0.5
 - Improved settings to only allow appropriate values.
