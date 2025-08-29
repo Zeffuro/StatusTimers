@@ -8,7 +8,7 @@ using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public class OverlayRootNode : SimpleOverlayNode
+public sealed class OverlayRootNode : SimpleOverlayNode
 {
     private readonly List<NodeBase> _overlays = [];
     private NativeController _nativeController;

@@ -26,7 +26,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private readonly Func<StatusTimerOverlayConfig> _getOverlayConfig;
 
     private SimpleNineGridNode _statusBackgroundNode;
-    private StatusInfo _statusInfo;
     private IconImageNode _iconNode;
     private CastBarProgressBarNode _progressNode;
     private NodeBase _statusName;
@@ -153,7 +152,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         UpdateLayoutOffsets();
 
-        _actorName.IsVisible = config.Actor.IsVisible && _statusInfo.ActorName != null;
+        _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
 
         UpdateValues();
     }
@@ -356,7 +355,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
         var config = _getOverlayConfig();
 
-        if (_statusInfo.Id == 0) {
+        if (StatusInfo.Id == 0) {
             _iconNode.IsVisible = false;
             _statusName.IsVisible = false;
             _statusRemaining.IsVisible = false;
@@ -364,40 +363,40 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _actorName.IsVisible = false;
             return;
         }
-        _iconNode.IconId = _statusInfo.Id > 0 ? _statusInfo.IconId : 0;
+        _iconNode.IconId = StatusInfo.Id > 0 ? StatusInfo.IconId : 0;
 
-        _statusName.SetText(_statusInfo.Name);
+        _statusName.SetText(StatusInfo.Name);
 
         _statusBackgroundNode.IsVisible = config.Background.IsVisible;
         _iconNode.IsVisible = config.Icon.IsVisible;
         _statusRemaining.IsVisible = config.Timer.IsVisible;
         _statusName.IsVisible = config.Name.IsVisible;
         _progressNode.IsVisible = config.Progress.IsVisible;
-        _actorName.IsVisible = config.Actor.IsVisible && _statusInfo.ActorName != null;
+        _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
 
-        if (_statusInfo.IsPermanent || _statusInfo.RemainingSeconds <= 0) {
+        if (StatusInfo.IsPermanent || StatusInfo.RemainingSeconds <= 0) {
             _progressNode.IsVisible = false;
             _statusRemaining.IsVisible = false;
         }
         else {
-            if (Math.Abs(_statusInfo.RemainingSeconds - _statusInfo.MaxSeconds) < 0.01 && config.AnimationsEnabled) {
+            if (Math.Abs(StatusInfo.RemainingSeconds - StatusInfo.MaxSeconds) < 0.01 && config.AnimationsEnabled) {
                 Timeline?.PlayAnimation(10);
             }
 
             _progressNode.IsVisible = config.Progress.IsVisible;
             _statusRemaining.IsVisible = config.Timer.IsVisible;
 
-            if (_statusInfo.ActorName != null && config.Actor.IsVisible) {
-                _actorName.SetText($"{(config.ShowActorLetter ? _statusInfo.EnemyLetter : "")}{_statusInfo.ActorName}");
+            if (StatusInfo.ActorName != null && config.Actor.IsVisible) {
+                _actorName.SetText($"{(config.ShowActorLetter ? StatusInfo.EnemyLetter : "")}{StatusInfo.ActorName}");
             }
             else {
                 _actorName.SetText("");
             }
 
-            if (_statusInfo.MaxSeconds > 0)
+            if (StatusInfo.MaxSeconds > 0)
             {
-                float max = Math.Max(_statusInfo.MaxSeconds, 1f);
-                float remaining = Math.Clamp(_statusInfo.RemainingSeconds, 0f, max);
+                float max = Math.Max(StatusInfo.MaxSeconds, 1f);
+                float remaining = Math.Clamp(StatusInfo.RemainingSeconds, 0f, max);
                 float ratio = remaining / max;
                 _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
             }
@@ -406,7 +405,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             }
 
 
-            _statusRemaining.SetText(Helpers.Util.SafeFormatTime(_statusInfo.RemainingSeconds, config.TimerFormat));
+            _statusRemaining.SetText(Helpers.Util.SafeFormatTime(StatusInfo.RemainingSeconds, config.TimerFormat));
         }
     }
 
@@ -418,7 +417,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private unsafe void OnIconClicked(AddonEventData eventData) {
         var config = _getOverlayConfig();
 
-        if (_statusInfo.Id == 0) {
+        if (StatusInfo.Id == 0) {
             return;
         }
 
@@ -433,8 +432,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         OnStatusNodeActionTriggered?.Invoke(
-            _statusInfo.Id,
-            _statusInfo.GameObjectId,
+            StatusInfo.Id,
+            StatusInfo.GameObjectId,
             Kind,
             config.AllowDismissStatus,
             config.AllowTargetActor

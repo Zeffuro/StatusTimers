@@ -704,7 +704,7 @@ public class ColorPickerAddon : NativeAddon
             crossX = Math.Max(0, Math.Min(_svSquareNode.Width, crossX));
             crossY = Math.Max(0, Math.Min(_svSquareNode.Height, crossY));
 
-            SetCrosshairPosition(_svCrosshair, crossX, crossY);;
+            SetCrosshairPosition(_svCrosshair, crossX, crossY);
         }
 
         if (_hueCrosshair != null && _hueBarNode != null)
