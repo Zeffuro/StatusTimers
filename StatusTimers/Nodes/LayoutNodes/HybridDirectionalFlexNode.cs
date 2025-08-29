@@ -3,7 +3,7 @@ using KamiToolKit.System;
 using System;
 using System.Linq;
 
-namespace StatusTimers.Nodes
+namespace StatusTimers.Nodes.LayoutNodes
 {
     public enum FlexGrowDirection
     {

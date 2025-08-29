@@ -34,7 +34,7 @@ public sealed class StatusTimerFormatRowNode : HorizontalListNode
                              ?? TimerFormats.Formats.Keys.First(),
             OnOptionSelected = selectedKey => {
                 textInput.String = TimerFormats.Formats[selectedKey];
-                getConfig().TimerFormat = TimerFormats.Formats[selectedKey];;
+                getConfig().TimerFormat = TimerFormats.Formats[selectedKey];
             },
             Width = 240,
             Height = 28,

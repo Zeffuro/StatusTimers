@@ -1,16 +1,10 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Game.ClientState.Statuses;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.Interop;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using StatusTimers.Config;
 using StatusTimers.Enums;
-using StatusTimers.Extensions;
 using StatusTimers.Helpers;
-using StatusTimers.Interfaces;
 using StatusTimers.Models;
 using System;
 using System.Collections.Frozen;
@@ -28,7 +22,7 @@ public static class StatusManager {
     private static readonly Dictionary<uint, float> StatusDurations = new();
 
     private static readonly FrozenSet<uint> HarmfulStatusIds = Services.DataManager
-        .GetExcelSheet<LuminaStatus>()!
+        .GetExcelSheet<LuminaStatus>()
         .Where(s => s is { IsPermanent: false, StatusCategory: 2 })
         .Select(s => s.RowId)
         .ToFrozenSet();
@@ -107,7 +101,7 @@ public static class StatusManager {
     private static unsafe StatusInfo? TransformStatus(ref Status status, ulong objectId, StatusTimerOverlayConfig? config, BattleChara* battleChar = null) {
         if (!StatusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData) || config == null) {
             return null;
-        };
+        }
 
         uint id = status.StatusId;
         uint iconId = gameData.Icon;

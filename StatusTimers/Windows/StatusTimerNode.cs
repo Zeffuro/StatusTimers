@@ -1,22 +1,17 @@
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
-using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
-using KamiToolKit.Extensions;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Extensions;
-using StatusTimers.Layout;
 using StatusTimers.Models;
 using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -40,7 +35,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private Dictionary<string, NodeBase> _nodeMap = new();
 
-    private bool _isDisposed = false;
+    private bool _isDisposed;
 
     public StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
         _getOverlayConfig = getOverlayConfig;

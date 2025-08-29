@@ -1,19 +1,14 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.TabBar;
-using KamiToolKit.System;
-using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Models;
-using StatusTimers.Nodes;
 using StatusTimers.Nodes.FunctionalNodes;
 using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
@@ -25,7 +20,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private readonly Dictionary<NodeKind, FilterSectionNode> _filterSectionNodes = new();
     private TabBarNode? _tabBar;
 
-    private bool _isRecalculating = false;
+    private bool _isRecalculating;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
         _configScrollingAreas.Clear();

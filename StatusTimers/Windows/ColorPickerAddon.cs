@@ -1,26 +1,20 @@
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Interface;
-using Dalamud.Interface.Textures.TextureWraps;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
-using KamiToolKit.Nodes.Slider;
 using KamiToolKit.System;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
-using StatusTimers.Nodes;
 using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
@@ -38,17 +32,14 @@ public class ColorPickerAddon : NativeAddon
     private SimpleComponentNode? _svContainer, _hueContainer, _alphaContainer;
     private NodeBase? _svCrosshair, _hueCrosshair, _alphaCrosshair;
     private bool _isDraggingSV, _isDraggingHue, _isDraggingAlpha;
-    private bool _isUpdating = false;
-    private bool _confirmed = false;
+    private bool _isUpdating;
+    private bool _confirmed;
 
     private const int SVBoxSize = 256;
     private const int BarWidth = 20;
     private const int CrosshairSize = 32;
     private const int PreviewSize = 100;
     private const int OptionOffset = 18;
-
-    public ColorPickerAddon(OverlayManager overlayManager) {
-    }
 
     public void Show(Vector4 initialColor, Action<Vector4> onPicked)
     {
@@ -67,9 +58,6 @@ public class ColorPickerAddon : NativeAddon
     private void CreateAdvancedColorPicker()
     {
         var mainList = CreateMainList();
-        if (mainList == null) {
-            return;
-        }
 
         var pickerRow = CreateSVSection();
         pickerRow.AddNode(CreateHueSection());
@@ -83,7 +71,7 @@ public class ColorPickerAddon : NativeAddon
         UpdateAllFields();
     }
 
-    private VerticalListNode? CreateMainList()
+    private VerticalListNode CreateMainList()
     {
         var mainList = new VerticalListNode
         {
@@ -504,44 +492,6 @@ public class ColorPickerAddon : NativeAddon
 
     // --- Input/Update helpers ---
 
-    private NumericInputNode AddColorInput(HorizontalFlexNode row, string label, int value, Action<int> onChanged, int min = 0, int max = 255)
-    {
-        HorizontalListNode resNode = new HorizontalListNode {
-            IsVisible = true,
-            Width = 80,
-            Height = 28,
-        };
-        row.AddNode(resNode);
-
-        TextNode labelNode = new TextNode
-        {
-            String = label,
-            IsVisible = true,
-            Y = 3,
-            Width = 14,
-            Height = 28,
-            FontSize = 14,
-        };
-        NativeController.AttachNode(labelNode, resNode);
-
-        var node = new NumericInputNode()
-        {
-            IsVisible = true,
-            X = 14,
-            Width = 80,
-            Height = 28,
-            Min = min,
-            Max = max,
-            Value = value,
-            OnValueUpdate = val => {
-                onChanged(val);
-            }
-        };
-        NativeController.AttachNode(node, resNode);
-
-        return node;
-    }
-
     private void SetComponent(int idx, int value)
     {
         if (_isUpdating) {
@@ -657,7 +607,7 @@ public class ColorPickerAddon : NativeAddon
             _hueContainer,
             _hueBarNode,
             ref _isDraggingHue,
-            (x, y) => {
+            (_, y) => {
                 _hue = ColorUtils.ClampMin(y);
                 _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
                 UpdateAllFields();
@@ -673,7 +623,7 @@ public class ColorPickerAddon : NativeAddon
             _alphaContainer,
             _alphaBarNode,
             ref _isDraggingAlpha,
-            (x, y) => {
+            (_, y) => {
                 float a = 1f - ColorUtils.ClampMin(y);
                 _workingColor.W = a;
                 UpdateAllFields();

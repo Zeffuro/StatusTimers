@@ -15,14 +15,14 @@ public static class StatusSorter {
         SortOrder secondaryOrder,
         SortCriterion tertiarySort,
         SortOrder tertiaryOrder) {
-        IOrderedEnumerable<StatusInfo>? orderedList = null;
+        IOrderedEnumerable<StatusInfo>? orderedList;
 
         IEnumerable<StatusInfo> statusInfos = statuses as StatusInfo[] ?? statuses.ToArray();
         if (primarySort != SortCriterion.None) {
             orderedList = ApplySingleSort(statusInfos, primarySort, primaryOrder);
         }
         else {
-            orderedList = statusInfos.OrderBy(status => 0);
+            orderedList = statusInfos.OrderBy(_ => 0);
         }
 
         if (secondarySort != SortCriterion.None) {

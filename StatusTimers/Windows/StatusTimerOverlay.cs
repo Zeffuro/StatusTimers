@@ -12,7 +12,6 @@ using StatusTimers.Interfaces;
 using StatusTimers.Layout;
 using StatusTimers.Models;
 using StatusTimers.Services;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,7 +23,7 @@ namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
 public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey : notnull {
-    private bool isDisposed = false;
+    private bool _isDisposed;
 
     private NodeKind _nodeKind;
 
@@ -239,10 +238,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
     }
 
     public void OnDispose() {
-        if (isDisposed) {
+        if (_isDisposed) {
             return;
         }
-        isDisposed = true;
+        _isDisposed = true;
 
         SaveConfig();
         _layoutManager.UnsubscribeFromNodeActions();

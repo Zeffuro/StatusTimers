@@ -36,7 +36,7 @@ public sealed class FilterSectionNode : VerticalListNode {
             OnClick = isChecked => {
                 getConfig().FilterEnabled = isChecked;
                 ToggleVisibility(isChecked);
-                onChanged?.Invoke();
+                onChanged();
             }
         };
         AddNode(_sectionEnabledOptionNode);

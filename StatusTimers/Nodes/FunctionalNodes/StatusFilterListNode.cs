@@ -14,8 +14,8 @@ public sealed class StatusFilterListNode : VerticalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly Action? _onChanged;
 
-    private bool _isRefreshing = false;
-    private bool _shouldRefresh = false;
+    private bool _isRefreshing;
+    private bool _shouldRefresh;
 
     public StatusFilterListNode(List<LuminaStatus> statusList, Func<StatusTimerOverlayConfig> getConfig, Action? onChanged = null) {
         _statusList = statusList;

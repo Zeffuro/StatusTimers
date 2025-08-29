@@ -46,11 +46,11 @@ public abstract class ColorUtils {
         {
             h = 0;
         }
-        else if (max == r)
+        else if (Math.Abs(max - r) < 0.001f)
         {
             h = (g - b) / delta % 6f / 6f;
         }
-        else if (max == g)
+        else if (Math.Abs(max - g) < 0.001f)
         {
             h = (b - r) / delta / 6f + (1f / 3f);
         }

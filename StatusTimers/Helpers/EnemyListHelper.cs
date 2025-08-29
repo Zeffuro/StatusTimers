@@ -1,9 +1,5 @@
-using Dalamud.Memory;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Arrays;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using System;
 using System.Collections.Generic;
 
 namespace StatusTimers.Helpers;

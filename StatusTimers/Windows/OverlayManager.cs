@@ -1,10 +1,6 @@
-using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes;
 using StatusTimers.Models;
-using StatusTimers.Nodes;
 using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Numerics;
@@ -12,7 +8,7 @@ using System.Numerics;
 namespace StatusTimers.Windows;
 
 public unsafe class OverlayManager : IDisposable {
-    private bool _isDisposed = false;
+    private bool _isDisposed;
     private ConfigurationWindow? _configurationWindow;
     private OverlayRootNode? _statusTimerRootNode;
     private EnemyMultiDoTOverlay? _enemyMultiDoTOverlay;
@@ -23,7 +19,7 @@ public unsafe class OverlayManager : IDisposable {
         Services.Services.NameplateAddonController.OnAttach += AttachNodes;
         Services.Services.NameplateAddonController.OnDetach += DetachNodes;
     }
-    
+
     public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
     public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
     public ColorPickerAddon? ColorPickerInstance => _colorPickerAddon;
@@ -58,7 +54,7 @@ public unsafe class OverlayManager : IDisposable {
         _statusTimerRootNode.AddOverlay(_playerCombinedOverlay);
         _statusTimerRootNode.AddOverlay(_enemyMultiDoTOverlay);
 
-        _colorPickerAddon = new ColorPickerAddon(this) {
+        _colorPickerAddon = new ColorPickerAddon() {
             InternalName = "StatusTimerColorPicker",
             Title = "Pick a color",
             Size = new Vector2(540, 500),
@@ -117,7 +113,7 @@ public unsafe class OverlayManager : IDisposable {
     public void RestartOverlay<TOverlay>(ref TOverlay overlayInstance, Func<TOverlay> creator)
         where TOverlay : StatusTimerOverlay<StatusKey>
     {
-        overlayInstance?.OnDispose();
+        overlayInstance.OnDispose();
         overlayInstance = creator();
         overlayInstance.Setup();
     }

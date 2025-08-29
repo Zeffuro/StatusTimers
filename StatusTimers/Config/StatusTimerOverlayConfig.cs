@@ -3,8 +3,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using Newtonsoft.Json;
 using StatusTimers.Enums;
-using StatusTimers.Layout;
-using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
 using System.Drawing;

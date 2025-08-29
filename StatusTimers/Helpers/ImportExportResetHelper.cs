@@ -44,8 +44,8 @@ public class ImportExportResetHelper {
                 Services.Services.Logger.Info("Configuration imported from clipboard.");
                 currentOverlayConfig.Notify("Config", updateNodes: true);
                 overlay.OnUpdate();
-                onConfigChanged?.Invoke();
-                closeWindow?.Invoke();
+                onConfigChanged();
+                closeWindow.Invoke();
 
                 // Restart overlay
                 overlay.RestartOverlay();
@@ -84,8 +84,8 @@ public class ImportExportResetHelper {
             new Notification { Content = "Configuration reset to default.", Type = NotificationType.Success }
         );
         Services.Services.Logger.Info("Configuration reset to default.");
-        onConfigChanged?.Invoke();
-        closeWindow?.Invoke();
+        onConfigChanged.Invoke();
+        closeWindow.Invoke();
     }
 
     public static Vector2 EnsurePositionOnScreen(Vector2 position, Vector2 overlaySize, Vector2 screenSize)

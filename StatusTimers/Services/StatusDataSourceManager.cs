@@ -10,9 +10,9 @@ using System.Linq;
 namespace StatusTimers.Services;
 
 public class StatusDataSourceManager<TKey> {
-    private static readonly Random _rand = new();
+    private readonly Random _rand = new();
 
-    private static readonly List<DummyStatusTemplate> CombinedDummyTemplates = [
+    private readonly List<DummyStatusTemplate> _combinedDummyTemplates = [
         new(1239, 213409, "Embolden", 20f, StatusCategory.Buff),
         new(786, 212578, "Battle Litany", 15f, StatusCategory.Buff),
         new(1822, 213709, "Technical Finish", 20f, StatusCategory.Buff),
@@ -20,12 +20,12 @@ public class StatusDataSourceManager<TKey> {
         new(2912, 217101, "Vulnerability Up", 30f, StatusCategory.Buff)
     ];
 
-    private static readonly List<DummyStatusTemplate> MultiDotDummyTemplates = new() {
-        new DummyStatusTemplate(1205, 212616, "Caustic Bite", 45f, StatusCategory.Debuff),
-        new DummyStatusTemplate(1206, 212617, "Stormbite", 45f, StatusCategory.Debuff),
-        new DummyStatusTemplate(1228, 213304, "Higanbana", 60, StatusCategory.Debuff),
-        new DummyStatusTemplate(3871, 212661, "High Thunder", 30, StatusCategory.Debuff)
-    };
+    private readonly List<DummyStatusTemplate> _multiDotDummyTemplates = [
+        new(1205, 212616, "Caustic Bite", 45f, StatusCategory.Debuff),
+        new(1206, 212617, "Stormbite", 45f, StatusCategory.Debuff),
+        new(1228, 213304, "Higanbana", 60, StatusCategory.Debuff),
+        new(3871, 212661, "High Thunder", 30, StatusCategory.Debuff)
+    ];
 
     private readonly Func<bool> _getIsPreviewEnabled;
     private readonly Func<int> _getItemsPerLine;
@@ -161,16 +161,16 @@ public class StatusDataSourceManager<TKey> {
 
         uint dummyStacks = (uint)_rand.Next(1, 4);
 
-        ulong gameObjectIdToUse = 0UL;
-        string? actorName = null;
-        char? enemyLetter = null;
+        ulong gameObjectIdToUse;
+        string? actorName;
+        char? enemyLetter;
 
         DummyStatusTemplate selectedTemplate;
 
         if (_nodeKind == NodeKind.MultiDoT) {
             if (initialIndex.HasValue) {
                 int index = initialIndex.Value;
-                selectedTemplate = MultiDotDummyTemplates[index % MultiDotDummyTemplates.Count];
+                selectedTemplate = _multiDotDummyTemplates[index % _multiDotDummyTemplates.Count];
 
                 ulong baseActorId = 1000UL;
                 gameObjectIdToUse = baseActorId + (ulong)(index / _getItemsPerLine()); // Use _getItemsPerLine()
@@ -180,7 +180,7 @@ public class StatusDataSourceManager<TKey> {
                 statusCategory = selectedTemplate.StatusType;
             }
             else {
-                selectedTemplate = MultiDotDummyTemplates[_rand.Next(0, MultiDotDummyTemplates.Count)];
+                selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
 
                 ulong baseActorId = 1000UL;
                 int numDummyActors =
@@ -195,7 +195,7 @@ public class StatusDataSourceManager<TKey> {
         else {
             if (initialIndex.HasValue) {
                 int index = initialIndex.Value;
-                selectedTemplate = CombinedDummyTemplates[index % CombinedDummyTemplates.Count];
+                selectedTemplate = _combinedDummyTemplates[index % _combinedDummyTemplates.Count];
 
                 gameObjectIdToUse = 0UL;
                 actorName = null;
@@ -204,7 +204,7 @@ public class StatusDataSourceManager<TKey> {
                 statusCategory = selectedTemplate.StatusType;
             }
             else {
-                selectedTemplate = CombinedDummyTemplates[_rand.Next(0, CombinedDummyTemplates.Count)];
+                selectedTemplate = _combinedDummyTemplates[_rand.Next(0, _combinedDummyTemplates.Count)];
 
                 gameObjectIdToUse = 0UL;
                 actorName = null;

@@ -2,13 +2,11 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
-using StatusTimers.Models;
 using StatusTimers.Nodes.FunctionalNodes;
 using StatusTimers.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
@@ -110,8 +108,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 () => nodePart.StyleBar.BorderColor,
                 c => { nodePart.StyleBar.BorderColor = c; onChanged?.Invoke(); },
                 overlayManager,
-                onChanged,
-                32
+                onChanged
             ));
 
             var barStyleRow2 = new HorizontalFlexNode
@@ -128,8 +125,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 () => nodePart.StyleBar.ProgressColor,
                 c => { nodePart.StyleBar.ProgressColor = c; onChanged?.Invoke(); },
                 overlayManager,
-                onChanged,
-                32
+                onChanged
             ));
 
             barStyleRow2.AddNode(new ColorPreviewOptionNode(
@@ -137,8 +133,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 () => nodePart.StyleBar.BackgroundColor,
                 c => { nodePart.StyleBar.BackgroundColor = c; onChanged?.Invoke(); },
                 overlayManager,
-                onChanged,
-                32
+                onChanged
             ));
         }
 
@@ -181,8 +176,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 () => nodePart.Style.TextColor,
                 c => { nodePart.Style.TextColor = c; onChanged?.Invoke(); },
                 overlayManager,
-                onChanged,
-                32
+                onChanged
             ));
 
             styleRow2.AddNode(new ColorPreviewOptionNode(
@@ -190,8 +184,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 () => nodePart.Style.TextOutlineColor,
                 c => { nodePart.Style.TextOutlineColor = c; onChanged?.Invoke(); },
                 overlayManager,
-                onChanged,
-                32
+                onChanged
             ));
         }
 

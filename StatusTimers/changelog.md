@@ -1,3 +1,6 @@
+# 1.0.0.6
+- The configuration window now remembers its last position and size.
+
 # 1.0.0.5
 - Improved settings to only allow appropriate values.
 - Refactored status display logic to improve stability and reduce potential crashes.

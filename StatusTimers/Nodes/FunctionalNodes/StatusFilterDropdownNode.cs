@@ -16,7 +16,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
     private StatusFilterListNode? _statusListNode;
     private readonly Action? _onChanged;
     private readonly bool _allowNoResult;
-    private bool _isUpdating = false;
+    private bool _isUpdating;
 
     private IconImageNode? _iconNode;
     private LuminaStatus? _currentSelection;
@@ -42,7 +42,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             Width = 200,
             Height = 28,
             OnInputComplete = input => {
-                string filter = input.TextValue ?? "";
+                string filter = input.TextValue;
                 UpdateDropdownOptions(filter);
             }
         };

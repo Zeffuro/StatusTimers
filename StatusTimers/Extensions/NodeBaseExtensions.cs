@@ -11,7 +11,7 @@ public static class NodeBaseExtensions
         {
             case TextNode tn: tn.String = value; break;
             case TextNineGridNode ngn: ngn.SeString = value; break;
-            default: Services.Services.Logger.Warning($"[NodeBaseExtensions] SetText called on unsupported node type: {node?.GetType().Name}"); break;
+            default: Services.Services.Logger.Warning($"[NodeBaseExtensions] SetText called on unsupported node type: {node.GetType().Name}"); break;
         }
     }
 }

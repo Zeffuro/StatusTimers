@@ -51,7 +51,7 @@ public class OverlayRootNode : SimpleOverlayNode
     {
         foreach (var overlay in _overlays)
         {
-            (overlay as IDisposable)?.Dispose();
+            (overlay as IDisposable).Dispose();
         }
         _overlays.Clear();
     }

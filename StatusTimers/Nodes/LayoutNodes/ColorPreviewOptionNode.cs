@@ -4,10 +4,8 @@ using System;
 using System.Numerics;
 using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
-using StatusTimers.Layout;
 using StatusTimers.Nodes.FunctionalNodes;
 using StatusTimers.Windows;
-using StatusTimers.Services;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
@@ -67,7 +65,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
             var startColor = _getColor();
             Services.Services.Framework.RunOnTick(() =>
             {
-                _overlayManager?.ColorPickerInstance?.Show(startColor, newColor =>
+                _overlayManager.ColorPickerInstance?.Show(startColor, newColor =>
                 {
                     _setColor(newColor);
                     colorPreviewButton.Color = newColor;

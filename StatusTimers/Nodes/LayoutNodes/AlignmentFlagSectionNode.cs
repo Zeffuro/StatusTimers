@@ -3,8 +3,6 @@ using KamiToolKit.Nodes;
 using System;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
-using StatusTimers.Layout;
-using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
