@@ -114,10 +114,19 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     public NodeKind Kind { get; set; }
     public NodeBase? OuterContainer { get; set; }
 
+    private uint _lastStatusId;
+
     public StatusInfo StatusInfo {
         get;
         set {
             field = value;
+            var info = StatusInfo;/*
+            GlobalServices.Logger.Info(
+                $"StatusInfo: Id={info.Id}, IconId={info.IconId}, Name={info.Name}, Desc={info.Description}, " +
+                $"RemainingSeconds={info.RemainingSeconds}, MaxSeconds={info.MaxSeconds}, GameObjectId={info.GameObjectId}, " +
+                $"SelfInflicted={info.SelfInflicted}, Stacks={info.Stacks}, PartyPriority={info.PartyPriority}, " +
+                $"IsPermanent={info.IsPermanent}, ActorName={info.ActorName}, EnemyLetter={info.EnemyLetter}, StatusType={info.StatusType}"
+            );*/
             UpdateValues();
         }
     }
@@ -355,28 +364,35 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
         var config = _getOverlayConfig();
 
+        if (_lastStatusId != StatusInfo.Id) {
+            _iconNode.IconId = StatusInfo.IconId;
+            _statusName.SetText(StatusInfo.Name);
+            _statusName.IsVisible = config.Name.IsVisible;
+            _iconNode.IsVisible = config.Icon.IsVisible;
+            _statusBackgroundNode.IsVisible = config.Background.IsVisible;
+            _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
+            _lastStatusId = StatusInfo.Id;
+        }
+
         if (StatusInfo.Id == 0) {
             _iconNode.IsVisible = false;
+            _iconNode.IconId = 0; // Reset to safe value
             _statusName.IsVisible = false;
+            _statusName.SetText("");
             _statusRemaining.IsVisible = false;
+            _statusRemaining.SetText("");
             _progressNode.IsVisible = false;
+            _progressNode.Progress = 0f; // Reset progress
             _actorName.IsVisible = false;
+            _actorName.SetText("");
             return;
         }
-        _iconNode.IconId = StatusInfo.Id > 0 ? StatusInfo.IconId : 0;
 
-        _statusName.SetText(StatusInfo.Name);
-
-        _statusBackgroundNode.IsVisible = config.Background.IsVisible;
-        _iconNode.IsVisible = config.Icon.IsVisible;
-        _statusRemaining.IsVisible = config.Timer.IsVisible;
-        _statusName.IsVisible = config.Name.IsVisible;
-        _progressNode.IsVisible = config.Progress.IsVisible;
-        _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
-
-        if (StatusInfo.IsPermanent || StatusInfo.RemainingSeconds <= 0) {
+        if (StatusInfo.IsPermanent || StatusInfo.RemainingSeconds <= 0 || StatusInfo.MaxSeconds <= 0) {
             _progressNode.IsVisible = false;
+            _progressNode.Progress = 0f;
             _statusRemaining.IsVisible = false;
+            _statusRemaining.SetText("");
         }
         else {
             if (Math.Abs(StatusInfo.RemainingSeconds - StatusInfo.MaxSeconds) < 0.01 && config.AnimationsEnabled) {
@@ -393,18 +409,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 _actorName.SetText("");
             }
 
-            if (StatusInfo.MaxSeconds > 0)
-            {
-                float max = Math.Max(StatusInfo.MaxSeconds, 1f);
-                float remaining = Math.Clamp(StatusInfo.RemainingSeconds, 0f, max);
-                float ratio = remaining / max;
-                _progressNode.Progress = 0.06f + (1f - 0.06f) * ratio;
+            if (StatusInfo.MaxSeconds > 0) {
+                float progress = Math.Clamp(Helpers.Util.CalculateProgressRatio(StatusInfo.RemainingSeconds, StatusInfo.MaxSeconds), 0f, 1f);
+                _progressNode.Progress = float.IsFinite(progress) ? progress : 0f;
+            } else {
+                _progressNode.Progress = 0f;
             }
-            else {
-                _progressNode.Progress = 0.06f;
-            }
-
-
             _statusRemaining.SetText(Helpers.Util.SafeFormatTime(StatusInfo.RemainingSeconds, config.TimerFormat));
         }
     }

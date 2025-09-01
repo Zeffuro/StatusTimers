@@ -117,4 +117,15 @@ public class Util
             prop.SetValue(config, prop.GetValue(defaults));
         }
     }
+
+    public static float CalculateProgressRatio(double value, double max)
+    {
+        if (max <= 0.0) {
+            return 0.06f;
+        }
+
+        float safeMax = (float)Math.Max(max, 1.0);
+        float ratio = (float)Math.Clamp(value / safeMax, 0.0, 1.0);
+        return 0.06f + (1f - 0.06f) * ratio;
+    }
 }

@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.TabBar;
 using StatusTimers.Enums;
