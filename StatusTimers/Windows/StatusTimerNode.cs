@@ -1,6 +1,7 @@
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
@@ -58,7 +59,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         GlobalServices.NativeController.AttachNode(_statusBackgroundNode, _containerResNode);
 
         // Icon
-        _iconNode = new IconImageNode { NodeId = 1 };
+        _iconNode = new IconImageNode { NodeId = 1, ImageNodeFlags = 0, WrapMode = WrapMode.Stretch };
+        _iconNode.TextureSize = new Vector2(24, 32);
         ApplyNodeSettings(_iconNode, config.Icon);
         GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
@@ -365,10 +367,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         var config = _getOverlayConfig();
 
         if (_lastStatusId != StatusInfo.Id) {
+            _iconNode.IsVisible = config.Icon.IsVisible;
             _iconNode.IconId = StatusInfo.IconId;
             _statusName.SetText(StatusInfo.Name);
             _statusName.IsVisible = config.Name.IsVisible;
-            _iconNode.IsVisible = config.Icon.IsVisible;
             _statusBackgroundNode.IsVisible = config.Background.IsVisible;
             _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
             _lastStatusId = StatusInfo.Id;
@@ -376,7 +378,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         if (StatusInfo.Id == 0) {
             _iconNode.IsVisible = false;
-            _iconNode.IconId = 0; // Reset to safe value
             _statusName.IsVisible = false;
             _statusName.SetText("");
             _statusRemaining.IsVisible = false;

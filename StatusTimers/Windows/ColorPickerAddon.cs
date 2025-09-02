@@ -104,7 +104,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Size = new Vector2(SVBoxSize),
             Alpha = 1f,
-            WrapMode = 2,
+            FitTexture = true,
             ImageNodeFlags = 0,
             EnableEventFlags = true,
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
@@ -117,7 +117,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Size = new Vector2(SVBoxSize),
             Alpha = 1f,
-            WrapMode = 2,
+            FitTexture = true,
             ImageNodeFlags = 0,
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
                 @"Media\Textures\sv_overlay_2_horizontal_gradient.png")
@@ -129,7 +129,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Size = new Vector2(SVBoxSize),
             Alpha = 1f,
-            WrapMode = 2,
+            FitTexture = true,
             ImageNodeFlags = 0,
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
                 @"Media\Textures\sv_overlay_3_vertical_black.png")
@@ -142,7 +142,7 @@ public class ColorPickerAddon : NativeAddon
             TexturePath = "ui/uld/AreaMap.tex",
             TextureSize = new Vector2(CrosshairSize),
             TextureCoordinates = new Vector2(252, 0),
-            WrapMode = 2,
+            FitTexture = true,
             ImageNodeFlags = 0,
         };
         NativeController.AttachNode(_svCrosshair, _svContainer);
@@ -178,6 +178,8 @@ public class ColorPickerAddon : NativeAddon
             Height = SVBoxSize,
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
                 @"Media\Textures\hue_bar.png"),
+            TextureSize = new Vector2(32, 256),
+            FitTexture = true,
         };
         NativeController.AttachNode(_hueBarNode, _hueContainer);
 
@@ -191,12 +193,14 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Color = KnownColor.White.Vector(),
             Size = new Vector2(BarWidth, 1),
+            WrapMode = WrapMode.Stretch
         }, _hueCrosshair);
         NativeController.AttachNode(new BackgroundImageNode {
             IsVisible = true,
             Y = 1,
             Color = KnownColor.Gray.Vector(),
             Size = new Vector2(BarWidth, 1),
+            WrapMode = WrapMode.Stretch
         }, _hueCrosshair);
 
         return _hueContainer;
@@ -222,12 +226,14 @@ public class ColorPickerAddon : NativeAddon
             EnableEventFlags = true,
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
                 @"Media\Textures\alpha_bar.png"),
+            TextureSize = new Vector2(32, 256),
+            FitTexture = true,
         };
         NativeController.AttachNode(_alphaBarNode, _alphaContainer);
 
         _alphaCrosshair = new ResNode() {
             IsVisible = true,
-            Size = new Vector2(BarWidth, 2),
+            Size = new Vector2(BarWidth, 2)
         };
         NativeController.AttachNode(_alphaCrosshair, _alphaContainer);
 
@@ -235,6 +241,7 @@ public class ColorPickerAddon : NativeAddon
             IsVisible = true,
             Color = KnownColor.White.Vector(),
             Size = new Vector2(BarWidth, 1),
+            FitTexture = true
         }, _alphaCrosshair);
         NativeController.AttachNode(new BackgroundImageNode {
             IsVisible = true,

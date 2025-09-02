@@ -1,5 +1,6 @@
 using Dalamud.Interface;
 using KamiToolKit;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using System.Drawing;
 using System.Numerics;
@@ -18,7 +19,8 @@ public class ColorPreviewNode : ResNode {
             IsVisible = true,
             Color = KnownColor.Black.Vector(),
             Size = new Vector2(52, 52),
-            Position = new Vector2(6, 6)
+            Position = new Vector2(6, 6),
+            FitTexture = true
         };
         nativeController.AttachNode(_colorBackground, this);
 
@@ -27,7 +29,8 @@ public class ColorPreviewNode : ResNode {
             IsVisible = true,
             Color = KnownColor.White.Vector(),
             Size = new Vector2(48, 48),
-            Position = new Vector2(8, 8)
+            Position = new Vector2(8, 8),
+            FitTexture = true
         };
         nativeController.AttachNode(_colorForeground, this);
     }
