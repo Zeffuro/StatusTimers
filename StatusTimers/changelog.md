@@ -1,3 +1,6 @@
+# 1.0.0.7
+- Added more safeguards and checks to prevent crashes and improve stability.
+
 # 1.0.0.6
 - The configuration window now remembers its last position, size and scale.
 - Fixed missing options when "Show [element]" was enabled.

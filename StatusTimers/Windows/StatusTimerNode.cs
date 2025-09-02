@@ -122,13 +122,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         get;
         set {
             field = value;
-            var info = StatusInfo;/*
-            GlobalServices.Logger.Info(
-                $"StatusInfo: Id={info.Id}, IconId={info.IconId}, Name={info.Name}, Desc={info.Description}, " +
-                $"RemainingSeconds={info.RemainingSeconds}, MaxSeconds={info.MaxSeconds}, GameObjectId={info.GameObjectId}, " +
-                $"SelfInflicted={info.SelfInflicted}, Stacks={info.Stacks}, PartyPriority={info.PartyPriority}, " +
-                $"IsPermanent={info.IsPermanent}, ActorName={info.ActorName}, EnemyLetter={info.EnemyLetter}, StatusType={info.StatusType}"
-            );*/
             UpdateValues();
         }
     }
