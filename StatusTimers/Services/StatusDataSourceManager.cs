@@ -12,6 +12,8 @@ namespace StatusTimers.Services;
 public class StatusDataSourceManager<TKey> {
     private readonly Random _rand = new();
 
+    private static uint _dummyStatusUniqueId = 1;
+
     private readonly List<DummyStatusTemplate> _combinedDummyTemplates = [
         new(1239, 213409, "Embolden", 20f, StatusCategory.Buff),
         new(786, 212578, "Battle Litany", 15f, StatusCategory.Buff),
@@ -133,7 +135,7 @@ public class StatusDataSourceManager<TKey> {
 
             float newRemaining = status.RemainingSeconds - deltaSeconds;
             if (newRemaining <= 0) {
-                updatedList.Add(CreateNewDummyStatus()); // Replace with a new dummy status
+                updatedList.Add(CreateNewDummyStatus());
             }
             else {
                 updatedList.Add(new StatusInfo(
@@ -149,7 +151,7 @@ public class StatusDataSourceManager<TKey> {
     }
 
 
-    private StatusInfo CreateNewDummyStatus(int? initialIndex = null) {
+    private StatusInfo CreateNewDummyStatus(int? initialIndex = null, uint? id = null) {
         uint dummyId;
         uint dummyIconId;
         string dummyName;
@@ -183,8 +185,7 @@ public class StatusDataSourceManager<TKey> {
                 selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
 
                 ulong baseActorId = 1000UL;
-                int numDummyActors =
-                    _getMaxStatuses() / _getItemsPerLine(); // Use _getMaxStatuses(), _getItemsPerLine()
+                int numDummyActors = _getMaxStatuses() / _getItemsPerLine();
                 gameObjectIdToUse = baseActorId + (ulong)_rand.Next(0, Math.Max(1, numDummyActors));
                 actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
                 enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
@@ -214,7 +215,7 @@ public class StatusDataSourceManager<TKey> {
             }
         }
 
-        dummyId = selectedTemplate.Id;
+        dummyId = id ?? _dummyStatusUniqueId++;
         dummyIconId = selectedTemplate.IconId;
         dummyName = selectedTemplate.Name;
         dummyDescription = $"Dummy description for {dummyName}";

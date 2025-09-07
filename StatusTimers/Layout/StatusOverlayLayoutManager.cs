@@ -23,11 +23,11 @@ public class StatusOverlayLayoutManager<TKey>(
     private NineGridNode? _backgroundNode;
 
     private StatusTimerNode<TKey>.StatusNodeActionHandler? _onNodeActionTriggered;
-    private HybridDirectionalFlexNode? _rootContainer;
+    private LayoutListNode? _rootContainer;
 
     public Vector2 CalculatedOverlaySize { get; private set; }
 
-    public HybridDirectionalFlexNode? RootContainer => _rootContainer;
+    public LayoutListNode? RootContainer => _rootContainer;
     public NineGridNode? BackgroundNode => _backgroundNode;
 
     public void SetNodeActionHandler(StatusTimerNode<TKey>.StatusNodeActionHandler handler) {
@@ -68,7 +68,7 @@ public class StatusOverlayLayoutManager<TKey>(
         BuildContainers();
     }
 
-    public void BuildContainers()
+    private void BuildContainers()
     {
         var config = getOverlayConfig();
 
@@ -103,11 +103,14 @@ public class StatusOverlayLayoutManager<TKey>(
             return;
         }
 
-        _rootContainer.GrowDirection = (FlexGrowDirection)config.GrowDirection;
-        _rootContainer.ItemsPerLine = config.ItemsPerLine;
-        _rootContainer.FillRowsFirst = config.FillRowsFirst;
-        _rootContainer.HorizontalPadding = config.StatusHorizontalPadding;
-        _rootContainer.VerticalPadding = config.StatusVerticalPadding;
+        if (_rootContainer is HybridDirectionalFlexNode flexNode)
+        {
+            flexNode.GrowDirection = (FlexGrowDirection)config.GrowDirection;
+            flexNode.ItemsPerLine = config.ItemsPerLine;
+            flexNode.FillRowsFirst = config.FillRowsFirst;
+            flexNode.HorizontalPadding = config.StatusHorizontalPadding;
+            flexNode.VerticalPadding = config.StatusVerticalPadding;
+        }
 
         CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
         _rootContainer.Width = CalculatedOverlaySize.X;
@@ -139,10 +142,7 @@ public class StatusOverlayLayoutManager<TKey>(
     }
 
     public void UpdateNodeContent(List<StatusInfo> finalSortedList, NodeKind nodeKind) {
-        if (_rootContainer == null) {
-            return;
-        }
-        _rootContainer.SyncWithListData(
+        _rootContainer?.SyncWithListData(
             finalSortedList,
             node => node.StatusInfo,
             data => {
@@ -150,7 +150,7 @@ public class StatusOverlayLayoutManager<TKey>(
                 {
                     Height = getOverlayConfig().RowHeight,
                     Width = getOverlayConfig().RowWidth,
-                    IsVisible = false,
+                    IsVisible = true,
                     StatusInfo = data,
                     Kind = nodeKind
                 };
@@ -160,21 +160,17 @@ public class StatusOverlayLayoutManager<TKey>(
                 return node;
             });
 
-        _rootContainer.RecalculateLayout();
-
-        foreach (var node in _rootContainer.GetNodes<StatusTimerNode<TKey>>())
+        foreach (var node in _rootContainer?.GetNodes<StatusTimerNode<TKey>>() ?? [])
         {
             var latestInfo = finalSortedList.FirstOrDefault(info => info.Id == node.StatusInfo.Id && info.GameObjectId == node.StatusInfo.GameObjectId);
             if (latestInfo != null)
             {
                 node.StatusInfo = latestInfo;
-                node.IsVisible = true;
-                GlobalServices.Framework.RunOnTick(() => node.IsVisible = true, delayTicks: 1);
             }
         }
 
         var idx = finalSortedList.Select((x, i) => (x.Key, i)).ToDictionary(x => x.Key, x => x.i);
-        _rootContainer.ReorderNodes((a, b) =>
+        _rootContainer?.ReorderNodes((a, b) =>
             idx.GetValueOrDefault(((StatusTimerNode<TKey>)a).StatusInfo.Key, int.MaxValue)
                 .CompareTo(idx.GetValueOrDefault(((StatusTimerNode<TKey>)b).StatusInfo.Key, int.MaxValue))
         );
