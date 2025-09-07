@@ -1,3 +1,6 @@
+# 1.0.0.8
+- Optimized how statuses are displayed to reduce potential issues.
+
 # 1.0.0.7
 - Added more safeguards and checks to prevent crashes and improve stability.
 
