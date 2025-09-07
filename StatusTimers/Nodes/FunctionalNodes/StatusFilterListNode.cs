@@ -33,7 +33,7 @@ public sealed class StatusFilterListNode : VerticalListNode {
                 Height = 32,
                 Width = 320,
                 IsVisible = true,
-                ItemSpacing = 10
+                ItemSpacing = 20
             });
         }
     }
@@ -62,10 +62,6 @@ public sealed class StatusFilterListNode : VerticalListNode {
 
         _isRefreshing = true;
         foreach (var node in GetNodes<StatusFilterRowNode>().ToList()) {
-            //TODO: Temporary fix for crashing issues
-            RaptureAtkModule.Instance()->ClearFocus();
-            AtkStage.Instance()->ClearFocus();
-            node.RemoveButtonNodeOnClick();
             RemoveNode(node);
         }
         foreach (var status in _statusList) {

@@ -29,8 +29,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
 
     private readonly IStatusSource<TKey> _source;
 
-    protected readonly Dictionary<TKey, StatusTimerNode<TKey>> Active = new();
-    protected readonly Stack<StatusTimerNode<TKey>> Pool = new();
     private StatusDataSourceManager<TKey> _dataSourceManager;
 
     private bool _isConfigLoading;
@@ -129,13 +127,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
             List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
 
             _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
-        }
-
-        Active.Clear();
-        foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes) {
-            if (node.IsVisible && node.StatusInfo.Id != 0) {
-                Active[_dataSourceManager.KeyOf(node.StatusInfo)] = node;
-            }
         }
 
         _layoutManager.RecalculateLayout();
@@ -246,8 +237,10 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
         SaveConfig();
         _layoutManager.UnsubscribeFromNodeActions();
 
-        foreach (StatusTimerNode<TKey> node in _layoutManager.AllNodes) {
-            GlobalServices.NativeController.DetachNode(node);
+        if (_layoutManager.RootContainer != null) {
+            foreach (StatusTimerNode<TKey> node in _layoutManager.RootContainer.GetNodes<StatusTimerNode<TKey>>()) {
+                GlobalServices.NativeController.DetachNode(node);
+            }
         }
 
         GlobalServices.NativeController.DetachNode(_layoutManager.RootContainer);

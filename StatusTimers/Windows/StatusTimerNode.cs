@@ -49,20 +49,17 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             Height = config.RowHeight,
             Origin = new Vector2(15.0f, 30.0f)
         };
-        GlobalServices.NativeController.AttachNode(_containerResNode, this);
 
         // Background
         _statusBackgroundNode = new NineGridBackgroundNode {
             NodeId = 6,
         };
         ApplyNodeSettings(_statusBackgroundNode, config.Background);
-        GlobalServices.NativeController.AttachNode(_statusBackgroundNode, _containerResNode);
 
         // Icon
         _iconNode = new IconImageNode { NodeId = 1, ImageNodeFlags = 0, WrapMode = WrapMode.Stretch };
         _iconNode.TextureSize = new Vector2(24, 32);
         ApplyNodeSettings(_iconNode, config.Icon);
-        GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
 
         // Status Name
         _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode { NodeId = 2 } : new TextNode{ NodeId = 2 };
@@ -71,7 +68,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (config.Name.Style != null) {
             config.Name.Style.Changed += OnStatusNameTextStyleChanged;
         }
-        GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
 
         // Progress
         _progressNode = new CastBarProgressBarNode { NodeId = 4 };
@@ -80,7 +76,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (config.Progress.StyleBar != null) {
             config.Progress.StyleBar.Changed += OnProgressBarStyleChanged;
         }
-        GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
 
         // Actor Name
         _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode { NodeId = 3 } : new TextNode { NodeId = 3 };
@@ -89,7 +84,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (config.Actor.Style != null) {
             config.Actor.Style.Changed += OnActorNameTextStyleChanged;
         }
-        GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
 
         // Timer
         _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
@@ -98,7 +92,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (config.Timer.Style != null) {
             config.Timer.Style.Changed += OnStatusRemainingTextStyleChanged;
         }
-        GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
 
         RegisterNodeMap();
 
@@ -107,6 +100,14 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _iconNode.EventFlagsSet = true;
         }
 
+        GlobalServices.NativeController.AttachNode(_containerResNode, this);
+        GlobalServices.NativeController.AttachNode(_statusBackgroundNode, _containerResNode);
+        GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
+        GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
+        GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
+        GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
+        GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
+
         UpdateLayoutOffsets();
 
         AddLabelTimeLine(this);
@@ -114,11 +115,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     public NodeKind Kind { get; set; }
-    public NodeBase? OuterContainer { get; set; }
 
     private uint _lastStatusId;
 
-    public StatusInfo StatusInfo {
+    public required StatusInfo StatusInfo {
         get;
         set {
             field = value;

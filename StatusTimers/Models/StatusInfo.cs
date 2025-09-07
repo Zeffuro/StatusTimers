@@ -1,8 +1,9 @@
 using StatusTimers.Enums;
+using System;
 
 namespace StatusTimers.Models;
 
-public readonly record struct StatusInfo(
+public record StatusInfo(
     uint Id,
     uint IconId,
     string Name,
@@ -19,4 +20,6 @@ public readonly record struct StatusInfo(
     StatusCategory StatusType = StatusCategory.Buff
 ) {
     public StatusKey Key => new(GameObjectId, Id);
+    public virtual bool Equals(StatusInfo? other) => other != null && Id == other.Id && GameObjectId == other.GameObjectId;
+    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId);
 }

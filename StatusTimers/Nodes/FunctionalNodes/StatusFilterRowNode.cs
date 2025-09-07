@@ -22,16 +22,17 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             Y = -4,
             Size = new System.Numerics.Vector2(24, 32),
             IsVisible = true,
-            IconId = status.Icon
+            IconId = status.Icon,
+            FitTexture = true
         };
         AddNode(_statusIconNode);
 
         _statusIdTextNode = new TextNode
         {
-            String = status.RowId.ToString(),
+            String = status.RowId.ToString() + " ",
             IsVisible = true,
             Height = 24,
-            Width = 60,
+            Width = 50,
             AlignmentType = AlignmentType.Right
         };
         AddNode(_statusIdTextNode);
@@ -41,7 +42,7 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             ReadOnlySeString = status.Name,
             IsVisible = true,
             Height = 24,
-            Width = 180,
+            Width = 220,
             AlignmentType = AlignmentType.Left
         };
         AddNode(_statusNameTextNode);
@@ -59,9 +60,4 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
     }
 
     public Status Status { get; }
-
-    public void RemoveButtonNodeOnClick() {
-        _statusRemoveButtonNode.OnClick = null;
-        RemoveNode(_statusRemoveButtonNode);
-    }
 }

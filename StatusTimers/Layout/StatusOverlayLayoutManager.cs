@@ -8,6 +8,7 @@ using StatusTimers.Nodes.LayoutNodes;
 using StatusTimers.Windows;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -18,7 +19,6 @@ public class StatusOverlayLayoutManager<TKey>(
     Func<StatusTimerOverlayConfig> getOverlayConfig)
     : IDisposable
     where TKey : notnull {
-    private readonly List<StatusTimerNode<TKey>> _allNodes = new();
 
     private NineGridNode? _backgroundNode;
 
@@ -29,8 +29,6 @@ public class StatusOverlayLayoutManager<TKey>(
 
     public HybridDirectionalFlexNode? RootContainer => _rootContainer;
     public NineGridNode? BackgroundNode => _backgroundNode;
-
-    public IReadOnlyList<StatusTimerNode<TKey>> AllNodes => _allNodes;
 
     public void SetNodeActionHandler(StatusTimerNode<TKey>.StatusNodeActionHandler handler) {
         _onNodeActionTriggered = handler;
@@ -72,8 +70,6 @@ public class StatusOverlayLayoutManager<TKey>(
 
     public void BuildContainers()
     {
-        _allNodes.Clear();
-
         var config = getOverlayConfig();
 
         CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
@@ -92,22 +88,6 @@ public class StatusOverlayLayoutManager<TKey>(
             ItemsPerLine = config.ItemsPerLine,
             FillRowsFirst = config.FillRowsFirst
         };
-
-        for (int i = 0; i < config.MaxStatuses; i++)
-        {
-            var node = new StatusTimerNode<TKey>(getOverlayConfig)
-            {
-                Height = config.RowHeight,
-                Width = config.RowWidth,
-                IsVisible = false
-            };
-            _rootContainer.AddNode(node);
-            _allNodes.Add(node);
-
-            if (_onNodeActionTriggered != null) {
-                node.OnStatusNodeActionTriggered += _onNodeActionTriggered;
-            }
-        }
 
         _rootContainer.RecalculateLayout();
 
@@ -134,7 +114,7 @@ public class StatusOverlayLayoutManager<TKey>(
         _rootContainer.Height = CalculatedOverlaySize.Y;
         _backgroundNode.Size = CalculatedOverlaySize;
 
-        foreach (var node in _allNodes)
+        foreach (var node in _rootContainer.GetNodes<StatusTimerNode<TKey>>())
         {
             node.Width = config.RowWidth;
             node.Height = config.RowHeight;
@@ -150,33 +130,61 @@ public class StatusOverlayLayoutManager<TKey>(
     }
 
     public void UpdateAllNodesDisplay() {
-        foreach (StatusTimerNode<TKey> node in _allNodes) {
+        if (_rootContainer == null) {
+            return;
+        }
+        foreach (StatusTimerNode<TKey> node in _rootContainer.GetNodes<StatusTimerNode<TKey>>()) {
             node.ApplyOverlayConfig();
         }
     }
 
     public void UpdateNodeContent(List<StatusInfo> finalSortedList, NodeKind nodeKind) {
-        int i = 0;
-        for (; i < finalSortedList.Count && i < _allNodes.Count; i++) {
-            StatusInfo status = finalSortedList[i];
-            StatusTimerNode<TKey> node = _allNodes[i];
-
-            node.Kind = nodeKind;
-            node.IsVisible = true;
-            node.StatusInfo = status;
+        if (_rootContainer == null) {
+            return;
         }
+        _rootContainer.SyncWithListData(
+            finalSortedList,
+            node => node.StatusInfo,
+            data => {
+                var node = new StatusTimerNode<TKey>(getOverlayConfig)
+                {
+                    Height = getOverlayConfig().RowHeight,
+                    Width = getOverlayConfig().RowWidth,
+                    IsVisible = false,
+                    StatusInfo = data,
+                    Kind = nodeKind
+                };
+                if (_onNodeActionTriggered != null) {
+                    node.OnStatusNodeActionTriggered += _onNodeActionTriggered;
+                }
+                return node;
+            });
 
-        for (; i < _allNodes.Count; i++) {
-            StatusTimerNode<TKey> node = _allNodes[i];
-            if (node.IsVisible) {
-                node.IsVisible = false;
-                node.StatusInfo = default!;
+        _rootContainer.RecalculateLayout();
+
+        foreach (var node in _rootContainer.GetNodes<StatusTimerNode<TKey>>())
+        {
+            var latestInfo = finalSortedList.FirstOrDefault(info => info.Id == node.StatusInfo.Id && info.GameObjectId == node.StatusInfo.GameObjectId);
+            if (latestInfo != null)
+            {
+                node.StatusInfo = latestInfo;
+                node.IsVisible = true;
+                GlobalServices.Framework.RunOnTick(() => node.IsVisible = true, delayTicks: 1);
             }
         }
+
+        var idx = finalSortedList.Select((x, i) => (x.Key, i)).ToDictionary(x => x.Key, x => x.i);
+        _rootContainer.ReorderNodes((a, b) =>
+            idx.GetValueOrDefault(((StatusTimerNode<TKey>)a).StatusInfo.Key, int.MaxValue)
+                .CompareTo(idx.GetValueOrDefault(((StatusTimerNode<TKey>)b).StatusInfo.Key, int.MaxValue))
+        );
     }
 
     public void UnsubscribeFromNodeActions() {
-        foreach (StatusTimerNode<TKey> node in _allNodes) {
+        if (_rootContainer == null) {
+            return;
+        }
+        foreach (StatusTimerNode<TKey> node in _rootContainer.GetNodes<StatusTimerNode<TKey>>()) {
             node.OnStatusNodeActionTriggered -= _onNodeActionTriggered;
         }
     }

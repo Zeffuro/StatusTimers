@@ -39,7 +39,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
 
         _textInputNode = new TextInputNode {
             IsVisible = true,
-            Width = 200,
+            Width = 250,
             Height = 28,
             OnInputComplete = input => {
                 string filter = input.TextValue;
@@ -48,13 +48,14 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
         };
         AddNode(_textInputNode);
 
-        AddDummy(120);
+        AddDummy(10);
 
         _iconNode = new IconImageNode
         {
             Size = new System.Numerics.Vector2(24, 32),
             IsVisible = true,
-            IconId = 0
+            IconId = 0,
+            FitTexture = true
         };
         AddNode(_iconNode);
 
@@ -90,7 +91,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
         {
             IsVisible = true,
             Y = 2,
-            Width = 200,
+            Width = 250,
             Height = 28,
             MaxListOptions = 5,
             Options = displayOptions,

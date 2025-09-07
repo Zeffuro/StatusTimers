@@ -58,15 +58,14 @@ namespace StatusTimers.Nodes.LayoutNodes
 
         public override void RecalculateLayout()
         {
-            int visibleCount = NodeList.Count(n => n.IsVisible);
-            if (visibleCount == 0) {
+            if (NodeList.Count == 0) {
                 return;
             }
 
             int itemsPerLine = Math.Max(1, ItemsPerLine);
 
-            float nodeWidth = NodeList.First(n => n.IsVisible).Width;
-            float nodeHeight = NodeList.First(n => n.IsVisible).Height;
+            float nodeWidth = NodeList.First().Width;
+            float nodeHeight = NodeList.First().Height;
 
             bool alignRight = GrowDirection is FlexGrowDirection.DownLeft or FlexGrowDirection.UpLeft;
             bool alignBottom = GrowDirection is FlexGrowDirection.UpRight or FlexGrowDirection.UpLeft;
@@ -77,10 +76,6 @@ namespace StatusTimers.Nodes.LayoutNodes
             int idx = 0;
             foreach (var node in NodeList)
             {
-                if (!node.IsVisible) {
-                    continue;
-                }
-
                 int row, col;
                 if (FillRowsFirst)
                 {

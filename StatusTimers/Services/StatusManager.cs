@@ -51,8 +51,8 @@ public static class StatusManager {
             }
 
             var transformed = TransformStatus(ref status, player.GameObjectId, config);
-            if (transformed.HasValue) {
-                result.Add(transformed.Value);
+            if (transformed != null) {
+                result.Add(transformed);
             }
         }
 
@@ -89,8 +89,8 @@ public static class StatusManager {
                 }
 
                 StatusInfo? transformedStatus = TransformStatus(ref status, battleChara->GetGameObjectId(), config, battleChara);
-                if (transformedStatus.HasValue) {
-                    HostileStatusBuffer.Add(transformedStatus.Value);
+                if (transformedStatus != null) {
+                    HostileStatusBuffer.Add(transformedStatus);
                 }
             }
         }
@@ -113,6 +113,10 @@ public static class StatusManager {
         bool isPerma = gameData.IsPermanent;
         byte partyPrio = gameData.PartyListPriority;
         StatusCategory statusType = gameData.StatusCategory == 1 ? StatusCategory.Buff : StatusCategory.Debuff;
+
+        if (isPerma) {
+            remainingSeconds = 99999;
+        }
 
         if (!StatusDurations.TryGetValue(id, out float maxSeconds) || remainingSeconds > maxSeconds) {
             maxSeconds = remainingSeconds;
