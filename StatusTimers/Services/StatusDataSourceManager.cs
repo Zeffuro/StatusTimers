@@ -87,7 +87,7 @@ public class StatusDataSourceManager<TKey> {
         }
         else {
             current = _realStatusSource.Fetch(overlayConfig);
-            if (_dummyActiveStatuses.Any()) {
+            if (_dummyActiveStatuses.Count != 0) {
                 _dummyActiveStatuses.Clear();
             }
         }
@@ -98,17 +98,12 @@ public class StatusDataSourceManager<TKey> {
         }
 
         if (overlayConfig.FilterEnabled && overlayConfig.FilterList is { Count: > 0 }) {
-            filteredStatuses = overlayConfig.FilterIsBlacklist ? filteredStatuses.Where(s => !overlayConfig.FilterList.Contains(s.Id)) : filteredStatuses.Where(s => overlayConfig.FilterList.Contains(s.Id));
+            filteredStatuses = overlayConfig.FilterIsBlacklist
+                ? filteredStatuses.Where(s => !overlayConfig.FilterList.Contains(s.Id))
+                : filteredStatuses.Where(s => overlayConfig.FilterList.Contains(s.Id));
         }
 
-        List<StatusInfo> finalSortedList = StatusSorter.ApplyAllSorts(
-            filteredStatuses,
-            _getPrimarySort(), _getPrimarySortOrder(),
-            _getSecondarySort(), _getSecondarySortOrder(),
-            _getTertiarySort(), _getTertiarySortOrder()
-        ).Take(_getMaxStatuses()).ToList();
-
-        return finalSortedList;
+        return filteredStatuses.Take(_getMaxStatuses()).ToList();;
     }
 
     private void InitializeDummyStatuses() {

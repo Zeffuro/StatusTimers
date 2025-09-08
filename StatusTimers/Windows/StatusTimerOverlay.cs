@@ -124,9 +124,9 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
 
     public void OnUpdate() {
         if (OverlayConfig != null) {
-            List<StatusInfo> finalSortedList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
+            List<StatusInfo> filteredList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
 
-            _layoutManager.UpdateNodeContent(finalSortedList, _nodeKind);
+            _layoutManager.UpdateNodeContent(filteredList, _nodeKind);
         }
 
         _layoutManager.RecalculateLayout();
@@ -173,7 +173,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
             }
 
             if (updateNodes) {
-                _layoutManager.UpdateAllNodesDisplay();
+                _layoutManager.UpdateAllNodesDisplay(property);
             }
         }
         SaveConfig();

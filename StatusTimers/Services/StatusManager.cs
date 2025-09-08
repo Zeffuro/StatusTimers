@@ -69,20 +69,17 @@ public static class StatusManager {
 
         foreach (BattleChara* battleChara in CharacterManager.Instance()->BattleCharas)
         {
-            if (battleChara == null) {
+            if (battleChara == null || !battleChara->GetIsTargetable() || battleChara->GetGameObjectId() == player.GameObjectId) {
                 continue;
             }
 
-            if (!battleChara->GetIsTargetable() || battleChara->GetGameObjectId() == player.GameObjectId) {
-                continue;
-            }
-
-            foreach (var statusId in HarmfulStatusIds) {
-                int statusIndex = battleChara->StatusManager.GetStatusIndex(statusId);
-                if (statusIndex == -1) {
+            ref var statusManager = ref battleChara->StatusManager;
+            for (int i = 0; i < statusManager.NumValidStatuses; i++)
+            {
+                ref var status = ref statusManager.Status[i];
+                if (!HarmfulStatusIds.Contains(status.StatusId)) {
                     continue;
                 }
-                ref var status = ref battleChara->StatusManager.Status[statusIndex];
 
                 if (status.SourceObject.Id != player.GameObjectId) {
                     continue;
@@ -138,8 +135,6 @@ public static class StatusManager {
         if (stacks > 0 && status.Param > 0 && !gameData.IsFcBuff) {
             iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
         }
-
-
 
         string? actorName = null;
         char? enemyLetter = null;

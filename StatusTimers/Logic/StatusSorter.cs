@@ -1,59 +1,46 @@
 using StatusTimers.Enums;
 using StatusTimers.Models;
+using StatusTimers.Windows;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace StatusTimers.Logic;
 
 public static class StatusSorter {
-    public static IOrderedEnumerable<StatusInfo> ApplyAllSorts(
-        IEnumerable<StatusInfo> statuses,
+    public static Comparison<StatusTimerNode<TKey>> GetNodeComparison<TKey>(
         SortCriterion primarySort,
         SortOrder primaryOrder,
         SortCriterion secondarySort,
         SortOrder secondaryOrder,
         SortCriterion tertiarySort,
-        SortOrder tertiaryOrder) {
-        IOrderedEnumerable<StatusInfo>? orderedList;
+        SortOrder tertiaryOrder)
+        where TKey : notnull
+    {
+        return (a, b) =>
+        {
+            int result = CompareByCriterion(a.StatusInfo, b.StatusInfo, primarySort, primaryOrder);
+            if (result != 0) {
+                return result;
+            }
 
-        IEnumerable<StatusInfo> statusInfos = statuses as StatusInfo[] ?? statuses.ToArray();
-        if (primarySort != SortCriterion.None) {
-            orderedList = ApplySingleSort(statusInfos, primarySort, primaryOrder);
-        }
-        else {
-            orderedList = statusInfos.OrderBy(_ => 0);
-        }
+            result = CompareByCriterion(a.StatusInfo, b.StatusInfo, secondarySort, secondaryOrder);
+            if (result != 0) {
+                return result;
+            }
 
-        if (secondarySort != SortCriterion.None) {
-            orderedList = ApplyThenBySort(orderedList, secondarySort, secondaryOrder);
-        }
-
-        if (tertiarySort != SortCriterion.None) {
-            orderedList = ApplyThenBySort(orderedList, tertiarySort, tertiaryOrder);
-        }
-
-        return orderedList; // Fallback if somehow still null
+            result = CompareByCriterion(a.StatusInfo, b.StatusInfo, tertiarySort, tertiaryOrder);
+            return result;
+        };
     }
 
-    private static IOrderedEnumerable<StatusInfo> ApplySingleSort(IEnumerable<StatusInfo> list, SortCriterion criterion,
-        SortOrder order) {
-        // Get the key selector function for the specified criterion.
-        Func<StatusInfo, object?> keySelector = GetKeySelector(criterion);
+    private static int CompareByCriterion(StatusInfo a, StatusInfo b, SortCriterion criterion, SortOrder order)
+    {
+        var selector = GetKeySelector(criterion);
+        var va = selector(a);
+        var vb = selector(b);
 
-        return order == SortOrder.Ascending
-            ? list.OrderBy(keySelector) // Directly pass the keySelector Func
-            : list.OrderByDescending(keySelector); // Directly pass the keySelector Func
-    }
-
-    private static IOrderedEnumerable<StatusInfo> ApplyThenBySort(IOrderedEnumerable<StatusInfo> orderedList,
-        SortCriterion criterion, SortOrder order) {
-        // Get the key selector function for the specified criterion.
-        Func<StatusInfo, object?> keySelector = GetKeySelector(criterion);
-
-        return order == SortOrder.Ascending
-            ? orderedList.ThenBy(keySelector) // Directly pass the keySelector Func
-            : orderedList.ThenByDescending(keySelector); // Directly pass the keySelector Func
+        int cmp = Comparer<object>.Default.Compare(va, vb);
+        return order == SortOrder.Ascending ? cmp : -cmp;
     }
 
     private static Func<StatusInfo, object?> GetKeySelector(SortCriterion criterion) {

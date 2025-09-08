@@ -132,7 +132,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
 
-    public void ApplyOverlayConfig() {
+    public void ApplyOverlayConfig(string changedProperty) {
         var config = _getOverlayConfig();
 
         bool needsRebuildName = (_statusName is TextNineGridNode) != (config.Name.BackgroundEnabled == true);

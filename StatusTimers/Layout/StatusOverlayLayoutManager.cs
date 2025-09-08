@@ -3,6 +3,7 @@ using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;
+using StatusTimers.Logic;
 using StatusTimers.Models;
 using StatusTimers.Nodes.LayoutNodes;
 using StatusTimers.Windows;
@@ -132,18 +133,18 @@ public class StatusOverlayLayoutManager<TKey>(
         }
     }
 
-    public void UpdateAllNodesDisplay() {
+    public void UpdateAllNodesDisplay(string property) {
         if (_rootContainer == null) {
             return;
         }
         foreach (StatusTimerNode<TKey> node in _rootContainer.GetNodes<StatusTimerNode<TKey>>()) {
-            node.ApplyOverlayConfig();
+            node.ApplyOverlayConfig(property);
         }
     }
 
-    public void UpdateNodeContent(List<StatusInfo> finalSortedList, NodeKind nodeKind) {
+    public void UpdateNodeContent(List<StatusInfo> filteredList, NodeKind nodeKind) {
         _rootContainer?.SyncWithListData(
-            finalSortedList,
+            filteredList,
             node => node.StatusInfo,
             data => {
                 var node = new StatusTimerNode<TKey>(getOverlayConfig)
@@ -162,17 +163,27 @@ public class StatusOverlayLayoutManager<TKey>(
 
         foreach (var node in _rootContainer?.GetNodes<StatusTimerNode<TKey>>() ?? [])
         {
-            var latestInfo = finalSortedList.FirstOrDefault(info => info.Id == node.StatusInfo.Id && info.GameObjectId == node.StatusInfo.GameObjectId);
+            var latestInfo = filteredList.FirstOrDefault(info => info.Id == node.StatusInfo.Id && info.GameObjectId == node.StatusInfo.GameObjectId);
             if (latestInfo != null)
             {
                 node.StatusInfo = latestInfo;
             }
         }
 
-        var idx = finalSortedList.Select((x, i) => (x.Key, i)).ToDictionary(x => x.Key, x => x.i);
+        var comparison = StatusSorter.GetNodeComparison<TKey>(
+            getOverlayConfig().PrimarySort,
+            getOverlayConfig().PrimarySortOrder,
+            getOverlayConfig().SecondarySort,
+            getOverlayConfig().SecondarySortOrder,
+            getOverlayConfig().TertiarySort,
+            getOverlayConfig().TertiarySortOrder
+        );
+
         _rootContainer?.ReorderNodes((a, b) =>
-            idx.GetValueOrDefault(((StatusTimerNode<TKey>)a).StatusInfo.Key, int.MaxValue)
-                .CompareTo(idx.GetValueOrDefault(((StatusTimerNode<TKey>)b).StatusInfo.Key, int.MaxValue))
+            comparison(
+                (StatusTimerNode<TKey>)a,
+                (StatusTimerNode<TKey>)b
+            )
         );
     }
 
