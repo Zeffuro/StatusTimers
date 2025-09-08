@@ -34,6 +34,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private NodeBase _actorName;
 
     private Dictionary<string, NodeBase> _nodeMap = new();
+    private Dictionary<string, Vector2> _anchorCache = new();
+
+    private StatusInfo? _lastStatusInfo;
+    private float _lastRemainingSeconds;
 
     private bool _isDisposed;
 
@@ -116,8 +120,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public NodeKind Kind { get; set; }
 
-    private uint _lastStatusId;
-
     public required StatusInfo StatusInfo {
         get;
         set {
@@ -127,6 +129,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     }
 
     protected override void OnSizeChanged() {
+        ClearAnchorCache();
         UpdateLayoutOffsets();
     }
 
@@ -134,6 +137,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public void ApplyOverlayConfig(string changedProperty) {
         var config = _getOverlayConfig();
+        ClearAnchorCache();
 
         bool needsRebuildName = (_statusName is TextNineGridNode) != (config.Name.BackgroundEnabled == true);
         bool needsRebuildActor = (_actorName is TextNineGridNode) != (config.Actor.BackgroundEnabled == true);
@@ -221,6 +225,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private void UpdateLayoutOffsets() {
         var config = _getOverlayConfig();
+
         _nodeMap["Background"] = _statusBackgroundNode;
         _nodeMap["Icon"] = _iconNode;
         _nodeMap["Name"] = _statusName;
@@ -236,60 +241,62 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         LayoutNode(_statusRemaining, config.Timer.Anchor, "Timer");
     }
 
-    private (float x, float y) GetAnchorBasePosition(
+    private void ClearAnchorCache() {
+        _anchorCache.Clear();
+    }
+
+    // C#
+    private Vector2 GetAnchorBasePosition(
     AnchorTarget anchorTo,
     string selfKey,
     AnchorAlignment alignment)
     {
+        string cacheKey = $"{anchorTo}-{selfKey}-{alignment}";
+        if (_anchorCache.TryGetValue(cacheKey, out var cached)) {
+            return cached;
+        }
+
+        // Handle container anchors
         switch (anchorTo)
         {
             case AnchorTarget.ContainerLeft:
-                return (0, 0);
+                return _anchorCache[cacheKey] = new Vector2(0, 0);
             case AnchorTarget.ContainerRight:
-                return (_containerResNode.Width, 0);
+                return _anchorCache[cacheKey] = new Vector2(_containerResNode.Width, 0);
             case AnchorTarget.ContainerTop:
-                return (0, 0);
+                return _anchorCache[cacheKey] = new Vector2(0, 0);
             case AnchorTarget.ContainerBottom:
-                return (0, _containerResNode.Height);
+                return _anchorCache[cacheKey] = new Vector2(0, _containerResNode.Height);
             case AnchorTarget.ContainerCenterH:
-                return (_containerResNode.Width / 2, 0);
+                return _anchorCache[cacheKey] = new Vector2(_containerResNode.Width / 2, 0);
             case AnchorTarget.ContainerCenterV:
-                return (0, _containerResNode.Height / 2);
-            default:
-                string anchorStr = anchorTo.ToString();
-                foreach (var key in _nodeMap.Keys)
-                {
-                    if (anchorStr.StartsWith(key) && key != selfKey)
-                    {
-                        var node = _nodeMap[key];
-                        string edge = anchorStr.Substring(key.Length);
-
-                        bool wantsVerticalCenter = alignment.HasFlag(AnchorAlignment.VerticalCenter) || alignment.HasFlag(AnchorAlignment.Center);
-                        bool wantsHorizontalCenter = alignment.HasFlag(AnchorAlignment.HorizontalCenter) || alignment.HasFlag(AnchorAlignment.Center);
-
-                        switch (edge)
-                        {
-                            case "Left":
-                                return (node.X, node.Y + (wantsVerticalCenter ? node.Height / 2f : 0));
-                            case "Right":
-                                return (node.X + node.Width, node.Y + (wantsVerticalCenter ? node.Height / 2f : 0));
-                            case "Top":
-                                return (node.X + (wantsHorizontalCenter ? node.Width / 2f : 0), node.Y);
-                            case "Bottom":
-                                return (node.X + (wantsHorizontalCenter ? node.Width / 2f : 0), node.Y + node.Height);
-                            default:
-                                return (node.X, node.Y);
-                        }
-                    }
-                }
-                return (0, 0);
+                return _anchorCache[cacheKey] = new Vector2(0, _containerResNode.Height / 2);
         }
+
+        // Use the mapping for other anchors
+        if (!AnchorTargetMap.Map.TryGetValue(anchorTo, out var mapping) || mapping.nodeKey == selfKey ||
+            !_nodeMap.TryGetValue(mapping.nodeKey, out var node)) {
+            return _anchorCache[cacheKey] = new Vector2(0, 0);
+        }
+
+        bool wantsVerticalCenter = alignment.HasFlag(AnchorAlignment.VerticalCenter) || alignment.HasFlag(AnchorAlignment.Center);
+        bool wantsHorizontalCenter = alignment.HasFlag(AnchorAlignment.HorizontalCenter) || alignment.HasFlag(AnchorAlignment.Center);
+
+        Vector2 result = mapping.edge switch
+        {
+            "Left"   => new Vector2(node.X, node.Y + (wantsVerticalCenter ? node.Height / 2f : 0)),
+            "Right"  => new Vector2(node.X + node.Width, node.Y + (wantsVerticalCenter ? node.Height / 2f : 0)),
+            "Top"    => new Vector2(node.X + (wantsHorizontalCenter ? node.Width / 2f : 0), node.Y),
+            "Bottom" => new Vector2(node.X + (wantsHorizontalCenter ? node.Width / 2f : 0), node.Y + node.Height),
+            _        => new Vector2(node.X, node.Y)
+        };
+        return _anchorCache[cacheKey] = result;
     }
 
     private void LayoutNode(NodeBase node, StatusTimerOverlayConfig.StatusNodeAnchorConfig anchorConfig, string selfKey) {
-        var (baseX, baseY) = GetAnchorBasePosition(anchorConfig.AnchorTo, selfKey, anchorConfig.Alignment);
-        float x = baseX + anchorConfig.OffsetX;
-        float y = baseY + anchorConfig.OffsetY;
+        var basePosition = GetAnchorBasePosition(anchorConfig.AnchorTo, selfKey, anchorConfig.Alignment);
+        float x = basePosition.X + anchorConfig.OffsetX;
+        float y = basePosition.Y + anchorConfig.OffsetY;
 
         var alignment = anchorConfig.Alignment;
 
@@ -357,60 +364,64 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (_isDisposed) {
             return;
         }
+
+        if (StatusInfo.Id == 0) {
+            ResetStatusDisplay();
+            return;
+        }
+
         var config = _getOverlayConfig();
 
-        if (_lastStatusId != StatusInfo.Id) {
+        // First time setup
+        if (_lastStatusInfo == null || !StatusInfo.Equals(_lastStatusInfo)) {
             _iconNode.IsVisible = config.Icon.IsVisible;
             _iconNode.IconId = StatusInfo.IconId;
             _statusName.SetText(StatusInfo.Name);
             _statusName.IsVisible = config.Name.IsVisible;
             _statusBackgroundNode.IsVisible = config.Background.IsVisible;
-            _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
-            _lastStatusId = StatusInfo.Id;
-        }
 
-        if (StatusInfo.Id == 0) {
-            _iconNode.IsVisible = false;
-            _statusName.IsVisible = false;
-            _statusName.SetText("");
-            _statusRemaining.IsVisible = false;
-            _statusRemaining.SetText("");
-            _progressNode.IsVisible = false;
-            _progressNode.Progress = 0f; // Reset progress
-            _actorName.IsVisible = false;
-            _actorName.SetText("");
-            return;
+            if (StatusInfo.ActorName != null && config.Actor.IsVisible) {
+                _actorName.SetText($"{(config.ShowActorLetter ? StatusInfo.EnemyLetter : "")}{StatusInfo.ActorName}");
+                _actorName.IsVisible = true;
+            } else {
+                _actorName.SetText(string.Empty);
+                _actorName.IsVisible = false;
+            }
         }
-
+        
         if (StatusInfo.IsPermanent || StatusInfo.RemainingSeconds <= 0 || StatusInfo.MaxSeconds <= 0) {
             _progressNode.IsVisible = false;
             _progressNode.Progress = 0f;
             _statusRemaining.IsVisible = false;
-            _statusRemaining.SetText("");
-        }
-        else {
+            _statusRemaining.SetText(string.Empty);
+        } else {
             if (Math.Abs(StatusInfo.RemainingSeconds - StatusInfo.MaxSeconds) < 0.01 && config.AnimationsEnabled) {
                 Timeline?.PlayAnimation(10);
             }
-
             _progressNode.IsVisible = config.Progress.IsVisible;
+            float progress = Math.Clamp(Helpers.Util.CalculateProgressRatio(StatusInfo.RemainingSeconds, StatusInfo.MaxSeconds), 0f, 1f);
+            _progressNode.Progress = float.IsFinite(progress) ? progress : 0f;
+
             _statusRemaining.IsVisible = config.Timer.IsVisible;
-
-            if (StatusInfo.ActorName != null && config.Actor.IsVisible) {
-                _actorName.SetText($"{(config.ShowActorLetter ? StatusInfo.EnemyLetter : "")}{StatusInfo.ActorName}");
-            }
-            else {
-                _actorName.SetText("");
-            }
-
-            if (StatusInfo.MaxSeconds > 0) {
-                float progress = Math.Clamp(Helpers.Util.CalculateProgressRatio(StatusInfo.RemainingSeconds, StatusInfo.MaxSeconds), 0f, 1f);
-                _progressNode.Progress = float.IsFinite(progress) ? progress : 0f;
-            } else {
-                _progressNode.Progress = 0f;
-            }
             _statusRemaining.SetText(Helpers.Util.SafeFormatTime(StatusInfo.RemainingSeconds, config.TimerFormat));
         }
+
+        _lastStatusInfo = StatusInfo;
+    }
+
+    private void ResetStatusDisplay()
+    {
+        _iconNode.IsVisible = false;
+        _statusName.IsVisible = false;
+        _statusRemaining.IsVisible = false;
+        _progressNode.IsVisible = false;
+        _actorName.IsVisible = false;
+
+        _statusName.SetText(string.Empty);
+        _statusRemaining.SetText(string.Empty);
+        _progressNode.Progress = 0f;
+        _actorName.SetText(string.Empty);
+        _lastStatusInfo = null;
     }
 
     private void OnStatusNameTextStyleChanged() => ApplyTextStyle(_statusName, _getOverlayConfig().Name.Style);

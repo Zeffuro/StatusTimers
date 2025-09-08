@@ -56,13 +56,7 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
             () => IsPreviewEnabled,
             () => OverlayConfig.ShowPermaIcons,
             () => OverlayConfig.MaxStatuses,
-            () => OverlayConfig.ItemsPerLine,
-            () => OverlayConfig.PrimarySort,
-            () => OverlayConfig.PrimarySortOrder,
-            () => OverlayConfig.SecondarySort,
-            () => OverlayConfig.SecondarySortOrder,
-            () => OverlayConfig.TertiarySort,
-            () => OverlayConfig.TertiarySortOrder
+            () => OverlayConfig.ItemsPerLine
         );
 
         OverlayConfig.OnPropertyChanged += (property, updateNodes) => {

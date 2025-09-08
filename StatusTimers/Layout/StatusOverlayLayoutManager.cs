@@ -179,12 +179,17 @@ public class StatusOverlayLayoutManager<TKey>(
             getOverlayConfig().TertiarySortOrder
         );
 
-        _rootContainer?.ReorderNodes((a, b) =>
-            comparison(
-                (StatusTimerNode<TKey>)a,
-                (StatusTimerNode<TKey>)b
-            )
-        );
+        var nodes =  _rootContainer?.GetNodes<StatusTimerNode<TKey>>().ToList();
+        var sortedNodes = nodes?.OrderBy(n => n, Comparer<StatusTimerNode<TKey>>.Create(comparison)).ToList();
+
+        if (nodes != null && sortedNodes != null && !nodes.SequenceEqual(sortedNodes)) {
+            _rootContainer?.ReorderNodes((a, b) =>
+                comparison(
+                    (StatusTimerNode<TKey>)a,
+                    (StatusTimerNode<TKey>)b
+                )
+            );
+        }
     }
 
     public void UnsubscribeFromNodeActions() {

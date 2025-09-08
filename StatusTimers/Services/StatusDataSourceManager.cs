@@ -9,10 +9,16 @@ using System.Linq;
 
 namespace StatusTimers.Services;
 
-public class StatusDataSourceManager<TKey> {
+public class StatusDataSourceManager<TKey>(
+    IStatusSource<TKey> realStatusSource,
+    NodeKind nodeKind,
+    Func<bool> getIsPreviewEnabled,
+    Func<bool> getShowPermaIcons,
+    Func<int> getMaxStatuses,
+    Func<int> getItemsPerLine) {
     private readonly Random _rand = new();
 
-    private static uint _dummyStatusUniqueId = 1;
+    private uint _dummyStatusUniqueId = 1;
 
     private readonly List<DummyStatusTemplate> _combinedDummyTemplates = [
         new(1239, 213409, "Embolden", 20f, StatusCategory.Buff),
@@ -29,55 +35,14 @@ public class StatusDataSourceManager<TKey> {
         new(3871, 212661, "High Thunder", 30, StatusCategory.Debuff)
     ];
 
-    private readonly Func<bool> _getIsPreviewEnabled;
-    private readonly Func<int> _getItemsPerLine;
-    private readonly Func<int> _getMaxStatuses;
-    private readonly Func<SortCriterion> _getPrimarySort;
-    private readonly Func<SortOrder> _getPrimarySortOrder;
-    private readonly Func<SortCriterion> _getSecondarySort;
-    private readonly Func<SortOrder> _getSecondarySortOrder;
-    private readonly Func<bool> _getShowPermaIcons;
-    private readonly Func<SortCriterion> _getTertiarySort;
-    private readonly Func<SortOrder> _getTertiarySortOrder;
-
-    private readonly NodeKind _nodeKind;
-
-    private readonly IStatusSource<TKey> _realStatusSource;
-
     private List<StatusInfo> _dummyActiveStatuses = new();
+    private readonly Dictionary<StatusKey, ulong> _dummyGameObjectIdMap = new();
     private DateTime _lastDummyUpdateTime;
-
-    public StatusDataSourceManager(
-        IStatusSource<TKey> realStatusSource,
-        NodeKind nodeKind,
-        Func<bool> getIsPreviewEnabled,
-        Func<bool> getShowPermaIcons,
-        Func<int> getMaxStatuses,
-        Func<int> getItemsPerLine,
-        Func<SortCriterion> getPrimarySort,
-        Func<SortOrder> getPrimarySortOrder,
-        Func<SortCriterion> getSecondarySort,
-        Func<SortOrder> getSecondarySortOrder,
-        Func<SortCriterion> getTertiarySort,
-        Func<SortOrder> getTertiarySortOrder) {
-        _realStatusSource = realStatusSource;
-        _nodeKind = nodeKind;
-        _getIsPreviewEnabled = getIsPreviewEnabled;
-        _getShowPermaIcons = getShowPermaIcons;
-        _getMaxStatuses = getMaxStatuses;
-        _getItemsPerLine = getItemsPerLine;
-        _getPrimarySort = getPrimarySort;
-        _getPrimarySortOrder = getPrimarySortOrder;
-        _getSecondarySort = getSecondarySort;
-        _getSecondarySortOrder = getSecondarySortOrder;
-        _getTertiarySort = getTertiarySort;
-        _getTertiarySortOrder = getTertiarySortOrder;
-    }
 
     public List<StatusInfo> FetchAndProcessStatuses(StatusTimerOverlayConfig overlayConfig) {
         IReadOnlyList<StatusInfo> current;
 
-        if (_getIsPreviewEnabled()) {
+        if (getIsPreviewEnabled()) {
             if (_dummyActiveStatuses.Count == 0 || _dummyActiveStatuses.Any(s => s.Id == 0)) {
                 InitializeDummyStatuses();
             }
@@ -86,14 +51,14 @@ public class StatusDataSourceManager<TKey> {
             current = _dummyActiveStatuses;
         }
         else {
-            current = _realStatusSource.Fetch(overlayConfig);
+            current = realStatusSource.Fetch(overlayConfig);
             if (_dummyActiveStatuses.Count != 0) {
                 _dummyActiveStatuses.Clear();
             }
         }
 
         IEnumerable<StatusInfo> filteredStatuses = current;
-        if (_nodeKind == NodeKind.Combined && !_getShowPermaIcons()) {
+        if (nodeKind == NodeKind.Combined && !getShowPermaIcons()) {
             filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
         }
 
@@ -103,12 +68,12 @@ public class StatusDataSourceManager<TKey> {
                 : filteredStatuses.Where(s => overlayConfig.FilterList.Contains(s.Id));
         }
 
-        return filteredStatuses.Take(_getMaxStatuses()).ToList();;
+        return filteredStatuses.Take(getMaxStatuses()).ToList();;
     }
 
     private void InitializeDummyStatuses() {
         _dummyActiveStatuses.Clear();
-        for (int i = 0; i < _getMaxStatuses(); i++) {
+        for (int i = 0; i < 30; i++) {
             _dummyActiveStatuses.Add(CreateNewDummyStatus(i));
         }
 
@@ -164,13 +129,13 @@ public class StatusDataSourceManager<TKey> {
 
         DummyStatusTemplate selectedTemplate;
 
-        if (_nodeKind == NodeKind.MultiDoT) {
+        ulong baseActorId = 1000UL;
+
+        if (nodeKind == NodeKind.MultiDoT) {
             if (initialIndex.HasValue) {
                 int index = initialIndex.Value;
                 selectedTemplate = _multiDotDummyTemplates[index % _multiDotDummyTemplates.Count];
-
-                ulong baseActorId = 1000UL;
-                gameObjectIdToUse = baseActorId + (ulong)(index / _getItemsPerLine()); // Use _getItemsPerLine()
+                gameObjectIdToUse = baseActorId + (ulong)index;
                 actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
                 enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
                 isPermanent = selectedTemplate.IsPermanent;
@@ -178,10 +143,8 @@ public class StatusDataSourceManager<TKey> {
             }
             else {
                 selectedTemplate = _multiDotDummyTemplates[_rand.Next(0, _multiDotDummyTemplates.Count)];
-
-                ulong baseActorId = 1000UL;
-                int numDummyActors = _getMaxStatuses() / _getItemsPerLine();
-                gameObjectIdToUse = baseActorId + (ulong)_rand.Next(0, Math.Max(1, numDummyActors));
+                int numDummyActors = getMaxStatuses() / getItemsPerLine();
+                gameObjectIdToUse = baseActorId + (ulong)_rand.Next(0, Math.Max(1, 30));
                 actorName = $"Enemy {gameObjectIdToUse - baseActorId}";
                 enemyLetter = (char)('' + (int)(gameObjectIdToUse - baseActorId));
                 isPermanent = selectedTemplate.IsPermanent;
@@ -192,8 +155,6 @@ public class StatusDataSourceManager<TKey> {
             if (initialIndex.HasValue) {
                 int index = initialIndex.Value;
                 selectedTemplate = _combinedDummyTemplates[index % _combinedDummyTemplates.Count];
-
-                gameObjectIdToUse = 0UL;
                 actorName = null;
                 enemyLetter = null;
                 isPermanent = selectedTemplate.IsPermanent && index % 5 == 0;
@@ -201,8 +162,6 @@ public class StatusDataSourceManager<TKey> {
             }
             else {
                 selectedTemplate = _combinedDummyTemplates[_rand.Next(0, _combinedDummyTemplates.Count)];
-
-                gameObjectIdToUse = 0UL;
                 actorName = null;
                 enemyLetter = null;
                 isPermanent = selectedTemplate.IsPermanent;
@@ -211,8 +170,10 @@ public class StatusDataSourceManager<TKey> {
         }
 
         dummyId = id ?? _dummyStatusUniqueId++;
+        gameObjectIdToUse = baseActorId + dummyId;
         dummyIconId = selectedTemplate.IconId;
         dummyName = selectedTemplate.Name;
+
         dummyDescription = $"Dummy description for {dummyName}";
         maxSeconds = selectedTemplate.MaxSeconds;
         selfInflicted = _rand.Next(100) < 50;
@@ -227,6 +188,6 @@ public class StatusDataSourceManager<TKey> {
     }
 
     public TKey KeyOf(StatusInfo info) {
-        return _realStatusSource.KeyOf(info);
+        return realStatusSource.KeyOf(info);
     }
 }
