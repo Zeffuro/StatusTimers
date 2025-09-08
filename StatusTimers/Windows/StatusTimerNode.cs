@@ -244,8 +244,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void ClearAnchorCache() {
         _anchorCache.Clear();
     }
-
-    // C#
+    
     private Vector2 GetAnchorBasePosition(
     AnchorTarget anchorTo,
     string selfKey,
@@ -388,7 +387,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 _actorName.IsVisible = false;
             }
         }
-        
+
         if (StatusInfo.IsPermanent || StatusInfo.RemainingSeconds <= 0 || StatusInfo.MaxSeconds <= 0) {
             _progressNode.IsVisible = false;
             _progressNode.Progress = 0f;
