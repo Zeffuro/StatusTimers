@@ -163,7 +163,7 @@ public class StatusOverlayLayoutManager<TKey>(
 
         foreach (var node in _rootContainer?.GetNodes<StatusTimerNode<TKey>>() ?? [])
         {
-            var latestInfo = filteredList.FirstOrDefault(info => info.Id == node.StatusInfo.Id && info.GameObjectId == node.StatusInfo.GameObjectId);
+            var latestInfo = filteredList.FirstOrDefault(info => info.Id == node.StatusInfo.Id && info.GameObjectId == node.StatusInfo.GameObjectId && info.IconId == node.StatusInfo.IconId);
             if (latestInfo != null)
             {
                 node.StatusInfo = latestInfo;

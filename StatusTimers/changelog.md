@@ -1,3 +1,6 @@
+# 1.0.1.0
+- Fixed certain statuses with stacks not being displayed correctly.
+
 # 1.0.0.9
 - Resolved status flickering when displaying more than 16 statuses.
 - Made significant performance improvements.

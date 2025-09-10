@@ -37,7 +37,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private Dictionary<string, Vector2> _anchorCache = new();
 
     private StatusInfo? _lastStatusInfo;
-    private float _lastRemainingSeconds;
 
     private bool _isDisposed;
 
@@ -244,7 +243,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void ClearAnchorCache() {
         _anchorCache.Clear();
     }
-    
+
     private Vector2 GetAnchorBasePosition(
     AnchorTarget anchorTo,
     string selfKey,

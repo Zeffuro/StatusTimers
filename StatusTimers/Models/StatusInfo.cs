@@ -20,6 +20,6 @@ public record StatusInfo(
     StatusCategory StatusType = StatusCategory.Buff
 ) {
     public StatusKey Key => new(GameObjectId, Id);
-    public virtual bool Equals(StatusInfo? other) => other != null && Id == other.Id && GameObjectId == other.GameObjectId;
-    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId);
+    public virtual bool Equals(StatusInfo? other) => other != null && Id == other.Id && GameObjectId == other.GameObjectId && IconId == other.IconId;
+    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId, IconId);
 }

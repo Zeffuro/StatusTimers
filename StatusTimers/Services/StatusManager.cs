@@ -132,8 +132,11 @@ public static class StatusManager {
             return null;
         }
 
-        if (stacks > 0 && status.Param > 0 && !gameData.IsFcBuff) {
-            iconId = gameData.Icon + (uint)Math.Max(0, status.Param - 1);
+        if (!gameData.IsFcBuff) {
+            int stackCount = stacks > 0 ? Math.Max(1, (int)status.Param) : 0;
+            if (stackCount > 0) {
+                iconId = gameData.Icon + (uint)(stackCount - 1);
+            }
         }
 
         string? actorName = null;
