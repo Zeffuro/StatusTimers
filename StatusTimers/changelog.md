@@ -1,3 +1,6 @@
+# 1.0.1.1
+- Added more safeguards to prevent a different crash.
+
 # 1.0.1.0
 - Fixed certain statuses with stacks not being displayed correctly.
 
