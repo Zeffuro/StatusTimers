@@ -12,7 +12,7 @@ public sealed class TwoOptionsRowNode : HorizontalFlexNode
         X = 18;
         Width = 600;
         Height = height;
-        AlignmentFlags = FlexFlags.FitHeight;
+        AlignmentFlags = FlexFlags.CenterVertically;
         FitPadding = 4;
 
         AddNode(first);

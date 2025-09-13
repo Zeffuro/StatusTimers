@@ -104,13 +104,13 @@ public sealed class VisualSectionNode : VerticalListNode
                 OnValueChanged = value => { getConfig().ScaleInt = value; },
                 X = 18,
                 Width = 280,
-                Height = 30,
+                Height = 20,
                 IsVisible = true
             },
             new ResNode {
                 IsVisible = true,
                 Width = 300,
-                Height = 30
+                Height = 20
             },
             30
         ));
@@ -158,7 +158,7 @@ public sealed class VisualSectionNode : VerticalListNode
                 OnValueChanged = value => { getConfig().ItemsPerLine = value; },
                 X = 18,
                 Width = 280,
-                Height = 30,
+                Height = 20,
                 IsVisible = true
             },
             new SliderNode {
@@ -169,7 +169,7 @@ public sealed class VisualSectionNode : VerticalListNode
                 OnValueChanged = value => { getConfig().MaxStatuses = value; },
                 X = 18,
                 Width = 280,
-                Height = 30,
+                Height = 20,
                 IsVisible = true
             },
             30
