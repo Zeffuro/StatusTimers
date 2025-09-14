@@ -97,14 +97,13 @@ public sealed class VisualSectionNode : VerticalListNode
         // Scale slider
         AddNode(new TwoOptionsRowNode(
             new SliderNode {
-                Min = 5,
-                Max = 200,
+                Range = new Range(5, 200),
                 Step = 5,
                 Value = getConfig().ScaleInt,
                 OnValueChanged = value => { getConfig().ScaleInt = value; },
                 X = 18,
                 Width = 280,
-                Height = 20,
+                Height = 24,
                 IsVisible = true
             },
             new ResNode {
@@ -151,25 +150,23 @@ public sealed class VisualSectionNode : VerticalListNode
         // Sliders for ItemsPerLine and MaxStatuses
         AddNode(new TwoOptionsRowNode(
             new SliderNode {
-                Min = 1,
-                Max = 30,
+                Range = new Range(1, 30),
                 Step = 1,
                 Value = getConfig().ItemsPerLine,
                 OnValueChanged = value => { getConfig().ItemsPerLine = value; },
                 X = 18,
                 Width = 280,
-                Height = 20,
+                Height = 24,
                 IsVisible = true
             },
             new SliderNode {
-                Min = 1,
-                Max = 30,
+                Range = new Range(1, 30),
                 Step = 1,
                 Value = getConfig().MaxStatuses,
                 OnValueChanged = value => { getConfig().MaxStatuses = value; },
                 X = 18,
                 Width = 280,
-                Height = 20,
+                Height = 24,
                 IsVisible = true
             },
             30
