@@ -35,7 +35,7 @@ public class StatusOverlayLayoutManager<TKey>(
         _onNodeActionTriggered = handler;
     }
 
-    public void InitializeLayout() {
+    public unsafe void InitializeLayout() {
         var config = getOverlayConfig();
 
         CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
