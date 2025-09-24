@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit;
+using KamiToolKit.Classes;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
 
@@ -38,6 +39,7 @@ public class Plugin : IDalamudPlugin {
         Services.Services.ClientState.Logout += OnLogout;
 
         Services.Services.NameplateAddonController.OnUpdate += OnNameplateUpdate;
+        //ReflectionDebugWindow.Open();
     }
 
     public void Dispose() {

@@ -1,3 +1,6 @@
+# 1.0.1.3
+- Added more safeguards to prevent crashes.
+
 # 1.0.1.2
 - Slightly tweaked the sliders in the configuration window.
 
