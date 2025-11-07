@@ -15,6 +15,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
     public NodeLayoutSectionNode(
         string label,
         StatusTimerOverlayConfig.NodePartConfig nodePart,
+        StatusTimerOverlayConfig.NodePartConfig baseDefaultsPart,
         OverlayManager? overlayManager,
         Action? onChanged = null,
         Action? onToggled = null)
@@ -82,6 +83,10 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
         if (nodePart.StyleKind == NodePartStyleKind.Bar && nodePart.StyleBar != null && overlayManager != null)
         {
+            var defaultBarStyle = baseDefaultsPart.StyleBar;
+            var borderDefaultColor = defaultBarStyle?.BorderColor ?? nodePart.StyleBar.BorderColor;
+            var progressDefaultColor = defaultBarStyle?.ProgressColor ?? nodePart.StyleBar.ProgressColor;
+            var backgroundDefaultColor = defaultBarStyle?.BackgroundColor ?? nodePart.StyleBar.BackgroundColor;
             var barStyleRow = new HorizontalFlexNode
             {
                 IsVisible = true,
@@ -102,7 +107,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
             barStyleRow.AddNode(new ColorPreviewOptionNode(
                 "Border Color",
-                () => nodePart.StyleBar.BorderColor,
+                () => nodePart.StyleBar.BorderColor, borderDefaultColor,
                 c => { nodePart.StyleBar.BorderColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
@@ -119,15 +124,14 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
             barStyleRow2.AddNode(new ColorPreviewOptionNode(
                 "Progress Color",
-                () => nodePart.StyleBar.ProgressColor,
+                () => nodePart.StyleBar.ProgressColor, progressDefaultColor,
                 c => { nodePart.StyleBar.ProgressColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
             ));
-
             barStyleRow2.AddNode(new ColorPreviewOptionNode(
                 "Background Color",
-                () => nodePart.StyleBar.BackgroundColor,
+                () => nodePart.StyleBar.BackgroundColor, backgroundDefaultColor,
                 c => { nodePart.StyleBar.BackgroundColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
@@ -137,6 +141,9 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         // Style rows
         if (nodePart.Style != null && overlayManager != null)
         {
+            var defaultTextStyle = baseDefaultsPart.Style;
+            var textDefaultColor = defaultTextStyle?.TextColor ?? nodePart.Style.TextColor;
+            var outlineDefaultColor = defaultTextStyle?.TextOutlineColor ?? nodePart.Style.TextOutlineColor;
             var styleRow = new HorizontalFlexNode
             {
                 IsVisible = true,
@@ -170,15 +177,14 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
             styleRow2.AddNode(new ColorPreviewOptionNode(
                 "Text Color",
-                () => nodePart.Style.TextColor,
+                () => nodePart.Style.TextColor, textDefaultColor,
                 c => { nodePart.Style.TextColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
             ));
-
             styleRow2.AddNode(new ColorPreviewOptionNode(
                 "Text Outline Color",
-                () => nodePart.Style.TextOutlineColor,
+                () => nodePart.Style.TextOutlineColor, outlineDefaultColor,
                 c => { nodePart.Style.TextOutlineColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged

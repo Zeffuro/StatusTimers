@@ -3,6 +3,7 @@ using KamiToolKit.Addon;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Nodes.TabBar;
+using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Models;
 using StatusTimers.Nodes.FunctionalNodes;
@@ -142,11 +143,15 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 }
             );
 
+            // Create a pristine default config to supply baseline (unmodified) colors
+            var defaultConfig = new StatusTimerOverlayConfig(kind);
+
             // Background Settings
             mainSettingsGroup.AddNode(
                 new NodeLayoutSectionNode(
                     "background",
                     overlay.OverlayConfig.Background,
+                    defaultConfig.Background,
                     overlayManager,
                     onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Background), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -158,6 +163,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 new NodeLayoutSectionNode(
                     "icon",
                     overlay.OverlayConfig.Icon,
+                    defaultConfig.Icon,
                     overlayManager,
                     onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Icon), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -169,6 +175,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 new NodeLayoutSectionNode(
                     "status name",
                     overlay.OverlayConfig.Name,
+                    defaultConfig.Name,
                     overlayManager,
                     onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Name), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -185,6 +192,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 new NodeLayoutSectionNode(
                     "time remaining",
                     overlay.OverlayConfig.Timer,
+                    defaultConfig.Timer,
                     overlayManager,
                     onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Timer), updateNodes: true),
                     onToggled: () => {
@@ -200,6 +208,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 new NodeLayoutSectionNode(
                     "progressbar",
                     overlay.OverlayConfig.Progress,
+                    defaultConfig.Progress,
                     overlayManager,
                     onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Progress), updateNodes: true),
                     onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
@@ -212,6 +221,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     new NodeLayoutSectionNode(
                         "enemy name",
                         overlay.OverlayConfig.Actor,
+                        defaultConfig.Actor,
                         overlayManager,
                         onChanged: () => overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Actor), updateNodes: true),
                         onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)

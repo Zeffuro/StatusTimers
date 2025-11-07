@@ -56,7 +56,7 @@ namespace StatusTimers.Nodes.LayoutNodes
             }
         } = 1;
 
-        public override void RecalculateLayout()
+        protected override void InternalRecalculateLayout()
         {
             if (NodeList.Count == 0) {
                 return;

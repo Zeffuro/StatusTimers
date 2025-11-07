@@ -20,6 +20,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
     public ColorPreviewOptionNode(
         string labelText,
         Func<Vector4> getColor,
+        Vector4 defaultColor,
         Action<Vector4> setColor,
         OverlayManager overlayManager,
         Action? onChanged = null,
@@ -65,7 +66,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
             var startColor = _getColor();
             Services.Services.Framework.RunOnTick(() =>
             {
-                _overlayManager.ColorPickerInstance?.Show(startColor, newColor =>
+                _overlayManager.ColorPickerInstance?.Show(startColor, defaultColor, newColor =>
                 {
                     _setColor(newColor);
                     colorPreviewButton.Color = newColor;

@@ -4,6 +4,7 @@ using StatusTimers.Models;
 using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Numerics;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
@@ -16,8 +17,8 @@ public unsafe class OverlayManager : IDisposable {
     private ColorPickerAddon? _colorPickerAddon;
 
     public OverlayManager() {
-        Services.Services.NameplateAddonController.OnAttach += AttachNodes;
-        Services.Services.NameplateAddonController.OnDetach += DetachNodes;
+        GlobalServices.OverlayAddonController.OnAttach += AttachNodes;
+        GlobalServices.OverlayAddonController.OnDetach += DetachNodes;
     }
 
     public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
@@ -57,7 +58,7 @@ public unsafe class OverlayManager : IDisposable {
         _colorPickerAddon = new ColorPickerAddon() {
             InternalName = "StatusTimerColorPicker",
             Title = "Pick a color",
-            Size = new Vector2(540, 500),
+            Size = new Vector2(400, 540),
             NativeController = Services.Services.NativeController
         };
 

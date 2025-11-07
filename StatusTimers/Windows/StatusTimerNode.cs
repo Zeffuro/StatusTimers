@@ -3,6 +3,7 @@ using Dalamud.Game.Addon.Events.EventDataTypes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Classes;
 using KamiToolKit.Classes.TimelineBuilding;
+using KamiToolKit.Extensions;
 using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
 using KamiToolKit.System;
@@ -40,7 +41,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private bool _isDisposed;
 
-    public StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
+    public unsafe StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
         _getOverlayConfig = getOverlayConfig;
 
         var config = _getOverlayConfig();
@@ -99,8 +100,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         RegisterNodeMap();
 
         if (config.ShowActorLetter || config.AllowTargetActor) {
-            _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
-            _iconNode.EventFlagsSet = true;
+            _iconNode.DrawFlags = DrawFlags.ClickableCursor;
+            _iconNode.AddEvent(AtkEventType.MouseClick, OnIconClicked);
         }
 
         GlobalServices.NativeController.AttachNode(_containerResNode, this);
@@ -207,7 +208,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.Y = partConfig.Anchor.OffsetY;
     }
 
-    private void RegisterNodeMap() {
+    private unsafe void RegisterNodeMap() {
         _nodeMap["Background"] = _statusBackgroundNode;
         _nodeMap["Icon"] = _iconNode;
         _nodeMap["Name"] = _statusName;
@@ -217,8 +218,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         var config = _getOverlayConfig();
         if (config.ShowActorLetter || config.AllowTargetActor) {
-            _iconNode.AddEvent(AddonEventType.MouseClick, OnIconClicked);
-            _iconNode.EventFlagsSet = true;
+            _iconNode.AddEvent(AtkEventType.MouseClick, OnIconClicked);
         }
     }
 
@@ -426,19 +426,16 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void OnActorNameTextStyleChanged() => ApplyTextStyle(_actorName, _getOverlayConfig().Actor.Style);
     private void OnStatusRemainingTextStyleChanged() => ApplyTextStyle(_statusRemaining, _getOverlayConfig().Timer.Style);
     private void OnProgressBarStyleChanged() => ApplyBarStyle(_progressNode, _getOverlayConfig().Progress.StyleBar);
-
-    private unsafe void OnIconClicked(AddonEventData eventData) {
+    private unsafe void OnIconClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
         var config = _getOverlayConfig();
 
         if (StatusInfo.Id == 0) {
             return;
         }
 
-        AtkEventData* atkEventData = (AtkEventData*)eventData.AtkEventDataPointer;
-
         bool shouldInvoke =
-            (atkEventData->MouseData.ButtonId == 1 && Kind == NodeKind.Combined) ||
-            (atkEventData->MouseData.ButtonId == 0 && Kind == NodeKind.MultiDoT);
+            (atkEventData->IsRightClick() && Kind == NodeKind.Combined) ||
+            (atkEventData->IsLeftClick() && Kind == NodeKind.MultiDoT);
 
         if (!shouldInvoke) {
             return;
@@ -484,7 +481,6 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private StatusTimerOverlayConfig.TextStyle? GetCurrentTextStyle(NodeBase node)
     {
-        // If _statusRemaining could be null, add a null check
         return node switch
         {
             TextNode text => new StatusTimerOverlayConfig.TextStyle
@@ -507,7 +503,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         };
     }
 
-    protected override void Dispose(bool disposing) {
+    protected override void Dispose(bool disposing, bool isNativeDestructor) {
         if (_isDisposed) {
             return;
         }
@@ -534,7 +530,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _progressNode.Dispose();
             _containerResNode.Dispose();
         }
-        base.Dispose(disposing);
+        base.Dispose(disposing, isNativeDestructor);
     }
 
     public bool IsDisposed => _isDisposed;

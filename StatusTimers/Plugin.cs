@@ -19,7 +19,7 @@ public class Plugin : IDalamudPlugin {
         BackupHelper.DoConfigBackup(pluginInterface);
 
         Services.Services.NativeController = new NativeController(pluginInterface);
-        Services.Services.NameplateAddonController = new NameplateAddonController(pluginInterface);
+        Services.Services.OverlayAddonController = new OverlayAddonController();
 
         OverlayManager = new OverlayManager();
 
@@ -38,7 +38,7 @@ public class Plugin : IDalamudPlugin {
         Services.Services.ClientState.Login += OnLogin;
         Services.Services.ClientState.Logout += OnLogout;
 
-        Services.Services.NameplateAddonController.OnUpdate += OnNameplateUpdate;
+        Services.Services.OverlayAddonController.OnUpdate += OnNameplateUpdate;
         //ReflectionDebugWindow.Open();
     }
 
@@ -51,7 +51,7 @@ public class Plugin : IDalamudPlugin {
 
         OverlayManager.Dispose();
         Services.Services.NativeController.Dispose();
-        Services.Services.NameplateAddonController.Dispose();
+        Services.Services.OverlayAddonController.Dispose();
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
@@ -80,7 +80,7 @@ public class Plugin : IDalamudPlugin {
     }
 
     private void OnLogin() {
-        Services.Services.NameplateAddonController.Enable();
+        Services.Services.OverlayAddonController.Enable();
 
         #if DEBUG
             OverlayManager.OpenConfig();
@@ -88,6 +88,6 @@ public class Plugin : IDalamudPlugin {
     }
 
     private static void OnLogout(int type, int code) {
-        Services.Services.NameplateAddonController.Disable();
+        Services.Services.OverlayAddonController.Disable();
     }
 }

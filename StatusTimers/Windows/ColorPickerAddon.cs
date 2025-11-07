@@ -1,764 +1,239 @@
-using Dalamud.Game.Addon.Events;
-using Dalamud.Game.Addon.Events.EventDataTypes;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Addon;
-using KamiToolKit.Classes;
-using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
+using KamiToolKit.Widgets;
+using KamiToolKit.Classes;
+using KamiToolKit.Nodes.Slider;
 using StatusTimers.Enums;
-using StatusTimers.Helpers;
-using StatusTimers.Nodes.FunctionalNodes;
 using System;
-using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Numerics;
-using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
-public class ColorPickerAddon : NativeAddon
-{
+public class ColorPickerAddon : NativeAddon {
     private Action<Vector4>? _onPicked;
     private Vector4 _initialColor;
     private Vector4 _workingColor;
-    private float _hue, _saturation, _value; // HSV representation
-    private ColorPreviewNode? _colorPreview;
-    private TextInputNode? _hexInput;
-    private ColorInputRowNode? _redInput, _greenInput, _blueInput, _alphaInput, _hueInput, _saturationInput, _valueInput;
-    private ImGuiImageNode? _svSquareNode, _svSquareNode2, _svSquareNode3, _hueBarNode, _alphaBarNode;
-    private SimpleComponentNode? _svContainer, _hueContainer, _alphaContainer;
-    private NodeBase? _svCrosshair, _hueCrosshair, _alphaCrosshair;
-    private bool _isDraggingSV, _isDraggingHue, _isDraggingAlpha;
-    private bool _isUpdating;
+    private Vector4 _defaultColor = new(1,1,1,1);
     private bool _confirmed;
+    private bool _closing;
 
-    private const int SVBoxSize = 256;
-    private const int BarWidth = 20;
-    private const int CrosshairSize = 32;
-    private const int PreviewSize = 100;
-    private const int OptionOffset = 18;
+    private ColorPickerWidget? _colorPickerWidget;
+    private TextDropDownNode? _colorDropdown;
+    private SliderNode? _sliderR, _sliderG, _sliderB, _sliderA;
+    private bool _updatingFromSliders;
+
+    private HorizontalLineNode? _bottomSeparator;
+    private TextButtonNode? _confirmButton;
+    private ColorOptionTextButtonNode? _defaultButton;
+    private TextButtonNode? _cancelButton;
 
     public void Show(Vector4 initialColor, Action<Vector4> onPicked)
     {
         _initialColor = initialColor;
         _workingColor = initialColor;
-        ColorUtils.ColorToHSV(_workingColor, out _hue, out _saturation, out _value);
         _onPicked = onPicked;
         Open();
+        _onPicked?.Invoke(_workingColor);
+        _colorPickerWidget?.SetColor(_workingColor);
+        _closing = false; // reset closing flag when showing
     }
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon)
-    {
-        CreateAdvancedColorPicker();
+    public void Show(Vector4 initialColor, Vector4 defaultColor, Action<Vector4> onPicked) {
+        _defaultColor = defaultColor;
+        Show(initialColor, onPicked);
     }
 
-    private void CreateAdvancedColorPicker()
-    {
-        var mainList = CreateMainList();
-
-        var pickerRow = CreateSVSection();
-        pickerRow.AddNode(CreateHueSection());
-        pickerRow.AddNode(CreateAlphaSection());
-        pickerRow.AddNode(CreatePreviewSection());
-        mainList.AddNode(pickerRow);
-        mainList.AddNode(CreateRGBASection());
-        mainList.AddNode(CreateHSVSection());
-        mainList.AddNode(CreateHexAndDropdownSection());
-        mainList.AddNode(CreateButtonRow());
-        UpdateAllFields();
-    }
-
-    private VerticalListNode CreateMainList()
-    {
-        var mainList = new VerticalListNode
-        {
-            Position = ContentStartPosition with { X = ContentStartPosition.X + OptionOffset },
+    protected override unsafe void OnSetup(AtkUnitBase* addon) {
+        var mainList = new VerticalListNode {
             IsVisible = true,
+            Position = ContentStartPosition,
             Width = Size.X,
             Height = Size.Y,
-            ItemSpacing = 0,
             FitContents = false,
+            ItemSpacing = 2,
         };
         AttachNode(mainList);
-        return mainList;
-    }
 
-    private HorizontalListNode CreateSVSection()
-    {
-        _svContainer = new SimpleComponentNode() {
+        var contentRow = new HorizontalFlexNode {
             IsVisible = true,
-            Size = new Vector2(SVBoxSize),
-            EnableEventFlags = true
+            Width = Size.X - 24f,
+            Height = Size.Y - 24f,
+            FitPadding = 8,
         };
+        mainList.AddNode(contentRow);
 
-        _svContainer.AddEvent(AddonEventType.MouseDown, OnSVMouse);
-        _svContainer.AddEvent(AddonEventType.MouseMove, OnSVMouse);
-        _svContainer.AddEvent(AddonEventType.MouseUp, OnSVMouse);
-        _svContainer.AddEvent(AddonEventType.MouseOut, OnSVMouse);
-
-        _svSquareNode = new ImGuiImageNode()
-        {
+        _colorPickerWidget = new ColorPickerWidget {
             IsVisible = true,
-            Size = new Vector2(SVBoxSize),
-            Alpha = 1f,
-            FitTexture = true,
-            ImageNodeFlags = 0,
-            EnableEventFlags = true,
-            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-                @"Media\Textures\sv_overlay_1_white.png")
+            Width = 400,
+            Height = 340,
         };
-        NativeController.AttachNode(_svSquareNode, _svContainer);
+        _colorPickerWidget.SetColor(_workingColor);
+        contentRow.AddNode(_colorPickerWidget);
 
-        _svSquareNode2 = new ImGuiImageNode()
-        {
+        BuildSliders(mainList, 380, contentRow.Height - 28f - 8f);
+
+        _colorDropdown = new TextDropDownNode {
             IsVisible = true,
-            Size = new Vector2(SVBoxSize),
-            Alpha = 1f,
-            FitTexture = true,
-            ImageNodeFlags = 0,
-            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-                @"Media\Textures\sv_overlay_2_horizontal_gradient.png")
-        };
-        NativeController.AttachNode(_svSquareNode2, _svContainer);
-
-        _svSquareNode3 = new ImGuiImageNode()
-        {
-            IsVisible = true,
-            Size = new Vector2(SVBoxSize),
-            Alpha = 1f,
-            FitTexture = true,
-            ImageNodeFlags = 0,
-            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-                @"Media\Textures\sv_overlay_3_vertical_black.png")
-        };
-        NativeController.AttachNode(_svSquareNode3, _svContainer);
-
-        _svCrosshair = new SimpleImageNode() {
-            IsVisible = true,
-            Size = new Vector2(CrosshairSize),
-            TexturePath = "ui/uld/AreaMap.tex",
-            TextureSize = new Vector2(CrosshairSize),
-            TextureCoordinates = new Vector2(252, 0),
-            FitTexture = true,
-            ImageNodeFlags = 0,
-        };
-        NativeController.AttachNode(_svCrosshair, _svContainer);
-
-        var pickerRow = new HorizontalListNode
-        {
-            IsVisible = true,
-            Width = 320,
-            Height = SVBoxSize,
-            ItemSpacing = 10
-        };
-        pickerRow.AddNode(_svContainer);
-
-        return pickerRow;
-    }
-
-    private SimpleComponentNode CreateHueSection()
-    {
-        _hueContainer = new SimpleComponentNode() {
-            IsVisible = true,
-            Size = new Vector2(BarWidth, SVBoxSize),
-            EnableEventFlags = true
-        };
-        _hueContainer.AddEvent(AddonEventType.MouseDown, OnHueMouse);
-        _hueContainer.AddEvent(AddonEventType.MouseMove, OnHueMouse);
-        _hueContainer.AddEvent(AddonEventType.MouseUp, OnHueMouse);
-        _hueContainer.AddEvent(AddonEventType.MouseOut, OnHueMouse);
-
-        _hueBarNode = new ImGuiImageNode
-        {
-            IsVisible = true,
-            Width = BarWidth,
-            Height = SVBoxSize,
-            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-                @"Media\Textures\hue_bar.png"),
-            TextureSize = new Vector2(32, 256),
-            FitTexture = true,
-        };
-        NativeController.AttachNode(_hueBarNode, _hueContainer);
-
-        _hueCrosshair = new ResNode() {
-            IsVisible = true,
-            Size = new Vector2(BarWidth, 2),
-        };
-        NativeController.AttachNode(_hueCrosshair, _hueContainer);
-
-        NativeController.AttachNode(new BackgroundImageNode() {
-            IsVisible = true,
-            Color = KnownColor.White.Vector(),
-            Size = new Vector2(BarWidth, 1),
-            WrapMode = WrapMode.Stretch
-        }, _hueCrosshair);
-        NativeController.AttachNode(new BackgroundImageNode {
-            IsVisible = true,
-            Y = 1,
-            Color = KnownColor.Gray.Vector(),
-            Size = new Vector2(BarWidth, 1),
-            WrapMode = WrapMode.Stretch
-        }, _hueCrosshair);
-
-        return _hueContainer;
-    }
-
-    private SimpleComponentNode CreateAlphaSection()
-    {
-        _alphaContainer = new SimpleComponentNode() {
-            IsVisible = true,
-            Size = new Vector2(BarWidth, SVBoxSize),
-            EnableEventFlags = true
-        };
-        _alphaContainer.AddEvent(AddonEventType.MouseDown, OnAlphaMouse);
-        _alphaContainer.AddEvent(AddonEventType.MouseMove, OnAlphaMouse);
-        _alphaContainer.AddEvent(AddonEventType.MouseUp, OnAlphaMouse);
-        _alphaContainer.AddEvent(AddonEventType.MouseOut, OnAlphaMouse);
-
-        _alphaBarNode = new ImGuiImageNode
-        {
-            IsVisible = true,
-            Width = BarWidth,
-            Height = SVBoxSize,
-            EnableEventFlags = true,
-            TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!,
-                @"Media\Textures\alpha_bar.png"),
-            TextureSize = new Vector2(32, 256),
-            FitTexture = true,
-        };
-        NativeController.AttachNode(_alphaBarNode, _alphaContainer);
-
-        _alphaCrosshair = new ResNode() {
-            IsVisible = true,
-            Size = new Vector2(BarWidth, 2)
-        };
-        NativeController.AttachNode(_alphaCrosshair, _alphaContainer);
-
-        NativeController.AttachNode(new BackgroundImageNode() {
-            IsVisible = true,
-            Color = KnownColor.White.Vector(),
-            Size = new Vector2(BarWidth, 1),
-            FitTexture = true
-        }, _alphaCrosshair);
-        NativeController.AttachNode(new BackgroundImageNode {
-            IsVisible = true,
-            Y = 1,
-            Color = KnownColor.Gray.Vector(),
-            Size = new Vector2(BarWidth, 1),
-        }, _alphaCrosshair);
-
-        return _alphaContainer;
-    }
-
-    private VerticalListNode CreatePreviewSection()
-    {
-        var listNode = new VerticalListNode
-        {
-            IsVisible = true,
-            Width = 64,
-            Height = 128,
-        };
-
-        listNode.AddNode(new TextNode {
-            IsVisible = true,
-            Width = 64,
-            Height = TextStyles.OptionLabel.Height,
-            String = "Current",
-            TextColor = TextStyles.OptionLabel.TextColor,
-            FontSize = TextStyles.Defaults.FontSize,
-            AlignmentType = AlignmentType.Center
-        });
-
-        _colorPreview = new ColorPreviewNode(GlobalServices.NativeController) {
-            IsVisible = true,
-            Size = new Vector2(PreviewSize),
-            Color = _workingColor
-        };
-        listNode.AddNode(_colorPreview);
-
-        listNode.AddNode(new TextNode {
-            IsVisible = true,
-            Width = 64,
-            Height = TextStyles.OptionLabel.Height,
-            String = "Original",
-            TextColor = TextStyles.OptionLabel.TextColor,
-            FontSize = TextStyles.Defaults.FontSize,
-            AlignmentType = AlignmentType.Center
-        });
-
-        listNode.AddNode(new ColorPreviewNode(GlobalServices.NativeController) {
-            IsVisible = true,
-            Size = new Vector2(PreviewSize),
-            Color = _initialColor
-        });
-
-        return listNode;
-    }
-
-    private HorizontalFlexNode CreateRGBASection()
-    {
-        var rgbaInputRow = new HorizontalFlexNode
-        {
-            IsVisible = true,
-            Width = 500,
-            Height = 34,
-            FitPadding = 2,
-            AlignmentFlags = FlexFlags.CenterVertically
-        };
-
-        _redInput = new ColorInputRowNode
-        {
-            Label = "R",
-            Value = (int)(_workingColor.X * 255),
-            Min = 0,
-            Max = 255,
-            OnValueUpdate = val => SetComponent(0, ColorUtils.ClampMax(val))
-        };
-        rgbaInputRow.AddNode(_redInput);
-
-        _greenInput = new ColorInputRowNode
-        {
-            Label = "G",
-            Value = (int)(_workingColor.Y * 255),
-            Min = 0,
-            Max = 255,
-            OnValueUpdate = val => SetComponent(1, ColorUtils.ClampMax(val))
-        };
-        rgbaInputRow.AddNode(_greenInput);
-
-        _blueInput = new ColorInputRowNode
-        {
-            Label = "B",
-            Value = (int)(_workingColor.Z * 255),
-            Min = 0,
-            Max = 255,
-            OnValueUpdate = val => SetComponent(2, ColorUtils.ClampMax(val))
-        };
-        rgbaInputRow.AddNode(_blueInput);
-
-        _alphaInput = new ColorInputRowNode
-        {
-            Label = "A",
-            Value = (int)(_workingColor.W * 255),
-            Min = 0,
-            Max = 255,
-            OnValueUpdate = val => SetComponent(3, ColorUtils.ClampMax(val))
-        };
-        rgbaInputRow.AddNode(_alphaInput);
-
-        return rgbaInputRow;
-    }
-
-    private HorizontalFlexNode CreateHSVSection()
-    {
-        var hsvInputRow = new HorizontalFlexNode
-        {
-            IsVisible = true,
-            Width = 375,
-            Height = 34,
-            FitPadding = 2,
-            AlignmentFlags = FlexFlags.CenterVertically
-        };
-
-        _hueInput = new ColorInputRowNode
-        {
-            Label = "H",
-            Value = (int)(_hue * 360),
-            Min = 0,
-            Max = 360,
-            OnValueUpdate = val => {
-                if (_isUpdating) {
-                    return;
-                }
-
-                _hue = ColorUtils.ClampMin(val / 360f);
-                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-                UpdateAllFields();
-            }
-        };
-        hsvInputRow.AddNode(_hueInput);
-
-        _saturationInput = new ColorInputRowNode
-        {
-            Label = "S",
-            Value = (int)(_saturation * 100),
-            Min = 0,
-            Max = 100,
-            OnValueUpdate = val => {
-                if (_isUpdating) {
-                    return;
-                }
-
-                _saturation = ColorUtils.ClampMin(val / 100f);
-                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-                UpdateAllFields();
-            }
-        };
-        hsvInputRow.AddNode(_saturationInput);
-
-        _valueInput = new ColorInputRowNode
-        {
-            Label = "V",
-            Value = (int)(_value * 100),
-            Min = 0,
-            Max = 100,
-            OnValueUpdate = val => {
-                if (_isUpdating) {
-                    return;
-                }
-
-                _value = ColorUtils.ClampMin(val / 100f);
-                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-                UpdateAllFields();
-            }
-        };
-        hsvInputRow.AddNode(_valueInput);
-
-        return hsvInputRow;
-    }
-
-    private HorizontalFlexNode CreateHexAndDropdownSection()
-    {
-        var thirdRow = new HorizontalFlexNode
-        {
-            IsVisible = true,
-            Width = 300,
-            Height = 28,
-            FitPadding = 2,
-            AlignmentFlags = FlexFlags.CenterVertically
-        };
-
-        _hexInput = new TextInputNode
-        {
-            IsVisible = true,
-            X = 12,
-            Width = 100,
-            Height = 28,
-            MaxCharacters = 0,
-            ShowLimitText = false,
-            String = ColorUtils.ColorToHex(_workingColor),
-            OnInputComplete = v => { if (ColorUtils.TryParseHex(v.TextValue, out Vector4 col)) {
-                    SetWorkingColorAndUpdate(col);
-                }
-            }
-        };
-        thirdRow.AddNode(_hexInput);
-
-        thirdRow.AddNode(new TextDropDownNode
-        {
-            X = 0,
-            Y = 0,
-            IsVisible = true,
-            Width = 220,
-            Height = 28,
-            MaxListOptions = 3,
+            Width = 376,
+            Height = 26,
+            X = 1,
+            MaxListOptions = 8,
             Options = CommonUIColor.CommonColors.Keys.ToList(),
-            OnOptionSelected = selectedDisplayName => {
-                var color = CommonUIColor.CommonColors[selectedDisplayName];
-                SetWorkingColorAndUpdate(color);
+            OnOptionSelected = displayName => {
+                var color = CommonUIColor.CommonColors[displayName];
+                _workingColor = color;
+                _colorPickerWidget?.SetColor(color);
+                _onPicked?.Invoke(color);
             }
-        });
-
-        return thirdRow;
-    }
-
-    private HorizontalFlexNode CreateButtonRow()
-    {
-        var buttonRow = new HorizontalFlexNode
-        {
-            IsVisible = true,
-            Width = 180,
-            Height = 36,
-            X = (Size.X - 180) / 2f,
-            AlignmentFlags = FlexFlags.CenterHorizontally,
-            FitPadding = 12
         };
+        mainList.AddNode(_colorDropdown);
 
-        buttonRow.AddNode(new TextButtonNode
-        {
+        _confirmButton = new TextButtonNode {
             IsVisible = true,
-            Height = 28,
-            Width = 70,
-            String = "OK",
-            OnClick = OnOk
-        });
-        buttonRow.AddNode(new TextButtonNode
-        {
+            Size = new Vector2(100f, 24f),
+            Position = ContentStartPosition + new Vector2(0f, ContentSize.Y - 24f),
+            String = "Confirm",
+            OnClick = OnOk,
+        };
+        AttachNode(_confirmButton);
+
+        _defaultButton = new ColorOptionTextButtonNode {
             IsVisible = true,
-            Height = 28,
-            Width = 70,
+            Size = new Vector2(100f, 24f),
+            Position = ContentStartPosition + new Vector2(ContentSize.X / 2f - 50f, ContentSize.Y - 24f),
+            String = "Default",
+            DefaultColor = _defaultColor,
+            DefaultHsvaColor = ColorHelpers.RgbaToHsv(_defaultColor),
+            OnClick = ApplyDefault,
+        };
+        AttachNode(_defaultButton);
+
+        _cancelButton = new TextButtonNode {
+            IsVisible = true,
+            Size = new Vector2(100f, 24f),
+            Position = ContentStartPosition + new Vector2(ContentSize.X - 100f, ContentSize.Y - 24f),
             String = "Cancel",
-            OnClick = OnCancel
-        });
+            OnClick = OnCancel,
+        };
+        AttachNode(_cancelButton);
 
-        return buttonRow;
+        _closing = false;
     }
 
-    // --- Input/Update helpers ---
+    private void BuildSliders(VerticalListNode parent, float availableWidth, float availableHeight) {
+        var sliderContainer = new VerticalListNode {
+            IsVisible = true,
+            Width = availableWidth,
+            Height = Math.Min(availableHeight, 160f),
+            FitContents = true,
+            ItemSpacing = 2,
+        };
+        parent.AddNode(sliderContainer);
 
-    private void SetComponent(int idx, int value)
-    {
-        if (_isUpdating) {
-            return;
-        }
+        var sliderInnerWidth = availableWidth - 34f;
+        _sliderR = CreateChannelSlider("R", c => c.X, (c, v) => c with { X = v }, sliderInnerWidth);
+        _sliderG = CreateChannelSlider("G", c => c.Y, (c, v) => c with { Y = v }, sliderInnerWidth);
+        _sliderB = CreateChannelSlider("B", c => c.Z, (c, v) => c with { Z = v }, sliderInnerWidth);
+        _sliderA = CreateChannelSlider("A", c => c.W, (c, v) => c with { W = v }, sliderInnerWidth);
 
-        var c = _workingColor;
-        switch (idx)
-        {
-            case 0: c.X = value / 255f; break;
-            case 1: c.Y = value / 255f; break;
-            case 2: c.Z = value / 255f; break;
-            case 3: c.W = value / 255f; break;
-        }
-        SetWorkingColorAndUpdate(c);
+        AddSliderRow(sliderContainer, "R", _sliderR, availableWidth);
+        AddSliderRow(sliderContainer, "G", _sliderG, availableWidth);
+        AddSliderRow(sliderContainer, "B", _sliderB, availableWidth);
+        AddSliderRow(sliderContainer, "A", _sliderA, availableWidth);
+
+        SyncSlidersToColor(_workingColor);
     }
 
-    private void SetWorkingColorAndUpdate(Vector4 color)
-    {
-        _workingColor = color;
-        ColorUtils.ColorToHSV(_workingColor, out _hue, out _saturation, out _value);
-        UpdateAllFields();
+    private void AddSliderRow(VerticalListNode container, string label, SliderNode? slider, float availableWidth) {
+        var row = new HorizontalListNode() {
+            IsVisible = true,
+            Width = availableWidth,
+            Height = 20f,
+        };
+        var text = new TextNode {
+            IsVisible = true,
+            Width = 16f,
+            Height = 16f,
+            FontSize = 12,
+            String = label,
+        };
+        row.AddNode(text);
+        if (slider != null) {
+            row.AddNode(slider);
+        }
+        container.AddNode(row, false);
     }
 
-    // --- Mouse Event Handlers ---
-    private unsafe void OnColorPickerMouse(
-        AddonEventData eventData,
-        SimpleComponentNode? containerNode,
-        ImGuiImageNode? node,
-        ref bool isDragging,
-        Action<float, float> updateAction,
-        bool verticalOnly = false)
-    {
-        var mouseData = eventData.GetMouseData();
-        if (node == null) {
-            return;
-        }
-
-        if (mouseData.ButtonId != 0) {
-            return;
-        }
-
-        switch (eventData.AtkEventType)
-        {
-            case AddonEventType.MouseDown:
-                if (containerNode != null && containerNode.CheckCollision((AtkEventData*)eventData.AtkEventDataPointer))
-                {
-                    GlobalServices.EventManager.SetCursor(AddonCursorType.Hidden);
-                    isDragging = true;
-                    UpdateFromMouse(mouseData, node, updateAction, verticalOnly);
-                }
-                break;
-            case AddonEventType.MouseMove:
-                if (isDragging) {
-                    UpdateFromMouse(mouseData, node, updateAction, verticalOnly);
-                }
-                break;
-            case AddonEventType.MouseUp:
-                GlobalServices.EventManager.ResetCursor();
-                isDragging = false;
-                UpdateFromMouse(mouseData, node, updateAction, verticalOnly);
-                UpdateAllFields();
-                break;
-            case AddonEventType.MouseOut:
-                if (isDragging) {
-                    GlobalServices.EventManager.ResetCursor();
-                    isDragging = false;
-                }
-                else
-                {
-                    GlobalServices.EventManager.ResetCursor();
-                }
-                break;
-        }
-    }
-
-    private void UpdateFromMouse(
-        AtkEventData.AtkMouseData mouseData,
-        ImGuiImageNode node,
-        Action<float, float> updateAction,
-        bool verticalOnly)
-    {
-        float x = ColorUtils.ClampMin((mouseData.PosX - node.ScreenX) / node.Width);
-        float y = ColorUtils.ClampMin((mouseData.PosY - node.ScreenY) / node.Height);
-        if (verticalOnly) {
-            updateAction(0, y);
-        }
-        else {
-            updateAction(x, y);
-        }
-    }
-
-    private void OnSVMouse(AddonEventData eventData)
-    {
-        OnColorPickerMouse(
-            eventData,
-            _svContainer,
-            _svSquareNode,
-            ref _isDraggingSV,
-            (x, y) => {
-                _saturation = ColorUtils.ClampMin(x);
-                _value = 1f - ColorUtils.ClampMin(y);
-                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-                UpdateAllFields();
+    private SliderNode CreateChannelSlider(string label, Func<Vector4, float> getter, Func<Vector4, float, Vector4> setter, float sliderWidth) {
+        var slider = new SliderNode {
+            IsVisible = true,
+            Width = sliderWidth,
+            Height = 22f,
+            Range = 0..255,
+            Step = 1,
+            DecimalPlaces = 0,
+        };
+        slider.Value = (int)Math.Round(getter(_workingColor) * 255);
+        slider.OnValueChanged = v => {
+            if (_updatingFromSliders) {
+                return;
             }
-        );
+            _workingColor = setter(_workingColor, v / 255f);
+            _colorPickerWidget?.SetColor(_workingColor);
+            _onPicked?.Invoke(_workingColor);
+        };
+        return slider;
     }
 
-    private void OnHueMouse(AddonEventData eventData)
-    {
-        OnColorPickerMouse(
-            eventData,
-            _hueContainer,
-            _hueBarNode,
-            ref _isDraggingHue,
-            (_, y) => {
-                _hue = ColorUtils.ClampMin(y);
-                _workingColor = ColorUtils.HSVToColor(_hue, _saturation, _value, _workingColor.W);
-                UpdateAllFields();
-            },
-            verticalOnly: true
-        );
-    }
-
-    private void OnAlphaMouse(AddonEventData eventData)
-    {
-        OnColorPickerMouse(
-            eventData,
-            _alphaContainer,
-            _alphaBarNode,
-            ref _isDraggingAlpha,
-            (_, y) => {
-                float a = 1f - ColorUtils.ClampMin(y);
-                _workingColor.W = a;
-                UpdateAllFields();
-            },
-            verticalOnly: true
-        );
-    }
-
-    private void SetCrosshairPosition(NodeBase? crosshairNode, float targetX, float targetY)
-    {
-        if (crosshairNode == null) {
+    protected override unsafe void OnUpdate(AtkUnitBase* addon) {
+        if (_closing) { return; }
+        if (_colorPickerWidget == null) {
             return;
         }
-
-        float offsetX = -16f;
-        float offsetY = -16f;
-
-        if (crosshairNode is ResNode lineCrosshair)
-        {
-            offsetX = -lineCrosshair.Size.X / 2f;
-            offsetY = -lineCrosshair.Size.Y / 2f;
+        var current = _colorPickerWidget.ColorPreviewWithInput.Color;
+        if (!NearlyEqual(_workingColor, current)) {
+            _workingColor = current;
+            SyncSlidersToColor(_workingColor);
+            _onPicked?.Invoke(_workingColor);
         }
-
-        crosshairNode.Position = new Vector2(targetX + offsetX, targetY + offsetY);
     }
 
-    // --- Field Update ---
-
-    private void UpdateAllFields()
-    {
-        _isUpdating = true;
-
-        if (_colorPreview != null) {
-            _colorPreview.Color = _workingColor;
-        }
-
-        if (_redInput != null) {
-            _redInput.Value = (int)(_workingColor.X * 255f);
-        }
-
-        if (_greenInput != null) {
-            _greenInput.Value = (int)(_workingColor.Y * 255f);
-        }
-
-        if (_blueInput != null) {
-            _blueInput.Value = (int)(_workingColor.Z * 255f);
-        }
-
-        if (_alphaInput != null) {
-            _alphaInput.Value = (int)(_workingColor.W * 255f);
-        }
-
-        if (_hueInput != null) {
-            _hueInput.Value = (int)(_hue * 360);
-        }
-
-        if (_saturationInput != null) {
-            _saturationInput.Value = (int)(_saturation * 100);
-        }
-
-        if (_valueInput != null) {
-            _valueInput.Value = (int)(_value * 100);
-        }
-
-        if (_hexInput != null) {
-            _hexInput.String = ColorUtils.ColorToHex(_workingColor);
-        }
-
-        if (_svSquareNode != null) {
-            UpdateSVSquareAppearance();
-        }
-
-        if (_svCrosshair != null && _svSquareNode != null)
-        {
-            float crossX = _saturation * _svSquareNode.Width;
-            float crossY = (1f - _value) * _svSquareNode.Height;
-
-            crossX = Math.Max(0, Math.Min(_svSquareNode.Width, crossX));
-            crossY = Math.Max(0, Math.Min(_svSquareNode.Height, crossY));
-
-            SetCrosshairPosition(_svCrosshair, crossX, crossY);
-        }
-
-        if (_hueCrosshair != null && _hueBarNode != null)
-        {
-            float crossY = _hue * _hueBarNode.Height;
-            SetCrosshairPosition(_hueCrosshair, _hueBarNode.Width / 2f, crossY);
-        }
-
-        if (_alphaCrosshair != null && _alphaBarNode != null)
-        {
-            float crossY = (1f - _workingColor.W) * _alphaBarNode.Height;
-            SetCrosshairPosition(_alphaCrosshair, _alphaBarNode.Width / 2f, crossY);
-        }
-
+    private void ApplyDefault() {
+        _workingColor = _defaultColor;
+        _colorPickerWidget?.SetColor(_workingColor);
+        SyncSlidersToColor(_workingColor);
         _onPicked?.Invoke(_workingColor);
-
-        _isUpdating = false;
     }
 
-    private void UpdateSVSquareAppearance()
+    private void SyncSlidersToColor(Vector4 color) {
+        _updatingFromSliders = true;
+        if (_sliderR != null) { _sliderR.Value = (int)Math.Round(color.X * 255); }
+        if (_sliderG != null) { _sliderG.Value = (int)Math.Round(color.Y * 255); }
+        if (_sliderB != null) { _sliderB.Value = (int)Math.Round(color.Z * 255); }
+        if (_sliderA != null) { _sliderA.Value = (int)Math.Round(color.W * 255); }
+        _updatingFromSliders = false;
+    }
+
+    private static bool NearlyEqual(in Vector4 a, in Vector4 b, float eps = 1e-4f)
     {
-        if (_svSquareNode2 != null)
-        {
-            Vector4 pureHueColor = ColorUtils.HSVToColor(_hue, 1f, 1f, 1f);
-            _svSquareNode2.MultiplyColor = new Vector3(pureHueColor.X, pureHueColor.Y, pureHueColor.Z);
-        }
+        return MathF.Abs(a.X - b.X) <= eps &&
+               MathF.Abs(a.Y - b.Y) <= eps &&
+               MathF.Abs(a.Z - b.Z) <= eps &&
+               MathF.Abs(a.W - b.W) <= eps;
     }
 
-    private void OnOk()
+    private void OnOk() { _confirmed = true; _closing = true; _onPicked?.Invoke(_workingColor); Close(); }
+    private void OnCancel() { _confirmed = true; _closing = true; _workingColor = _initialColor; _colorPickerWidget?.SetColor(_workingColor); _onPicked?.Invoke(_initialColor); Close(); }
+
+    protected override unsafe void OnHide(AtkUnitBase* addon)
     {
-        _confirmed = true;
-        _onPicked?.Invoke(_workingColor);
-        Close();
-    }
-
-    protected override unsafe void OnHide(AtkUnitBase* addon) {
-        if (!_confirmed) {
-            _onPicked?.Invoke(_initialColor);
-        }
-
+        if (!_confirmed) { _onPicked?.Invoke(_initialColor); }
         _confirmed = false;
+        _closing = false;
     }
 
-    private void OnCancel()
-    {
-        _confirmed = true;
-        _onPicked?.Invoke(_initialColor);
-        Close();
-    }
+    public Vector4 DefaultColor { get => _defaultColor; set { _defaultColor = value; if (_defaultButton != null) { _defaultButton.DefaultColor = value; _defaultButton.DefaultHsvaColor = ColorHelpers.RgbaToHsv(value); } } }
 }

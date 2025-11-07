@@ -148,7 +148,7 @@ public class StatusTimerOverlayConfig
         StyleBar = new BarStyle
         {
             BackgroundColor = KnownColor.Black.Vector(),
-            ProgressColor = KnownColor.Green.Vector(),
+            ProgressColor = ColorHelper.GetColor(45),
             BorderColor = KnownColor.Black.Vector(),
             BorderVisible = true
         },
