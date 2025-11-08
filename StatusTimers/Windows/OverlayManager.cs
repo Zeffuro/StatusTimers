@@ -39,7 +39,7 @@ public unsafe class OverlayManager : IDisposable {
 
         var screenSize = new Vector2(AtkStage.Instance()->ScreenSize.Width, AtkStage.Instance()->ScreenSize.Height);
 
-        _statusTimerRootNode = new OverlayRootNode(screenSize, Services.Services.NativeController);
+        _statusTimerRootNode = new OverlayRootNode(screenSize, GlobalServices.NativeController);
 
         _playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
             NodeId = 2,
@@ -59,14 +59,14 @@ public unsafe class OverlayManager : IDisposable {
             InternalName = "StatusTimerColorPicker",
             Title = "Pick a color",
             Size = new Vector2(400, 540),
-            NativeController = Services.Services.NativeController
+            NativeController = GlobalServices.NativeController
         };
 
         _configurationWindow = new ConfigurationWindow(this) {
             InternalName = "StatusTimersConfiguration",
             Title = "StatusTimers Configuration",
             Size = new Vector2(640, 512),
-            NativeController = Services.Services.NativeController
+            NativeController = GlobalServices.NativeController
         };
 
         if (addonNamePlate != null && _statusTimerRootNode != null)

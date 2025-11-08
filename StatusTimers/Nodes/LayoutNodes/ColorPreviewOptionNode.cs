@@ -6,6 +6,7 @@ using KamiToolKit.Nodes;
 using StatusTimers.Helpers;
 using StatusTimers.Nodes.FunctionalNodes;
 using StatusTimers.Windows;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
@@ -54,7 +55,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
             String = labelText
         });
 
-        var colorPreviewButton = new ColorPreviewButtonNode(Services.Services.NativeController)
+        var colorPreviewButton = new ColorPreviewButtonNode(GlobalServices.NativeController)
         {
             Y = -2,
             IsVisible = true,
@@ -64,7 +65,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
         colorPreviewButton.OnClick = () =>
         {
             var startColor = _getColor();
-            Services.Services.Framework.RunOnTick(() =>
+            GlobalServices.Framework.RunOnTick(() =>
             {
                 _overlayManager.ColorPickerInstance?.Show(startColor, defaultColor, newColor =>
                 {

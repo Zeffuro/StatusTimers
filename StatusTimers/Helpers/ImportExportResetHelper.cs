@@ -9,6 +9,7 @@ using StatusTimers.Windows;
 using System;
 using System.Linq;
 using System.Numerics;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Helpers;
 
@@ -19,7 +20,7 @@ public class ImportExportResetHelper {
         Action onConfigChanged,
         Action closeWindow)
     {
-        if (!Services.Services.KeyState[VirtualKey.SHIFT]) {
+        if (!GlobalServices.KeyState[VirtualKey.SHIFT]) {
             return;
         }
 
@@ -41,7 +42,7 @@ public class ImportExportResetHelper {
                 overlay.IsVisible = imported.Enabled;
                 overlay.Position = clampedPosition;
                 StatusTimerOverlayConfigHelper.MigrateLegacyConfig(currentOverlayConfig);
-                Services.Services.Logger.Info("Configuration imported from clipboard.");
+                GlobalServices.Logger.Info("Configuration imported from clipboard.");
                 currentOverlayConfig.Notify("Config", updateNodes: true);
                 overlay.OnUpdate();
                 onConfigChanged();
@@ -52,14 +53,14 @@ public class ImportExportResetHelper {
             } else {
                 notification.Content = "Clipboard data was invalid or could not be imported.";
                 notification.Type = NotificationType.Error;
-                Services.Services.Logger.Warning("Clipboard data was invalid or could not be imported.");
+                GlobalServices.Logger.Warning("Clipboard data was invalid or could not be imported.");
             }
         } else {
             notification.Content = "Clipboard is empty or invalid for import.";
             notification.Type = NotificationType.Warning;
-            Services.Services.Logger.Warning("Clipboard is empty or invalid for import.");
+            GlobalServices.Logger.Warning("Clipboard is empty or invalid for import.");
         }
-        Services.Services.NotificationManager.AddNotification(notification);
+        GlobalServices.NotificationManager.AddNotification(notification);
     }
 
     public static void TryExportConfigToClipboard(
@@ -67,10 +68,10 @@ public class ImportExportResetHelper {
     {
         var exportString = Util.SerializeConfig(currentOverlayConfig);
         ImGui.SetClipboardText(exportString);
-        Services.Services.NotificationManager.AddNotification(
+        GlobalServices.NotificationManager.AddNotification(
             new Notification { Content = "Configuration exported to clipboard.", Type = NotificationType.Success }
         );
-        Services.Services.Logger.Info("Configuration exported to clipboard.");
+        GlobalServices.Logger.Info("Configuration exported to clipboard.");
     }
 
     public static void TryResetConfig(
@@ -80,15 +81,15 @@ public class ImportExportResetHelper {
         Action closeWindow)
     {
         Util.ResetConfig(currentOverlayConfig, kind);
-        Services.Services.NotificationManager.AddNotification(
+        GlobalServices.NotificationManager.AddNotification(
             new Notification { Content = "Configuration reset to default.", Type = NotificationType.Success }
         );
-        Services.Services.Logger.Info("Configuration reset to default.");
+        GlobalServices.Logger.Info("Configuration reset to default.");
         onConfigChanged.Invoke();
         closeWindow.Invoke();
     }
 
-    public static Vector2 EnsurePositionOnScreen(Vector2 position, Vector2 overlaySize, Vector2 screenSize)
+    private static Vector2 EnsurePositionOnScreen(Vector2 position, Vector2 overlaySize, Vector2 screenSize)
     {
         float x = Math.Clamp(position.X, 0, screenSize.X - overlaySize.X);
         float y = Math.Clamp(position.Y, 0, screenSize.Y - overlaySize.Y);

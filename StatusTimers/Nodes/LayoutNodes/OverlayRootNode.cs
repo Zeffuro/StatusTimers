@@ -5,6 +5,7 @@ using KamiToolKit.System;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
@@ -42,9 +43,9 @@ public sealed class OverlayRootNode : SimpleOverlayNode
     {
         foreach (var overlay in _overlays)
         {
-            Services.Services.NativeController.DetachNode(overlay);
+            GlobalServices.NativeController.DetachNode(overlay);
         }
-        Services.Services.NativeController.DetachNode(this);
+        GlobalServices.NativeController.DetachNode(this);
     }
 
     public void DisposeAllOverlays()

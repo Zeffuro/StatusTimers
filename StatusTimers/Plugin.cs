@@ -3,9 +3,9 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit;
-using KamiToolKit.Classes;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
+using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers;
 
@@ -14,44 +14,44 @@ public class Plugin : IDalamudPlugin {
     public readonly OverlayManager OverlayManager;
 
     public unsafe Plugin(IDalamudPluginInterface pluginInterface) {
-        pluginInterface.Create<Services.Services>();
+        pluginInterface.Create<GlobalServices>();
 
         BackupHelper.DoConfigBackup(pluginInterface);
 
-        Services.Services.NativeController = new NativeController(pluginInterface);
-        Services.Services.OverlayAddonController = new OverlayAddonController();
+        GlobalServices.NativeController = new NativeController(pluginInterface);
+        GlobalServices.OverlayAddonController = new OverlayAddonController();
 
         OverlayManager = new OverlayManager();
 
-        Services.Services.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
-        Services.Services.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
+        GlobalServices.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
+        GlobalServices.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
 
-        Services.Services.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
+        GlobalServices.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand) {
             HelpMessage = "Open the main window"
         });
 
-        if (Services.Services.ClientState.IsLoggedIn) {
-            Services.Services.Framework.RunOnFrameworkThread(OnLogin);
+        if (GlobalServices.ClientState.IsLoggedIn) {
+            GlobalServices.Framework.RunOnFrameworkThread(OnLogin);
         }
 
-        Services.Services.Framework.Update += OnFrameworkUpdate;
-        Services.Services.ClientState.Login += OnLogin;
-        Services.Services.ClientState.Logout += OnLogout;
+        GlobalServices.Framework.Update += OnFrameworkUpdate;
+        GlobalServices.ClientState.Login += OnLogin;
+        GlobalServices.ClientState.Logout += OnLogout;
 
-        Services.Services.OverlayAddonController.OnUpdate += OnNameplateUpdate;
+        GlobalServices.OverlayAddonController.OnUpdate += OnNameplateUpdate;
         //ReflectionDebugWindow.Open();
     }
 
     public void Dispose() {
-        Services.Services.Framework.Update -= OnFrameworkUpdate;
-        Services.Services.CommandManager.RemoveHandler(CommandName);
+        GlobalServices.Framework.Update -= OnFrameworkUpdate;
+        GlobalServices.CommandManager.RemoveHandler(CommandName);
 
-        Services.Services.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
-        Services.Services.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
+        GlobalServices.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
+        GlobalServices.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
 
         OverlayManager.Dispose();
-        Services.Services.NativeController.Dispose();
-        Services.Services.OverlayAddonController.Dispose();
+        GlobalServices.NativeController.Dispose();
+        GlobalServices.OverlayAddonController.Dispose();
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
@@ -80,7 +80,7 @@ public class Plugin : IDalamudPlugin {
     }
 
     private void OnLogin() {
-        Services.Services.OverlayAddonController.Enable();
+        GlobalServices.OverlayAddonController.Enable();
 
         #if DEBUG
             OverlayManager.OpenConfig();
@@ -88,6 +88,6 @@ public class Plugin : IDalamudPlugin {
     }
 
     private static void OnLogout(int type, int code) {
-        Services.Services.OverlayAddonController.Disable();
+        GlobalServices.OverlayAddonController.Disable();
     }
 }
