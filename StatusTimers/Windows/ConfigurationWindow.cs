@@ -258,6 +258,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             // Filtering Settings
             _filterSectionNodes[kind] = new FilterSectionNode(() => overlay.OverlayConfig, onChanged: () => {
+                overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.FilterList));
                 RecalculateAllLayouts(mainSettingsGroup, kind, true);
             }) {
                 IsVisible = true,

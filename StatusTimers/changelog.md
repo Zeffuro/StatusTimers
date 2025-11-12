@@ -1,3 +1,8 @@
+# 1.0.2.0
+- Updated the color picker to use parts of KTK's new color picker.
+- Cleaned up some internal code.
+- Fixed an issue where adding or removing statuses from the whitelist/blacklist wouldn't save properly.
+
 # 1.0.1.3
 - Added more safeguards to prevent crashes.
 
