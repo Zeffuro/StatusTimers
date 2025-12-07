@@ -1,6 +1,6 @@
+using KamiToolKit;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
 

@@ -42,7 +42,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             Width = 250,
             Height = 28,
             OnInputComplete = input => {
-                string filter = input.TextValue;
+                string filter = input.ExtractText();
                 UpdateDropdownOptions(filter);
             }
         };

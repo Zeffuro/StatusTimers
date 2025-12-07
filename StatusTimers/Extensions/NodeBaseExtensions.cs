@@ -1,5 +1,5 @@
+using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Extensions;

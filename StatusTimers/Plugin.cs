@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit;
+using KamiToolKit.Overlay;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
 using GlobalServices = StatusTimers.Services.Services;
@@ -18,10 +19,12 @@ public class Plugin : IDalamudPlugin {
 
         BackupHelper.DoConfigBackup(pluginInterface);
 
-        GlobalServices.NativeController = new NativeController(pluginInterface);
-        GlobalServices.OverlayAddonController = new OverlayAddonController();
+        KamiToolKitLibrary.Initialize(pluginInterface);
+        GlobalServices.OverlayController = new OverlayController();
 
         OverlayManager = new OverlayManager();
+
+        OverlayManager.Setup();
 
         GlobalServices.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
         GlobalServices.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
@@ -36,10 +39,6 @@ public class Plugin : IDalamudPlugin {
 
         GlobalServices.Framework.Update += OnFrameworkUpdate;
         GlobalServices.ClientState.Login += OnLogin;
-        GlobalServices.ClientState.Logout += OnLogout;
-
-        GlobalServices.OverlayAddonController.OnUpdate += OnNameplateUpdate;
-        //ReflectionDebugWindow.Open();
     }
 
     public void Dispose() {
@@ -50,29 +49,18 @@ public class Plugin : IDalamudPlugin {
         GlobalServices.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
 
         OverlayManager.Dispose();
-        GlobalServices.NativeController.Dispose();
-        GlobalServices.OverlayAddonController.Dispose();
+        KamiToolKitLibrary.Dispose();
+        GlobalServices.OverlayController.Dispose();
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
         EnemyListHelper.UpdateEnemyListMapping();
     }
 
-    private unsafe void OnNameplateUpdate(AddonNamePlate* nameplate) {
-        OverlayManager.OnUpdate();
-    }
-
     private void OnCommand(string command, string args) {
         if (args is "toggleall") {
-            if (OverlayManager.PlayerCombinedOverlayInstance != null) {
-                OverlayManager.PlayerCombinedOverlayInstance.IsVisible =
-                    !OverlayManager.PlayerCombinedOverlayInstance.IsVisible;
-            }
-
-            if (OverlayManager.EnemyMultiDoTOverlayInstance != null) {
-                OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible =
-                    !OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible;
-            }
+            OverlayManager.PlayerCombinedOverlayInstance?.IsVisible = !OverlayManager.PlayerCombinedOverlayInstance.IsVisible;
+            OverlayManager.EnemyMultiDoTOverlayInstance?.IsVisible = !OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible;
         }
         else {
             OverlayManager.ToggleConfig();
@@ -80,14 +68,8 @@ public class Plugin : IDalamudPlugin {
     }
 
     private void OnLogin() {
-        GlobalServices.OverlayAddonController.Enable();
-
         #if DEBUG
             OverlayManager.OpenConfig();
         #endif
-    }
-
-    private static void OnLogout(int type, int code) {
-        GlobalServices.OverlayAddonController.Disable();
     }
 }

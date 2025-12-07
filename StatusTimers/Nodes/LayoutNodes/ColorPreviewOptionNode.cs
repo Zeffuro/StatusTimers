@@ -55,7 +55,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
             String = labelText
         });
 
-        var colorPreviewButton = new ColorPreviewButtonNode(GlobalServices.NativeController)
+        var colorPreviewButton = new ColorPreviewButtonNode
         {
             Y = -2,
             IsVisible = true,

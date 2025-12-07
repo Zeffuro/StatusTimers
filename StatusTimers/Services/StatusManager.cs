@@ -34,7 +34,7 @@ public static class StatusManager {
     }
 
     public static unsafe IReadOnlyList<StatusInfo> GetPlayerStatuses(StatusTimerOverlayConfig? config) {
-        IPlayerCharacter? player = Services.ClientState.LocalPlayer;
+        IPlayerCharacter? player = Services.ObjectTable.LocalPlayer;
         if (player?.StatusList == null) {
             return [];
         }
@@ -62,7 +62,7 @@ public static class StatusManager {
     public static unsafe IReadOnlyList<StatusInfo> GetHostilePlayerStatuses(StatusTimerOverlayConfig? config) {
         HostileStatusBuffer.Clear();
 
-        IPlayerCharacter? player = Services.ClientState.LocalPlayer;
+        IPlayerCharacter? player = Services.ObjectTable.LocalPlayer;
         if (player == null) {
             return HostileStatusBuffer;
         }
@@ -142,7 +142,7 @@ public static class StatusManager {
         string? actorName = null;
         char? enemyLetter = null;
 
-        IPlayerCharacter? player = Services.ClientState.LocalPlayer;
+        IPlayerCharacter? player = Services.ObjectTable.LocalPlayer;
 
         bool selfInflicted = player != null && player.GameObjectId == status.SourceObject;
 

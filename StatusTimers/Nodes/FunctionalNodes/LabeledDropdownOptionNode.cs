@@ -1,6 +1,6 @@
-using Dalamud.Game.Text.SeStringHandling;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
+using Lumina.Text.ReadOnly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,7 +47,7 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
         AddNode(_dropDownNode);
     }
 
-    public SeString LabelText
+    public ReadOnlySeString LabelText
     {
         get => _labelNode.SeString;
         set => _labelNode.SeString = value;

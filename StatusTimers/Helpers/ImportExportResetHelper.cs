@@ -13,7 +13,7 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Helpers;
 
-public class ImportExportResetHelper {
+public abstract class ImportExportResetHelper {
     public static unsafe void TryImportConfigFromClipboard(
         StatusTimerOverlay<StatusKey> overlay,
         StatusTimerOverlayConfig currentOverlayConfig,
@@ -44,7 +44,7 @@ public class ImportExportResetHelper {
                 StatusTimerOverlayConfigHelper.MigrateLegacyConfig(currentOverlayConfig);
                 GlobalServices.Logger.Info("Configuration imported from clipboard.");
                 currentOverlayConfig.Notify("Config", updateNodes: true);
-                overlay.OnUpdate();
+                overlay.Update();
                 onConfigChanged();
                 closeWindow.Invoke();
 

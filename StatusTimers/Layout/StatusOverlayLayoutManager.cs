@@ -1,4 +1,4 @@
-using KamiToolKit.NodeParts;
+using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -35,12 +35,13 @@ public class StatusOverlayLayoutManager<TKey>(
         _onNodeActionTriggered = handler;
     }
 
-    public unsafe void InitializeLayout() {
+    public void InitializeLayout() {
         var config = getOverlayConfig();
 
         CalculatedOverlaySize = OverlayLayoutHelper.CalculateOverlaySize(config);
 
         _backgroundNode = new NineGridNode {
+            IsVisible = false,
             NodeId = 2,
             Size = CalculatedOverlaySize,
             BottomOffset = 8,
@@ -66,7 +67,7 @@ public class StatusOverlayLayoutManager<TKey>(
             }
         );
 
-        GlobalServices.NativeController.AttachNode(_backgroundNode, ownerOverlay);
+        ownerOverlay.AttachNode(_backgroundNode);
 
         BuildContainers();
     }
@@ -92,9 +93,10 @@ public class StatusOverlayLayoutManager<TKey>(
             FillRowsFirst = config.FillRowsFirst
         };
 
+        ownerOverlay.AttachNode(_rootContainer);
+
         _rootContainer.RecalculateLayout();
 
-        GlobalServices.NativeController.AttachNode(_rootContainer, ownerOverlay);
         ownerOverlay.Size = CalculatedOverlaySize;
         ToggleBackground(ownerOverlay.IsLocked);
     }
@@ -130,9 +132,7 @@ public class StatusOverlayLayoutManager<TKey>(
     }
 
     public void ToggleBackground(bool isLocked) {
-        if (_backgroundNode != null) {
-            _backgroundNode.IsVisible = !isLocked;
-        }
+        _backgroundNode?.IsVisible = !isLocked;
     }
 
     public void UpdateAllNodesDisplay(string property) {
@@ -203,5 +203,7 @@ public class StatusOverlayLayoutManager<TKey>(
         }
     }
     public void Dispose() {
+        _backgroundNode?.DetachNode();
+        _rootContainer?.DetachNode();
     }
 }

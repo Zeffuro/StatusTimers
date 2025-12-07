@@ -1,6 +1,7 @@
 using Dalamud.Game.Addon.Events.EventDataTypes;
 using KamiToolKit;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Nodes;
 using System.Numerics;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
@@ -8,14 +9,16 @@ namespace StatusTimers.Nodes.FunctionalNodes;
 public class ColorPreviewButtonNode : ButtonBase {
     private ColorPreviewNode _colorPreview;
 
-    public ColorPreviewButtonNode(NativeController nativeController) {
-        _colorPreview = new ColorPreviewNode(nativeController) {
+    public ColorPreviewButtonNode() {
+        _colorPreview = new ColorPreviewNode {
             IsVisible = true,
+            Position = Vector2.Zero,
             Size = base.Size,
             NodeId = 3,
         };
-        nativeController.AttachNode(_colorPreview, this);
 
+        _colorPreview.AttachNode(this);
+        //AttachNode(_colorPreview);
 
         LoadTimelines();
 

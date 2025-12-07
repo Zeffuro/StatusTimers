@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Nodes;
-using KamiToolKit.Nodes.Slider;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Helpers;

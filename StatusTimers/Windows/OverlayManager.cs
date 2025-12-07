@@ -8,18 +8,12 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
-public unsafe class OverlayManager : IDisposable {
+public class OverlayManager : IDisposable {
     private bool _isDisposed;
     private ConfigurationWindow? _configurationWindow;
-    private OverlayRootNode? _statusTimerRootNode;
     private EnemyMultiDoTOverlay? _enemyMultiDoTOverlay;
     private PlayerCombinedStatusesOverlay? _playerCombinedOverlay;
     private ColorPickerAddon? _colorPickerAddon;
-
-    public OverlayManager() {
-        GlobalServices.OverlayAddonController.OnAttach += AttachNodes;
-        GlobalServices.OverlayAddonController.OnDetach += DetachNodes;
-    }
 
     public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
     public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
@@ -34,52 +28,44 @@ public unsafe class OverlayManager : IDisposable {
         DetachAndDisposeAll();
     }
 
-    private void AttachNodes(AddonNamePlate* addonNamePlate) {
+    public void Setup() {
         DetachAndDisposeAll();
 
-        var screenSize = new Vector2(AtkStage.Instance()->ScreenSize.Width, AtkStage.Instance()->ScreenSize.Height);
+        GlobalServices.Framework.RunOnFrameworkThread(() => {
+            _playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
+                NodeId = 2,
+                Position = new Vector2(100, 100),
+                Size = new Vector2(400, 400),
+                IsVisible = true
+            };
+            _enemyMultiDoTOverlay = new EnemyMultiDoTOverlay {
+                NodeId = 3,
+                Position = new Vector2(600, 100),
+                Size = new Vector2(400, 400),
+                IsVisible = true
+            };
 
-        _statusTimerRootNode = new OverlayRootNode(screenSize, GlobalServices.NativeController);
 
-        _playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
-            NodeId = 2,
-            Position = new Vector2(100, 100),
-            Size = new Vector2(400, 400)
-        };
-        _enemyMultiDoTOverlay = new EnemyMultiDoTOverlay {
-            NodeId = 3,
-            Position = new Vector2(600, 100),
-            Size = new Vector2(400, 400)
-        };
+            GlobalServices.OverlayController.AddNode(_playerCombinedOverlay);
+            GlobalServices.OverlayController.AddNode(_enemyMultiDoTOverlay);
+        });
 
-        _statusTimerRootNode.AddOverlay(_playerCombinedOverlay);
-        _statusTimerRootNode.AddOverlay(_enemyMultiDoTOverlay);
-
-        _colorPickerAddon = new ColorPickerAddon() {
+        _colorPickerAddon = new ColorPickerAddon {
             InternalName = "StatusTimerColorPicker",
             Title = "Pick a color",
-            Size = new Vector2(400, 540),
-            NativeController = GlobalServices.NativeController
+            Size = new Vector2(400, 540)
         };
 
         _configurationWindow = new ConfigurationWindow(this) {
             InternalName = "StatusTimersConfiguration",
             Title = "StatusTimers Configuration",
-            Size = new Vector2(640, 512),
-            NativeController = GlobalServices.NativeController
+            Size = new Vector2(640, 512)
         };
 
-        if (addonNamePlate != null && _statusTimerRootNode != null)
-        {
-            _statusTimerRootNode.AttachAllToNativeController(addonNamePlate->RootNode);
-        }
+        GlobalServices.Logger.Info($"Setting up overlay 111");
 
         _enemyMultiDoTOverlay?.Setup();
         _playerCombinedOverlay?.Setup();
-    }
-
-    private void DetachNodes(AddonNamePlate* addonNamePlate) {
-        DetachAndDisposeAll();
     }
 
     private void DetachAndDisposeAll() {
@@ -93,22 +79,9 @@ public unsafe class OverlayManager : IDisposable {
             _configurationWindow.Dispose();
             _configurationWindow = null;
         }
-        if (_statusTimerRootNode != null)
-        {
-            _statusTimerRootNode.Cleanup();
-            _statusTimerRootNode = null;
-        }
+
         _playerCombinedOverlay = null;
         _enemyMultiDoTOverlay = null;
-    }
-
-    public void OnUpdate() {
-        if (_isDisposed) {
-            return;
-        }
-
-        _playerCombinedOverlay?.OnUpdate();
-        _enemyMultiDoTOverlay?.OnUpdate();
     }
 
     public void RestartOverlay<TOverlay>(ref TOverlay overlayInstance, Func<TOverlay> creator)

@@ -106,7 +106,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             });
 
             barStyleRow.AddNode(new ColorPreviewOptionNode(
-                "Border Color",
+                $"Border Color",
                 () => nodePart.StyleBar.BorderColor, borderDefaultColor,
                 c => { nodePart.StyleBar.BorderColor = c; onChanged?.Invoke(); },
                 overlayManager,

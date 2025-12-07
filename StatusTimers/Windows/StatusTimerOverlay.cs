@@ -1,10 +1,9 @@
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit;
 using KamiToolKit.Classes;
-using KamiToolKit.Classes.TimelineBuilding;
-using KamiToolKit.NodeParts;
-using KamiToolKit.Nodes;
-using KamiToolKit.System;
+using KamiToolKit.Classes.Timelines;
+using KamiToolKit.Overlay;
 using Newtonsoft.Json;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -22,7 +21,9 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
-public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey : notnull {
+public abstract class StatusTimerOverlay<TKey> : OverlayNode where TKey : notnull {
+    public override OverlayLayer OverlayLayer { get; } = OverlayLayer.AboveUserInterface;
+
     private bool _isDisposed;
 
     private NodeKind _nodeKind;
@@ -103,7 +104,6 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
         _layoutManager.InitializeLayout();
         Size = _layoutManager.CalculatedOverlaySize;
 
-
         if (!IsLocked) {
             ToggleDrag(IsLocked);
         }
@@ -116,11 +116,16 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
         _isSetupCompleted = true;
     }
 
-    public void OnUpdate() {
+    public override void Update() {
+        if (!_isSetupCompleted) {
+            Setup();
+        }
+
         if (OverlayConfig != null) {
             List<StatusInfo> filteredList = _dataSourceManager.FetchAndProcessStatuses(OverlayConfig);
 
-            _layoutManager.UpdateNodeContent(filteredList, _nodeKind);
+            //TODO: FIX
+            //_layoutManager.UpdateNodeContent(filteredList, _nodeKind);
         }
 
         _layoutManager.RecalculateLayout();
@@ -233,12 +238,11 @@ public abstract class StatusTimerOverlay<TKey> : SimpleComponentNode where TKey 
 
         if (_layoutManager.RootContainer != null) {
             foreach (StatusTimerNode<TKey> node in _layoutManager.RootContainer.GetNodes<StatusTimerNode<TKey>>()) {
-                GlobalServices.NativeController.DetachNode(node);
+                node.DetachNode();
             }
         }
-
-        GlobalServices.NativeController.DetachNode(_layoutManager.RootContainer);
-        GlobalServices.NativeController.DetachNode(_layoutManager.BackgroundNode);
+        _layoutManager.RootContainer?.DetachNode();
+        _layoutManager.BackgroundNode?.DetachNode();
 
         _isSetupCompleted = false;
     }

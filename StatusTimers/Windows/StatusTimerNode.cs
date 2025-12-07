@@ -1,12 +1,11 @@
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit;
 using KamiToolKit.Classes;
-using KamiToolKit.Classes.TimelineBuilding;
+using KamiToolKit.Classes.Timelines;
 using KamiToolKit.Extensions;
-using KamiToolKit.NodeParts;
 using KamiToolKit.Nodes;
-using KamiToolKit.System;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Extensions;
@@ -29,7 +28,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private SimpleNineGridNode _statusBackgroundNode;
     private IconImageNode _iconNode;
-    private CastBarProgressBarNode _progressNode;
+    private ProgressBarCastNode _progressNode;
     private NodeBase _statusName;
     private NodeBase _statusRemaining;
     private NodeBase _actorName;
@@ -74,7 +73,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         // Progress
-        _progressNode = new CastBarProgressBarNode { NodeId = 4 };
+        _progressNode = new ProgressBarCastNode { NodeId = 4 };
         ApplyNodeSettings(_progressNode, config.Progress);
         ApplyBarStyle(_progressNode, config.Progress.StyleBar);
         if (config.Progress.StyleBar != null) {
@@ -104,13 +103,15 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _iconNode.AddEvent(AtkEventType.MouseClick, OnIconClicked);
         }
 
-        GlobalServices.NativeController.AttachNode(_containerResNode, this);
-        GlobalServices.NativeController.AttachNode(_statusBackgroundNode, _containerResNode);
-        GlobalServices.NativeController.AttachNode(_iconNode, _containerResNode);
-        GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
-        GlobalServices.NativeController.AttachNode(_progressNode, _containerResNode);
-        GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
-        GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
+        //_containerResNode.AttachNode(this);
+        AttachNode(_containerResNode);
+
+        _containerResNode.AttachNode(_statusBackgroundNode);
+        _containerResNode.AttachNode(_iconNode);
+        _containerResNode.AttachNode(_statusName);
+        _containerResNode.AttachNode(_progressNode);
+        _containerResNode.AttachNode(_actorName);
+        _containerResNode.AttachNode(_statusRemaining);
 
         UpdateLayoutOffsets();
 
@@ -189,7 +190,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
     }
 
-    private void ApplyBarStyle(CastBarProgressBarNode node, StatusTimerOverlayConfig.BarStyle? style) {
+    private void ApplyBarStyle(ProgressBarCastNode node, StatusTimerOverlayConfig.BarStyle? style) {
         if (style == null) {
             return;
         }
@@ -318,9 +319,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private void RebuildNodes(StatusTimerOverlayConfig config, bool rebuildName, bool rebuildActor, bool rebuildTimer)
     {
-        // Remove and dispose old nodes if necessary
         if (rebuildName) {
-            GlobalServices.NativeController.DetachNode(_statusName);
+            _statusName.DetachNode();
             _statusName.Dispose();
             _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 2 } : new TextNode{ NodeId = 2 };
             ApplyNodeSettings(_statusName, config.Name);
@@ -329,10 +329,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 config.Name.Style.Changed += OnStatusNameTextStyleChanged;
             }
 
-            GlobalServices.NativeController.AttachNode(_statusName, _containerResNode);
+            _containerResNode.AttachNode(_statusName);
         }
         if (rebuildActor) {
-            GlobalServices.NativeController.DetachNode(_actorName);
+            _actorName.DetachNode();
             _actorName.Dispose();
             _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 3 } : new TextNode{ NodeId = 3 };
             ApplyNodeSettings(_actorName, config.Actor);
@@ -341,10 +341,10 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 config.Actor.Style.Changed += OnActorNameTextStyleChanged;
             }
 
-            GlobalServices.NativeController.AttachNode(_actorName, _containerResNode);
+            _containerResNode.AttachNode(_actorName);
         }
         if (rebuildTimer) {
-            GlobalServices.NativeController.DetachNode(_statusRemaining);
+            _statusRemaining.DetachNode();
             _statusRemaining.Dispose();
             _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
             ApplyNodeSettings(_statusRemaining, config.Timer);
@@ -353,7 +353,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 config.Timer.Style.Changed += OnStatusRemainingTextStyleChanged;
             }
 
-            GlobalServices.NativeController.AttachNode(_statusRemaining, _containerResNode);
+            _containerResNode.AttachNode(_statusRemaining);
         }
         RegisterNodeMap();
     }

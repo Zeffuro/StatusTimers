@@ -1,10 +1,8 @@
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Addon;
+using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.Widgets;
-using KamiToolKit.Classes;
-using KamiToolKit.Nodes.Slider;
+using KamiToolKit.Premade.Widgets;
 using StatusTimers.Enums;
 using System;
 using System.Linq;
@@ -25,7 +23,6 @@ public class ColorPickerAddon : NativeAddon {
     private SliderNode? _sliderR, _sliderG, _sliderB, _sliderA;
     private bool _updatingFromSliders;
 
-    private HorizontalLineNode? _bottomSeparator;
     private TextButtonNode? _confirmButton;
     private ColorOptionTextButtonNode? _defaultButton;
     private TextButtonNode? _cancelButton;
@@ -55,7 +52,7 @@ public class ColorPickerAddon : NativeAddon {
             FitContents = false,
             ItemSpacing = 2,
         };
-        AttachNode(mainList);
+        mainList.AttachNode(this);
 
         var contentRow = new HorizontalFlexNode {
             IsVisible = true,
@@ -98,7 +95,7 @@ public class ColorPickerAddon : NativeAddon {
             String = "Confirm",
             OnClick = OnOk,
         };
-        AttachNode(_confirmButton);
+        _confirmButton.AttachNode(this);
 
         _defaultButton = new ColorOptionTextButtonNode {
             IsVisible = true,
@@ -109,7 +106,7 @@ public class ColorPickerAddon : NativeAddon {
             DefaultHsvaColor = ColorHelpers.RgbaToHsv(_defaultColor),
             OnClick = ApplyDefault,
         };
-        AttachNode(_defaultButton);
+        _defaultButton.AttachNode(this);
 
         _cancelButton = new TextButtonNode {
             IsVisible = true,
@@ -118,7 +115,7 @@ public class ColorPickerAddon : NativeAddon {
             String = "Cancel",
             OnClick = OnCancel,
         };
-        AttachNode(_cancelButton);
+        _cancelButton.AttachNode(this);
 
         _closing = false;
     }

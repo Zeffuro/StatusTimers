@@ -4,6 +4,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit;
+using KamiToolKit.Overlay;
 
 namespace StatusTimers.Services;
 
@@ -19,6 +20,5 @@ public class Services {
     [PluginService] public static IPluginLog Logger { get; private set; } = null!;
     [PluginService] public static ITargetManager TargetManager { get; private set; } = null!;
 
-    public static NativeController NativeController { get; set; } = null!;
-    public static OverlayAddonController OverlayAddonController { get; set; } = null!;
+    public static OverlayController OverlayController { get; set; } = null!;
 }
