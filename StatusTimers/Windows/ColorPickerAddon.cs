@@ -17,6 +17,7 @@ public class ColorPickerAddon : NativeAddon {
     private Vector4 _defaultColor = new(1,1,1,1);
     private bool _confirmed;
     private bool _closing;
+    private bool _suppressCallbacks;
 
     private ColorPickerWidget? _colorPickerWidget;
     private TextDropDownNode? _colorDropdown;
@@ -32,6 +33,7 @@ public class ColorPickerAddon : NativeAddon {
         _initialColor = initialColor;
         _workingColor = initialColor;
         _onPicked = onPicked;
+        _suppressCallbacks = false;
         Open();
         _onPicked?.Invoke(_workingColor);
         _colorPickerWidget?.SetColor(_workingColor);
@@ -41,6 +43,15 @@ public class ColorPickerAddon : NativeAddon {
     public void Show(Vector4 initialColor, Vector4 defaultColor, Action<Vector4> onPicked) {
         _defaultColor = defaultColor;
         Show(initialColor, onPicked);
+    }
+
+    public void CloseSilently()
+    {
+        if (_closing) {
+            return;
+        }
+        _suppressCallbacks = true;
+        Close();
     }
 
     protected override unsafe void OnSetup(AtkUnitBase* addon) {
@@ -227,9 +238,10 @@ public class ColorPickerAddon : NativeAddon {
 
     protected override unsafe void OnHide(AtkUnitBase* addon)
     {
-        if (!_confirmed) { _onPicked?.Invoke(_initialColor); }
+        if (!_suppressCallbacks && !_confirmed) { _onPicked?.Invoke(_initialColor); }
         _confirmed = false;
         _closing = false;
+        _suppressCallbacks = false;
     }
 
     public Vector4 DefaultColor { get => _defaultColor; set { _defaultColor = value; if (_defaultButton != null) { _defaultButton.DefaultColor = value; _defaultButton.DefaultHsvaColor = ColorHelpers.RgbaToHsv(value); } } }

@@ -18,7 +18,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
 
         _statusIconNode = new IconImageNode
         {
-            NodeId = 2,
             Y = -4,
             Size = new System.Numerics.Vector2(24, 32),
             IsVisible = true,
@@ -29,7 +28,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
 
         _statusIdTextNode = new TextNode
         {
-            NodeId = 3,
             String = status.RowId.ToString() + " ",
             IsVisible = true,
             Height = 24,
@@ -40,7 +38,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
 
         _statusNameTextNode = new TextNode
         {
-            NodeId = 4,
             SeString = status.Name,
             IsVisible = true,
             Height = 24,
@@ -50,7 +47,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
         AddNode(_statusNameTextNode);
 
         _statusRemoveButtonNode = new TextButtonNode {
-            NodeId = 5,
             String = "-",
             Width = 32,
             Height = 28,

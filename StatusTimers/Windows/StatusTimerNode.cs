@@ -18,11 +18,11 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
-public sealed class StatusTimerNode<TKey> : ResNode {
+public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
     public delegate void StatusNodeActionHandler(uint statusId, ulong gameObjectToTargetId, NodeKind nodeKind,
         bool allowDismiss, bool allowTarget);
 
-    private ResNode _containerResNode;
+    private SimpleOverlayNode _containerResNode;
 
     private readonly Func<StatusTimerOverlayConfig> _getOverlayConfig;
 
@@ -45,8 +45,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         var config = _getOverlayConfig();
 
-        _containerResNode = new ResNode {
-            NodeId = 1,
+        _containerResNode = new SimpleOverlayNode() {
             IsVisible = true,
             Width = config.RowWidth,
             Height = config.RowHeight,
@@ -55,17 +54,16 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
         // Background
         _statusBackgroundNode = new NineGridBackgroundNode {
-            NodeId = 6,
         };
         ApplyNodeSettings(_statusBackgroundNode, config.Background);
 
         // Icon
-        _iconNode = new IconImageNode { NodeId = 1, ImageNodeFlags = 0, WrapMode = WrapMode.Stretch };
+        _iconNode = new IconImageNode { ImageNodeFlags = 0, WrapMode = WrapMode.Stretch };
         _iconNode.TextureSize = new Vector2(24, 32);
         ApplyNodeSettings(_iconNode, config.Icon);
 
         // Status Name
-        _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode { NodeId = 2 } : new TextNode{ NodeId = 2 };
+        _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
         ApplyNodeSettings(_statusName, config.Name);
         ApplyTextStyle(_statusName, config.Name.Style);
         if (config.Name.Style != null) {
@@ -73,7 +71,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         // Progress
-        _progressNode = new ProgressBarCastNode { NodeId = 4 };
+        _progressNode = new ProgressBarCastNode();
         ApplyNodeSettings(_progressNode, config.Progress);
         ApplyBarStyle(_progressNode, config.Progress.StyleBar);
         if (config.Progress.StyleBar != null) {
@@ -81,7 +79,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         // Actor Name
-        _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode { NodeId = 3 } : new TextNode { NodeId = 3 };
+        _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
         ApplyNodeSettings(_actorName, config.Actor);
         ApplyTextStyle(_actorName, config.Actor.Style);
         if (config.Actor.Style != null) {
@@ -89,7 +87,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         // Timer
-        _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
+        _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
         ApplyNodeSettings(_statusRemaining, config.Timer);
         ApplyTextStyle(_statusRemaining, config.Timer.Style);
         if (config.Timer.Style != null) {
@@ -103,15 +101,14 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _iconNode.AddEvent(AtkEventType.MouseClick, OnIconClicked);
         }
 
-        //_containerResNode.AttachNode(this);
-        AttachNode(_containerResNode);
+        _containerResNode.AttachNode(this);
 
-        _containerResNode.AttachNode(_statusBackgroundNode);
-        _containerResNode.AttachNode(_iconNode);
-        _containerResNode.AttachNode(_statusName);
-        _containerResNode.AttachNode(_progressNode);
-        _containerResNode.AttachNode(_actorName);
-        _containerResNode.AttachNode(_statusRemaining);
+        _statusBackgroundNode.AttachNode(_containerResNode);
+        _iconNode.AttachNode(_containerResNode);
+        _statusName.AttachNode(_containerResNode);
+        _progressNode.AttachNode(_containerResNode);
+        _actorName.AttachNode(_containerResNode);
+        _statusRemaining.AttachNode(_containerResNode);
 
         UpdateLayoutOffsets();
 
@@ -322,7 +319,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (rebuildName) {
             _statusName.DetachNode();
             _statusName.Dispose();
-            _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 2 } : new TextNode{ NodeId = 2 };
+            _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
             ApplyNodeSettings(_statusName, config.Name);
             ApplyTextStyle(_statusName, config.Name.Style);
             if (config.Name.Style != null) {
@@ -334,7 +331,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (rebuildActor) {
             _actorName.DetachNode();
             _actorName.Dispose();
-            _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 3 } : new TextNode{ NodeId = 3 };
+            _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
             ApplyNodeSettings(_actorName, config.Actor);
             ApplyTextStyle(_actorName, config.Actor.Style);
             if (config.Actor.Style != null) {
@@ -346,7 +343,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         if (rebuildTimer) {
             _statusRemaining.DetachNode();
             _statusRemaining.Dispose();
-            _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode{ NodeId = 5 } : new TextNode{ NodeId = 5 };
+            _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
             ApplyNodeSettings(_statusRemaining, config.Timer);
             ApplyTextStyle(_statusRemaining, config.Timer.Style);
             if (config.Timer.Style != null) {

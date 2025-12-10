@@ -17,6 +17,7 @@ namespace StatusTimers.Nodes.LayoutNodes
 
     public class HybridDirectionalFlexNode<T> : LayoutListNode where T : NodeBase
     {
+
         public FlexGrowDirection GrowDirection { get;
             set {
                 field = value;

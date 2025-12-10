@@ -15,7 +15,7 @@ namespace StatusTimers.Helpers;
 
 public abstract class ImportExportResetHelper {
     public static unsafe void TryImportConfigFromClipboard(
-        StatusTimerOverlay<StatusKey> overlay,
+        StatusTimerOverlayNode<StatusKey> overlay,
         StatusTimerOverlayConfig currentOverlayConfig,
         Action onConfigChanged,
         Action closeWindow)
@@ -48,8 +48,8 @@ public abstract class ImportExportResetHelper {
                 onConfigChanged();
                 closeWindow.Invoke();
 
-                // Restart overlay
-                overlay.RestartOverlay();
+                // restart overlay node for parity
+                overlay.Initialize();
             } else {
                 notification.Content = "Clipboard data was invalid or could not be imported.";
                 notification.Type = NotificationType.Error;

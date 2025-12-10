@@ -8,13 +8,13 @@ namespace StatusTimers.Nodes.FunctionalNodes;
 
 public class ColorPreviewButtonNode : ButtonBase {
     private ColorPreviewNode _colorPreview;
+    private bool _isNodeDisposed;
 
     public ColorPreviewButtonNode() {
         _colorPreview = new ColorPreviewNode {
             IsVisible = true,
             Position = Vector2.Zero,
             Size = base.Size,
-            NodeId = 3,
         };
 
         _colorPreview.AttachNode(this);
@@ -24,6 +24,8 @@ public class ColorPreviewButtonNode : ButtonBase {
 
         InitializeComponentEvents();
     }
+
+    public bool IsNodeDisposed => _isNodeDisposed;
 
     public override Vector4 Color
     {
@@ -47,4 +49,19 @@ public class ColorPreviewButtonNode : ButtonBase {
 
     private void LoadTimelines()
         => LoadTwoPartTimelines(this, _colorPreview);
+
+    protected override void Dispose(bool disposing, bool isNativeDestructor)
+    {
+        if (_isNodeDisposed)
+        {
+            base.Dispose(disposing, isNativeDestructor);
+            return;
+        }
+        _isNodeDisposed = true;
+        if (disposing)
+        {
+            _colorPreview.Dispose();
+        }
+        base.Dispose(disposing, isNativeDestructor);
+    }
 }
