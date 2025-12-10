@@ -28,7 +28,6 @@ public sealed class StatusFilterListNode : VerticalListNode {
     private void AddStatusRow(LuminaStatus status) {
         if (_getConfig().FilterList.Contains(status.RowId)) {
             AddNode(new StatusFilterRowNode(status) {
-                NodeId = status.RowId,
                 X = 18,
                 Height = 32,
                 Width = 320,
