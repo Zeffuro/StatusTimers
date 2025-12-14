@@ -55,6 +55,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     protected override unsafe void OnHide(AtkUnitBase* addon) {
+        overlayManager.CloseColorPicker();
         foreach (var kind in Enum.GetValues(typeof(NodeKind)).Cast<NodeKind>()) {
             var overlay = GetOverlayByKind(kind);
             if (overlay == null) {
@@ -299,7 +300,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         }
     }
 
-    private StatusTimerOverlay<StatusKey>? GetOverlayByKind(NodeKind kind) {
+    private StatusTimerOverlayNode<StatusKey>? GetOverlayByKind(NodeKind kind) {
         return kind switch {
             NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
             NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
@@ -339,7 +340,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         _isRecalculating = false;
     }
 
-    private void ToggleEnabled(StatusTimerOverlay<StatusKey>? overlay, VerticalListNode group,
+    private void ToggleEnabled(StatusTimerOverlayNode<StatusKey>? overlay, VerticalListNode group,
         NodeKind kind, bool isChecked) {
         if (overlay == null) {
             return;

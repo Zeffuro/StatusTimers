@@ -14,7 +14,7 @@ namespace StatusTimers.Nodes.LayoutNodes;
 public sealed class ImportExportResetNode : HorizontalListNode
 {
     public ImportExportResetNode(
-        Func<StatusTimerOverlay<StatusKey>> getOverlay,
+        Func<StatusTimerOverlayNode<StatusKey>> getOverlay,
         Func<StatusTimerOverlayConfig> getConfig,
         NodeKind kind,
         Action onConfigChanged,

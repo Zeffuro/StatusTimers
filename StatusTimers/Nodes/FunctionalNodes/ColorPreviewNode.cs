@@ -14,6 +14,8 @@ public class ColorPreviewNode : ResNode
     private readonly ImGuiImageNode _alphaLayer;
     private readonly BackgroundImageNode _colorForeground;
 
+    private bool _isDisposed;
+
     public ColorPreviewNode()
     {
         base.Size = new Vector2(64, 64);
@@ -88,5 +90,24 @@ public class ColorPreviewNode : ResNode
     {
         var baseDir = GlobalServices.PluginInterface.AssemblyLocation.Directory!.FullName;
         return Path.Combine(baseDir, "Media", "Textures", "alpha_background.png");
+    }
+
+    protected override void Dispose(bool disposing, bool isNativeDestructor)
+    {
+        if (_isDisposed)
+        {
+            base.Dispose(disposing, isNativeDestructor);
+            return;
+        }
+
+        _isDisposed = true;
+        if (disposing)
+        {
+            _colorBackground.Dispose();
+            _alphaLayer.Dispose();
+            _colorForeground.Dispose();
+        }
+
+        base.Dispose(disposing, isNativeDestructor);
     }
 }

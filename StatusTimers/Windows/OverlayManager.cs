@@ -1,8 +1,14 @@
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.Overlay;
+using StatusTimers.Config;
+using StatusTimers.Enums;
+using StatusTimers.Logic;
 using StatusTimers.Models;
-using StatusTimers.Nodes.LayoutNodes;
+using StatusTimers.Services;
+using StatusTimers.StatusSources;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -11,12 +17,15 @@ namespace StatusTimers.Windows;
 public class OverlayManager : IDisposable {
     private bool _isDisposed;
     private ConfigurationWindow? _configurationWindow;
-    private EnemyMultiDoTOverlay? _enemyMultiDoTOverlay;
-    private PlayerCombinedStatusesOverlay? _playerCombinedOverlay;
+    private StatusTimerOverlayNode<StatusKey>? _playerCombinedOverlay;
+    private StatusTimerOverlayNode<StatusKey>? _enemyMultiDoTOverlay;
+    private StatusDataSourceManager<StatusKey>? _playerDataSource;
+    private StatusDataSourceManager<StatusKey>? _enemyDataSource;
+    private StatusNodeActionService? _statusActionService;
     private ColorPickerAddon? _colorPickerAddon;
 
-    public PlayerCombinedStatusesOverlay? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
-    public EnemyMultiDoTOverlay? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
+    public StatusTimerOverlayNode<StatusKey>? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
+    public StatusTimerOverlayNode<StatusKey>? EnemyMultiDoTOverlayInstance => _enemyMultiDoTOverlay;
     public ColorPickerAddon? ColorPickerInstance => _colorPickerAddon;
 
     public void Dispose() {
@@ -31,24 +40,7 @@ public class OverlayManager : IDisposable {
     public void Setup() {
         DetachAndDisposeAll();
 
-        GlobalServices.Framework.RunOnFrameworkThread(() => {
-            _playerCombinedOverlay = new PlayerCombinedStatusesOverlay {
-                NodeId = 2,
-                Position = new Vector2(100, 100),
-                Size = new Vector2(400, 400),
-                IsVisible = true
-            };
-            _enemyMultiDoTOverlay = new EnemyMultiDoTOverlay {
-                NodeId = 3,
-                Position = new Vector2(600, 100),
-                Size = new Vector2(400, 400),
-                IsVisible = true
-            };
-
-
-            GlobalServices.OverlayController.AddNode(_playerCombinedOverlay);
-            GlobalServices.OverlayController.AddNode(_enemyMultiDoTOverlay);
-        });
+        GlobalServices.Framework.RunOnFrameworkThread(CreateAndAttachOverlays);
 
         _colorPickerAddon = new ColorPickerAddon {
             InternalName = "StatusTimerColorPicker",
@@ -61,16 +53,12 @@ public class OverlayManager : IDisposable {
             Title = "StatusTimers Configuration",
             Size = new Vector2(640, 512)
         };
-
-        GlobalServices.Logger.Info($"Setting up overlay 111");
-
-        _enemyMultiDoTOverlay?.Setup();
-        _playerCombinedOverlay?.Setup();
     }
 
     private void DetachAndDisposeAll() {
         if (_colorPickerAddon != null)
         {
+            _colorPickerAddon.CloseSilently();
             _colorPickerAddon.Dispose();
             _colorPickerAddon = null;
         }
@@ -80,16 +68,52 @@ public class OverlayManager : IDisposable {
             _configurationWindow = null;
         }
 
+        _playerCombinedOverlay?.Dispose();
         _playerCombinedOverlay = null;
+        _enemyMultiDoTOverlay?.Dispose();
         _enemyMultiDoTOverlay = null;
+        _playerDataSource = null;
+        _enemyDataSource = null;
     }
 
-    public void RestartOverlay<TOverlay>(ref TOverlay overlayInstance, Func<TOverlay> creator)
-        where TOverlay : StatusTimerOverlay<StatusKey>
+    private void CreateAndAttachOverlays()
     {
-        overlayInstance.OnDispose();
-        overlayInstance = creator();
-        overlayInstance.Setup();
+        _playerCombinedOverlay = new StatusTimerOverlayNode<StatusKey>(NodeKind.Combined);
+        _enemyMultiDoTOverlay = new StatusTimerOverlayNode<StatusKey>(NodeKind.MultiDoT);
+
+        _playerCombinedOverlay.Initialize();
+        _enemyMultiDoTOverlay.Initialize();
+
+        _statusActionService = new StatusNodeActionService();
+
+        _playerDataSource = new StatusDataSourceManager<StatusKey>(
+            new PlayerCombinedStatusesSource(),
+            NodeKind.Combined,
+            () => _playerCombinedOverlay?.IsPreviewEnabled ?? false,
+            () => _playerCombinedOverlay!.OverlayConfig.ShowPermaIcons,
+            () => _playerCombinedOverlay!.OverlayConfig.MaxStatuses,
+            () => _playerCombinedOverlay!.OverlayConfig.ItemsPerLine);
+        _enemyDataSource = new StatusDataSourceManager<StatusKey>(
+            new EnemyMultiDoTSource(),
+            NodeKind.MultiDoT,
+            () => _enemyMultiDoTOverlay?.IsPreviewEnabled ?? false,
+            () => _enemyMultiDoTOverlay!.OverlayConfig.ShowPermaIcons,
+            () => _enemyMultiDoTOverlay!.OverlayConfig.MaxStatuses,
+            () => _enemyMultiDoTOverlay!.OverlayConfig.ItemsPerLine);
+
+        _playerCombinedOverlay.SetStatusProvider(() =>
+            _playerDataSource?.FetchAndProcessStatuses(_playerCombinedOverlay!.OverlayConfig) ??
+            new List<StatusInfo>());
+
+        _enemyMultiDoTOverlay.SetStatusProvider(() =>
+            _enemyDataSource?.FetchAndProcessStatuses(_enemyMultiDoTOverlay!.OverlayConfig) ??
+            new List<StatusInfo>());
+
+        _playerCombinedOverlay.SetNodeActionHandler(_statusActionService.Handle);
+        _enemyMultiDoTOverlay.SetNodeActionHandler(_statusActionService.Handle);
+
+        GlobalServices.OverlayController.AddNode(_playerCombinedOverlay);
+        GlobalServices.OverlayController.AddNode(_enemyMultiDoTOverlay);
     }
 
     public void ToggleConfig() {
@@ -97,6 +121,7 @@ public class OverlayManager : IDisposable {
             return;
         }
 
+        CloseColorPicker();
         _configurationWindow?.Toggle();
     }
 
@@ -105,6 +130,12 @@ public class OverlayManager : IDisposable {
             return;
         }
 
+        CloseColorPicker();
         _configurationWindow?.Open();
     }
+
+    internal void CloseColorPicker() {
+        _colorPickerAddon?.CloseSilently();
+    }
 }
+

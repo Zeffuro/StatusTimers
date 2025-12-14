@@ -14,7 +14,7 @@ namespace StatusTimers.Nodes.LayoutNodes;
 public sealed class VisualSectionNode : VerticalListNode
 {
     public VisualSectionNode(
-        StatusTimerOverlay<StatusKey> overlay,
+        StatusTimerOverlayNode<StatusKey> overlay,
         Func<StatusTimerOverlayConfig> getConfig)
     {
         AddNode(new SectionHeaderNode("Visual Settings"));

@@ -70,7 +70,10 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
                 _overlayManager.ColorPickerInstance?.Show(startColor, defaultColor, newColor =>
                 {
                     _setColor(newColor);
-                    colorPreviewButton.Color = newColor;
+                    if (!colorPreviewButton.IsNodeDisposed)
+                    {
+                        colorPreviewButton.Color = newColor;
+                    }
                     _onChanged?.Invoke();
                 });
             }, delayTicks: 3);
