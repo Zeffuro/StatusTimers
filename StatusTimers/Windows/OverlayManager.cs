@@ -3,6 +3,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.Overlay;
 using StatusTimers.Config;
 using StatusTimers.Enums;
+using StatusTimers.Logic;
 using StatusTimers.Models;
 using StatusTimers.Services;
 using StatusTimers.StatusSources;
@@ -20,6 +21,7 @@ public class OverlayManager : IDisposable {
     private StatusTimerOverlayNode<StatusKey>? _enemyMultiDoTOverlay;
     private StatusDataSourceManager<StatusKey>? _playerDataSource;
     private StatusDataSourceManager<StatusKey>? _enemyDataSource;
+    private StatusNodeActionService? _statusActionService;
     private ColorPickerAddon? _colorPickerAddon;
 
     public StatusTimerOverlayNode<StatusKey>? PlayerCombinedOverlayInstance => _playerCombinedOverlay;
@@ -78,8 +80,12 @@ public class OverlayManager : IDisposable {
     {
         _playerCombinedOverlay = new StatusTimerOverlayNode<StatusKey>(NodeKind.Combined);
         _enemyMultiDoTOverlay = new StatusTimerOverlayNode<StatusKey>(NodeKind.MultiDoT);
+
         _playerCombinedOverlay.Initialize();
         _enemyMultiDoTOverlay.Initialize();
+
+        _statusActionService = new StatusNodeActionService();
+
         _playerDataSource = new StatusDataSourceManager<StatusKey>(
             new PlayerCombinedStatusesSource(),
             NodeKind.Combined,
@@ -103,6 +109,8 @@ public class OverlayManager : IDisposable {
             _enemyDataSource?.FetchAndProcessStatuses(_enemyMultiDoTOverlay!.OverlayConfig) ??
             new List<StatusInfo>());
 
+        _playerCombinedOverlay.SetNodeActionHandler(_statusActionService.Handle);
+        _enemyMultiDoTOverlay.SetNodeActionHandler(_statusActionService.Handle);
 
         GlobalServices.OverlayController.AddNode(_playerCombinedOverlay);
         GlobalServices.OverlayController.AddNode(_enemyMultiDoTOverlay);
@@ -130,3 +138,4 @@ public class OverlayManager : IDisposable {
         _colorPickerAddon?.CloseSilently();
     }
 }
+
