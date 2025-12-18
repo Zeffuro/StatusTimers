@@ -431,8 +431,8 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
         }
 
         bool shouldInvoke =
-            (atkEventData->IsRightClick() && Kind == NodeKind.Combined) ||
-            (atkEventData->IsLeftClick() && Kind == NodeKind.MultiDoT);
+            (atkEventData->IsRightClick && Kind == NodeKind.Combined) ||
+            (atkEventData->IsLeftClick && Kind == NodeKind.MultiDoT);
 
         if (!shouldInvoke) {
             return;

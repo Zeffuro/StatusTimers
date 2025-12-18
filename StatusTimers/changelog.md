@@ -1,3 +1,7 @@
+# 1.0.3.0
+- Updated to use the new KTK OverlayController
+- Updated for API 14.
+
 # 1.0.2.0
 - Updated the color picker to use parts of KTK's new color picker.
 - Cleaned up some internal code.
