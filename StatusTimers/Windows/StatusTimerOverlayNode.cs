@@ -22,7 +22,7 @@ namespace StatusTimers.Windows;
 
 [JsonObject(MemberSerialization.OptIn)]
 public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
-    public override OverlayLayer OverlayLayer => OverlayLayer.AboveUserInterface;
+    public override OverlayLayer OverlayLayer => OverlayLayer.BehindUserInterface;
 
     private readonly NodeKind _nodeKind;
     private readonly SimpleOverlayNode _rootContainer;
