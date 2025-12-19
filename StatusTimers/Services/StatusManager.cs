@@ -186,7 +186,7 @@ public static class StatusManager {
                 continue;
             }
 
-            if (itemAction.Type is not (844 or 845 or 846)) {
+            if (itemAction.Action.RowId is not (844 or 845 or 846)) {
                 continue;
             }
 

@@ -1,9 +1,10 @@
-<Project Sdk="Dalamud.NET.Sdk/13.1.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.1">
     <PropertyGroup>
         <PackageProjectUrl>https://github.com/Zeffuro/StatusTimers.git</PackageProjectUrl>
-        <Version>1.0.2.0</Version>
+        <Version>1.0.3.0</Version>
         <LangVersion>preview</LangVersion>
         <DebugType>portable</DebugType>
+        <TargetFramework>net10.0-windows</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -40,5 +41,9 @@
 
     <ItemGroup>
       <Folder Include="Media\Icons\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="DalamudPackager" Version="14.0.1" />
     </ItemGroup>
 </Project>

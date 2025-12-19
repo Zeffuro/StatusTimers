@@ -172,7 +172,7 @@ public class ColorPickerAddon : NativeAddon {
         if (slider != null) {
             row.AddNode(slider);
         }
-        container.AddNode(row, false);
+        container.AddNode(row);
     }
 
     private SliderNode CreateChannelSlider(string label, Func<Vector4, float> getter, Func<Vector4, float, Vector4> setter, float sliderWidth) {
