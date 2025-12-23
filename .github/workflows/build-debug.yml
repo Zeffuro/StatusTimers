@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.x.x'
+          dotnet-version: '10.x.x'
 
       # Cache the nuget packages.
       - name: Cache Dependencies
@@ -82,7 +82,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.x.x'
+          dotnet-version: '10.x.x'
 
       # Cache the nuget packages
       - name: Cache Dependencies
