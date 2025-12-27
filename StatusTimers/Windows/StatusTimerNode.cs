@@ -1,5 +1,6 @@
 using Dalamud.Game.Addon.Events;
 using Dalamud.Game.Addon.Events.EventDataTypes;
+using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Classes;
@@ -13,6 +14,7 @@ using StatusTimers.Models;
 using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -192,10 +194,10 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
             return;
         }
 
-        node.BackgroundColor = style.BackgroundColor;
-        node.BarColor = style.ProgressColor;
-        node.BorderColor = style.BorderColor;
-        node.BorderVisible = style.BorderVisible;
+        node.BackgroundColor = style.BackgroundColor ??  BarStyleDefaults.BackgroundColor;
+        node.BarColor = style.ProgressColor ?? BarStyleDefaults.ProgressColor;
+        node.BorderColor = style.BorderColor ??  BarStyleDefaults.BorderColor;
+        node.BorderVisible = style.BorderVisible ??  BarStyleDefaults.BorderVisible;
     }
 
     private void ApplyNodeSettings(NodeBase node, StatusTimerOverlayConfig.NodePartConfig partConfig) {

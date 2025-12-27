@@ -98,7 +98,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
             barStyleRow.AddNode(new CheckboxOptionNode {
                 String = "Show Border",
-                IsChecked = nodePart.StyleBar.BorderVisible,
+                IsChecked = nodePart.StyleBar.BorderVisible ?? BarStyleDefaults.BorderVisible,
                 OnClick = isChecked => {
                     nodePart.StyleBar.BorderVisible = isChecked;
                     onChanged?.Invoke();
@@ -107,7 +107,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
             barStyleRow.AddNode(new ColorPreviewOptionNode(
                 $"Border Color",
-                () => nodePart.StyleBar.BorderColor, borderDefaultColor,
+                () => nodePart.StyleBar.BorderColor ?? BarStyleDefaults.BorderColor, borderDefaultColor ?? BarStyleDefaults.BorderColor,
                 c => { nodePart.StyleBar.BorderColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
@@ -124,14 +124,14 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
 
             barStyleRow2.AddNode(new ColorPreviewOptionNode(
                 "Progress Color",
-                () => nodePart.StyleBar.ProgressColor, progressDefaultColor,
+                () => nodePart.StyleBar.ProgressColor ?? BarStyleDefaults.ProgressColor, progressDefaultColor ?? BarStyleDefaults.ProgressColor,
                 c => { nodePart.StyleBar.ProgressColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
             ));
             barStyleRow2.AddNode(new ColorPreviewOptionNode(
                 "Background Color",
-                () => nodePart.StyleBar.BackgroundColor, backgroundDefaultColor,
+                () => nodePart.StyleBar.BackgroundColor ?? BarStyleDefaults.BackgroundColor, backgroundDefaultColor ?? BarStyleDefaults.BackgroundColor,
                 c => { nodePart.StyleBar.BackgroundColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged

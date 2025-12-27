@@ -699,7 +699,7 @@ public class StatusTimerOverlayConfig
             }
         }
 
-        public Vector4 ProgressColor {
+        public Vector4? ProgressColor {
             get;
             set {
                 if (field != value) {
@@ -710,7 +710,7 @@ public class StatusTimerOverlayConfig
             }
         }
 
-        public Vector4 BackgroundColor {
+        public Vector4? BackgroundColor {
             get;
             set {
                 if (field != value) {
@@ -721,7 +721,7 @@ public class StatusTimerOverlayConfig
             }
         }
 
-        public Vector4 BorderColor {
+        public Vector4? BorderColor {
             get;
             set {
                 if (field != value) {
@@ -732,7 +732,7 @@ public class StatusTimerOverlayConfig
             }
         }
 
-        public bool BorderVisible {
+        public bool? BorderVisible {
             get;
             set {
                 if (field != value) {
@@ -751,21 +751,10 @@ public class StatusTimerOverlayConfig
         };
 
         public void CopyMissingFrom(BarStyle defaults) {
-            if (BorderColor == default) {
-                BorderColor = defaults.BorderColor;
-            }
-
-            if (!BorderVisible && defaults.BorderVisible) {
-                BorderVisible = true;
-            }
-
-            if (ProgressColor == default) {
-                ProgressColor = defaults.ProgressColor;
-            }
-
-            if (BackgroundColor == default) {
-                BackgroundColor = defaults.BackgroundColor;
-            }
+            BorderColor ??= defaults.BorderColor;
+            BorderVisible ??= defaults.BorderVisible;
+            ProgressColor ??= defaults.ProgressColor;
+            BackgroundColor ??= defaults.BackgroundColor;
         }
     }
 
@@ -868,4 +857,12 @@ public class StatusTimerOverlayConfig
             }
         }
     }
+}
+
+public static class BarStyleDefaults
+{
+    public static readonly Vector4 BackgroundColor = KnownColor.Black.Vector();
+    public static readonly Vector4 BorderColor = KnownColor.Black.Vector();
+    public static readonly Vector4 ProgressColor = ColorHelper.GetColor(45);
+    public static readonly bool BorderVisible = true;
 }
