@@ -623,6 +623,20 @@ public class StatusTimerOverlayConfig
         }
     } = true;
 
+    [JsonProperty]
+    public bool InCombatOnly
+    {
+        get => field;
+        set
+        {
+            if (InCombatOnly != value)
+            {
+                field = value;
+                Notify(nameof(InCombatOnly));
+            }
+        }
+    } = false;
+
     public class NodePartConfig
     {
         public bool IsVisible { get; set; }

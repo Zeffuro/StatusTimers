@@ -6,6 +6,7 @@ using StatusTimers.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Game.ClientState.Conditions;
 
 namespace StatusTimers.Services;
 
@@ -40,6 +41,10 @@ public class StatusDataSourceManager<TKey>(
     private DateTime _lastDummyUpdateTime;
 
     public List<StatusInfo> FetchAndProcessStatuses(StatusTimerOverlayConfig overlayConfig) {
+        if (overlayConfig.InCombatOnly && !Services.Condition[ConditionFlag.InCombat] && !getIsPreviewEnabled()) {
+            return [];
+        }
+
         IReadOnlyList<StatusInfo> current;
 
         if (getIsPreviewEnabled()) {

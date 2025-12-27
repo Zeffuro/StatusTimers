@@ -25,13 +25,13 @@ public sealed class VisualSectionNode : VerticalListNode
                 String = "Locked",
                 IsChecked = overlay.IsLocked,
                 OnClick = isChecked => { overlay.IsLocked = isChecked; },
-                Tooltip = "When locked, the overlay cannot be moved or resized."
+                TextTooltip = "When locked, the overlay cannot be moved or resized."
             },
             new CheckboxOptionNode {
                 String = "Preview Mode",
                 IsChecked = overlay.IsPreviewEnabled,
                 OnClick = isChecked => { overlay.IsPreviewEnabled = isChecked; },
-                Tooltip = "When enabled, will show random statuses to test with."
+                TextTooltip = "When enabled, will show random statuses to test with."
             },
             20
         ));

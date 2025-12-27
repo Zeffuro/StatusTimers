@@ -1,6 +1,7 @@
 // File: StatusTimers/Nodes/FunctionalNodes/ColorInputRowNode.cs
 
 using KamiToolKit.Nodes;
+using Lumina.Text.ReadOnly;
 using System;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
@@ -42,10 +43,10 @@ public sealed class ColorInputRowNode : HorizontalListNode
         set => _labelNode.String = value;
     }
 
-    public string LabelTooltip
+    public ReadOnlySeString LabelTooltip
     {
-        get => _labelNode.TooltipString;
-        set => _labelNode.TooltipString = value;
+        get => _labelNode.TextTooltip;
+        set => _labelNode.TextTooltip = value;
     }
 
     public int Value

@@ -96,6 +96,12 @@ public sealed class FunctionalSectionNode : VerticalListNode {
             });
         }
 
+        AddNode(new CheckboxOptionNode {
+            String = "Only show when in combat",
+            IsChecked = getConfig().InCombatOnly,
+            OnClick = isChecked => getConfig().InCombatOnly = isChecked
+        });
+
         RecalculateLayout();
     }
 }

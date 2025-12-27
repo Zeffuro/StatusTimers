@@ -32,7 +32,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Height = 30,
             Width = 30,
             IsVisible = true,
-            Tooltip = " Import Configuration\n(hold shift to confirm)",
+            TextTooltip = " Import Configuration\n(hold shift to confirm)",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
             OnClick = () => ImportExportResetHelper.TryImportConfigFromClipboard(
                 getOverlay(), getConfig(), onConfigChanged, closeWindow)
@@ -43,7 +43,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Height = 30,
             Width = 30,
             IsVisible = true,
-            Tooltip = "Export Configuration",
+            TextTooltip = "Export Configuration",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
             OnClick = () => ImportExportResetHelper.TryExportConfigToClipboard(getConfig())
         });
@@ -54,7 +54,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Height = 32,
             Width = 100,
             String = "Reset",
-            Tooltip = "   Reset configuration\n(hold button to confirm)",
+            TextTooltip = "   Reset configuration\n(hold button to confirm)",
             OnClick = () => ImportExportResetHelper.TryResetConfig(
                 getConfig(), kind, onConfigChanged, closeWindow)
         });

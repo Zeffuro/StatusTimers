@@ -38,7 +38,7 @@ public sealed class StatusFilterButtonGroupNode : HorizontalListNode {
             Height = 30,
             Width = 30,
             IsVisible = true,
-            Tooltip = "Export Filter List",
+            TextTooltip = "Export Filter List",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
             OnClick = () => FilterListHelper.TryExportFilterListToClipboard(getConfig().FilterList)
         };
@@ -49,7 +49,7 @@ public sealed class StatusFilterButtonGroupNode : HorizontalListNode {
             Height = 30,
             Width = 30,
             IsVisible = true,
-            TooltipString = "     Import Filter List \n(hold shift to confirm)",
+            TextTooltip = "     Import Filter List \n(hold shift to confirm)",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
             OnClick = () => FilterListHelper.TryImportFilterListFromClipboard(getConfig(), onChanged)
         };

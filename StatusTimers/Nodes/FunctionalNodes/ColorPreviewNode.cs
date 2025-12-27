@@ -32,7 +32,7 @@ public class ColorPreviewNode : ResNode
         {
             IsVisible = true,
             TexturePath = GetAlphaTexturePath(),
-            WrapMode = WrapMode.Tile,
+            WrapMode = WrapMode.Stretch,
         };
         _alphaLayer.AttachNode(this);
 
