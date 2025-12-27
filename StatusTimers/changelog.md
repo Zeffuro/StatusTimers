@@ -1,3 +1,7 @@
+# 1.0.3.1
+- Added an option to only show statuses when in combat.
+- Fixed an issue where the settings for the progressbar wouldn't save properly.
+
 # 1.0.3.0
 - Updated to use the new KTK OverlayController
 - Updated for API 14.
