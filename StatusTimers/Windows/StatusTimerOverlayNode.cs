@@ -1,4 +1,5 @@
 using Dalamud.Utility;
+using KamiToolKit;
 using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using KamiToolKit.Overlay;
@@ -97,7 +98,7 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         };
         _statusContainer.AttachNode(_rootContainer);
 
-        OnMoveComplete = SaveConfig;
+        OnMoveComplete = _ => SaveConfig();
     }
 
     public void Initialize() {
@@ -117,7 +118,7 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         _isInitialized = true;
     }
 
-    public override void Update() {
+    protected override void OnUpdate() {
         base.Update();
         Initialize();
         if (_statusProvider != null) {
