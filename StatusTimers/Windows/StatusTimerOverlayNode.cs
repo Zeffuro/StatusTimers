@@ -119,7 +119,6 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     }
 
     protected override void OnUpdate() {
-        base.Update();
         Initialize();
         if (_statusProvider != null) {
             UpdateStatuses(_statusProvider());
