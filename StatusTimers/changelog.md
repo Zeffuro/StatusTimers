@@ -1,3 +1,6 @@
+# 1.0.3.2
+- Updated KTK and added more guards against crashes.
+
 # 1.0.3.1
 - Added an option to only show statuses when in combat.
 - Fixed an issue where the settings for the progressbar wouldn't save properly.

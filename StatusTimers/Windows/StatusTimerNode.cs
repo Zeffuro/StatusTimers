@@ -137,33 +137,35 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
     public event StatusNodeActionHandler? OnStatusNodeActionTriggered;
 
     public void ApplyOverlayConfig(string changedProperty) {
-        var config = _getOverlayConfig();
-        ClearAnchorCache();
+        GlobalServices.Framework.RunOnFrameworkThread(() => {
+            var config = _getOverlayConfig();
+            ClearAnchorCache();
 
-        bool needsRebuildName = (_statusName is TextNineGridNode) != (config.Name.BackgroundEnabled == true);
-        bool needsRebuildActor = (_actorName is TextNineGridNode) != (config.Actor.BackgroundEnabled == true);
-        bool needsRebuildTimer = (_statusRemaining is TextNineGridNode) != (config.Timer.BackgroundEnabled == true);
+            bool needsRebuildName = (_statusName is TextNineGridNode) != (config.Name.BackgroundEnabled == true);
+            bool needsRebuildActor = (_actorName is TextNineGridNode) != (config.Actor.BackgroundEnabled == true);
+            bool needsRebuildTimer = (_statusRemaining is TextNineGridNode) != (config.Timer.BackgroundEnabled == true);
 
-        if (needsRebuildName || needsRebuildActor || needsRebuildTimer) {
-            RebuildNodes(config, needsRebuildName, needsRebuildActor, needsRebuildTimer);
-        }
+            if (needsRebuildName || needsRebuildActor || needsRebuildTimer) {
+                RebuildNodes(config, needsRebuildName, needsRebuildActor, needsRebuildTimer);
+            }
 
-        ApplyNodeSettings(_statusBackgroundNode, config.Background);
-        ApplyNodeSettings(_iconNode, config.Icon);
-        ApplyNodeSettings(_statusName, config.Name);
-        ApplyTextStyle(_statusName, config.Name.Style);
+            ApplyNodeSettings(_statusBackgroundNode, config.Background);
+            ApplyNodeSettings(_iconNode, config.Icon);
+            ApplyNodeSettings(_statusName, config.Name);
+            ApplyTextStyle(_statusName, config.Name.Style);
 
-        ApplyNodeSettings(_progressNode, config.Progress);
-        ApplyBarStyle(_progressNode, config.Progress.StyleBar);
+            ApplyNodeSettings(_progressNode, config.Progress);
+            ApplyBarStyle(_progressNode, config.Progress.StyleBar);
 
-        ApplyNodeSettings(_actorName, config.Actor);
-        ApplyTextStyle(_actorName, config.Actor.Style);
+            ApplyNodeSettings(_actorName, config.Actor);
+            ApplyTextStyle(_actorName, config.Actor.Style);
 
-        UpdateLayoutOffsets();
+            UpdateLayoutOffsets();
 
-        _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
+            _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
 
-        UpdateValues();
+            UpdateValues();
+        });
     }
 
     private void ApplyTextStyle(NodeBase node, StatusTimerOverlayConfig.TextStyle? style) {
@@ -523,11 +525,6 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
             if (_getOverlayConfig().Timer.Style is { } timerStyle) {
                 timerStyle.Changed -= OnStatusRemainingTextStyleChanged;
             }
-            _iconNode.Dispose();
-            _statusName.Dispose();
-            _statusRemaining.Dispose();
-            _actorName.Dispose();
-            _progressNode.Dispose();
             _containerResNode.Dispose();
         }
         base.Dispose(disposing, isNativeDestructor);

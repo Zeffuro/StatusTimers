@@ -28,13 +28,12 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
 
     private readonly NodeKind _nodeKind;
     private readonly SimpleOverlayNode _rootContainer;
-    private readonly HUDLayoutBackgroundNode _backgroundNode;
     private readonly HybridDirectionalFlexNode _statusContainer;
 
     private bool _isInitialized;
     private bool _suppressConfigEvents;
     private bool _isLocked = true;
-    private bool _isPreviewEnabled;
+
     private Func<IReadOnlyList<StatusInfo>>? _statusProvider;
 
     private StatusTimerNode<TKey>.StatusNodeActionHandler? _nodeActionHandler;
@@ -63,17 +62,17 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
                     DisableEditMode(NodeEditMode.Move);
                 }
             });
-            UpdateBackgroundVisibility();
         }
     }
 
     public bool IsPreviewEnabled {
-        get => _isPreviewEnabled;
+        get;
         set {
-            if (_isPreviewEnabled == value) {
+            if (field == value) {
                 return;
             }
-            _isPreviewEnabled = value;
+
+            field = value;
         }
     }
 
@@ -87,11 +86,6 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
             IsVisible = true
         };
         _rootContainer.AttachNode(this);
-
-        _backgroundNode = new HUDLayoutBackgroundNode {
-            IsVisible = false
-        };
-        _backgroundNode.AttachNode(_rootContainer);
 
         _statusContainer = new HybridDirectionalFlexNode {
             IsVisible = true,
@@ -114,7 +108,6 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         ApplyLayoutSettings();
         Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
         Util.ApplyConfigProps(OverlayConfig, this);
-        UpdateBackgroundVisibility();
 
         _isInitialized = true;
     }
@@ -171,10 +164,6 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         }
     }
 
-    public void ToggleBackground(bool show) {
-        _backgroundNode.IsVisible = show;
-    }
-
     private StatusTimerNode<TKey> CreateStatusNode(StatusInfo info) {
         var node = new StatusTimerNode<TKey>(() => OverlayConfig) {
             Width = OverlayConfig.RowWidth,
@@ -216,31 +205,33 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
             return;
         }
 
-        if (propertyName == nameof(StatusTimerOverlayConfig.ScaleInt)) {
-            Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
-        }
+        GlobalServices.Framework.RunOnFrameworkThread(() => {
+            if (propertyName == nameof(StatusTimerOverlayConfig.ScaleInt)) {
+                Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
+            }
 
-        if (propertyName == nameof(StatusTimerOverlayConfig.Enabled) ||
-            propertyName == nameof(StatusTimerOverlayConfig.Position)) {
-            Util.ApplyConfigProps(OverlayConfig, this);
-        }
+            if (propertyName == nameof(StatusTimerOverlayConfig.Enabled) ||
+                propertyName == nameof(StatusTimerOverlayConfig.Position)) {
+                Util.ApplyConfigProps(OverlayConfig, this);
+            }
 
-        if (propertyName is nameof(StatusTimerOverlayConfig.RowWidth) or
-            nameof(StatusTimerOverlayConfig.RowHeight) or
-            nameof(StatusTimerOverlayConfig.ItemsPerLine) or
-            nameof(StatusTimerOverlayConfig.MaxStatuses) or
-            nameof(StatusTimerOverlayConfig.StatusHorizontalPadding) or
-            nameof(StatusTimerOverlayConfig.StatusVerticalPadding) or
-            nameof(StatusTimerOverlayConfig.GrowDirection) or
-            nameof(StatusTimerOverlayConfig.FillRowsFirst)) {
-            ApplyLayoutSettings();
-        }
+            if (propertyName is nameof(StatusTimerOverlayConfig.RowWidth) or
+                nameof(StatusTimerOverlayConfig.RowHeight) or
+                nameof(StatusTimerOverlayConfig.ItemsPerLine) or
+                nameof(StatusTimerOverlayConfig.MaxStatuses) or
+                nameof(StatusTimerOverlayConfig.StatusHorizontalPadding) or
+                nameof(StatusTimerOverlayConfig.StatusVerticalPadding) or
+                nameof(StatusTimerOverlayConfig.GrowDirection) or
+                nameof(StatusTimerOverlayConfig.FillRowsFirst)) {
+                ApplyLayoutSettings();
+            }
 
-        if (updateNodes) {
-            UpdateAllNodesDisplay(propertyName);
-        }
+            if (updateNodes) {
+                UpdateAllNodesDisplay(propertyName);
+            }
 
-        SaveConfig();
+            SaveConfig();
+        });
     }
 
     private void ApplyLayoutSettings() {
@@ -248,7 +239,6 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
 
         _rootContainer.Size = CalculatedOverlaySize;
         Size = CalculatedOverlaySize;
-        _backgroundNode.Size = CalculatedOverlaySize;
 
         _statusContainer.Width = CalculatedOverlaySize.X;
         _statusContainer.Height = CalculatedOverlaySize.Y;
@@ -262,10 +252,6 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
             node.Width = OverlayConfig.RowWidth;
             node.Height = OverlayConfig.RowHeight;
         }
-    }
-
-    private void UpdateBackgroundVisibility() {
-        _backgroundNode.IsVisible = !_isLocked;
     }
 
     private void LoadConfig() {
