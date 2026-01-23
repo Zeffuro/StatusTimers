@@ -37,7 +37,7 @@ public sealed class ColorInputRowNode : HorizontalListNode
         AddNode(InputNode);
     }
 
-    public string Label
+    public ReadOnlySeString Label
     {
         get => _labelNode.String;
         set => _labelNode.String = value;

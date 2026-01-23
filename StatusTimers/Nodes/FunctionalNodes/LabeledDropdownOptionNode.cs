@@ -1,4 +1,4 @@
-using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using Lumina.Text.ReadOnly;
 using System;
@@ -49,8 +49,8 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
 
     public ReadOnlySeString LabelText
     {
-        get => _labelNode.SeString;
-        set => _labelNode.SeString = value;
+        get => _labelNode.String;
+        set => _labelNode.String = value;
     }
 
     public Action<string>? OnOptionSelected

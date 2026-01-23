@@ -1,5 +1,5 @@
 using Dalamud.Interface;
-using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using System.Drawing;
 using System.IO;
 using System.Numerics;

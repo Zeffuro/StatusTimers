@@ -2,7 +2,7 @@ using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Widgets;
+using KamiToolKit.Premade.Color;
 using StatusTimers.Enums;
 using System;
 using System.Linq;

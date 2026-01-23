@@ -1,6 +1,7 @@
 using Dalamud.Utility;
 using KamiToolKit;
 using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using KamiToolKit.Overlay;
 using Newtonsoft.Json;

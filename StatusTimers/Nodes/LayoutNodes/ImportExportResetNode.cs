@@ -1,4 +1,5 @@
 using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -54,6 +55,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             Height = 32,
             Width = 100,
             String = "Reset",
+            TextNode = { TextColor = ColorHelper.GetColor(50) },
             TextTooltip = "   Reset configuration\n(hold button to confirm)",
             OnClick = () => ImportExportResetHelper.TryResetConfig(
                 getConfig(), kind, onConfigChanged, closeWindow)

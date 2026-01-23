@@ -1,4 +1,4 @@
-using KamiToolKit.Classes;
+using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 using System;
 
