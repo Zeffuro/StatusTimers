@@ -1,7 +1,7 @@
 <Project Sdk="Dalamud.NET.Sdk/14.0.1">
     <PropertyGroup>
         <PackageProjectUrl>https://github.com/Zeffuro/StatusTimers.git</PackageProjectUrl>
-        <Version>1.0.3.2</Version>
+        <Version>1.0.3.3</Version>
         <LangVersion>preview</LangVersion>
         <DebugType>portable</DebugType>
         <TargetFramework>net10.0-windows</TargetFramework>

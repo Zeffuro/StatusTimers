@@ -1,3 +1,6 @@
+# 1.0.3.3
+- Updated KTK to the latest version.
+
 # 1.0.3.2
 - Updated KTK and added more guards against crashes.
 
