@@ -42,7 +42,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             Width = 250,
             Height = 28,
             OnInputComplete = input => {
-                string filter = input.ExtractText();
+                string filter = input.ToString();
                 UpdateDropdownOptions(filter);
             }
         };
@@ -79,13 +79,13 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
         var filtered = allOptions
             .Where(opt =>
                 string.IsNullOrEmpty(filter) ||
-                $"{opt.RowId} {opt.Name.ExtractText()}".Contains(filter, StringComparison.OrdinalIgnoreCase)
+                $"{opt.RowId} {opt.Name.ToString()}".Contains(filter, StringComparison.OrdinalIgnoreCase)
             )
             .ToList();
 
         var displayOptions = (filtered.Count == 0 && _allowNoResult)
             ? new List<string> { "No results found" }
-            : filtered.Select(opt => $"{opt.RowId} {opt.Name.ExtractText()}").ToList();
+            : filtered.Select(opt => $"{opt.RowId} {opt.Name.ToString()}").ToList();
 
         _dropdownNode = new TextDropDownNode
         {
@@ -134,7 +134,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
 
     private void SetIcon(string selectedOption, List<LuminaStatus> filtered)
     {
-        var idx = filtered.FindIndex(opt => $"{opt.RowId} {opt.Name.ExtractText()}" == selectedOption);
+        var idx = filtered.FindIndex(opt => $"{opt.RowId} {opt.Name.ToString()}" == selectedOption);
         _currentSelection = idx >= 0 ? filtered[idx] : null;
         if (_iconNode != null && _currentSelection.HasValue) {
             _iconNode.IconId = _currentSelection.Value.Icon;

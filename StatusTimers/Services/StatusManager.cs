@@ -102,8 +102,8 @@ public static class StatusManager {
 
         uint id = status.StatusId;
         uint iconId = gameData.Icon;
-        string name = gameData.Name.ExtractText();
-        string description = gameData.Description.ExtractText();
+        string name = gameData.Name.ToString();
+        string description = gameData.Description.ToString();
         float remainingSeconds = status.RemainingTime;
         ulong sourceObjectId = objectId;
         uint stacks = gameData.MaxStacks;
@@ -207,6 +207,6 @@ public static class StatusManager {
             return null;
         }
 
-        return !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ExtractText(), item.Icon);
+        return !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ToString(), item.Icon);
     }
 }
