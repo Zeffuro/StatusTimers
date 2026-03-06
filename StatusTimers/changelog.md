@@ -1,3 +1,6 @@
+# 1.0.3.4
+- Updated to experimental version of KTK to hopefully prevent more crashes, please report any weird issues you may encounter).
+
 # 1.0.3.3
 - Updated KTK to the latest version.
 
