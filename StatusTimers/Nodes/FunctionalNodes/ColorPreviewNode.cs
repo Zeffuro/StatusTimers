@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Numerics;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Nodes.FunctionalNodes;

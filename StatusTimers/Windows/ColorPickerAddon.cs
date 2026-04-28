@@ -2,7 +2,8 @@ using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Color;
+using KamiToolKit.Premade.Node;
+using KamiToolKit.Premade.Node.Color;
 using StatusTimers.Enums;
 using System;
 using System.Linq;
@@ -37,7 +38,7 @@ public class ColorPickerAddon : NativeAddon {
         Open();
         _onPicked?.Invoke(_workingColor);
         _colorPickerWidget?.SetColor(_workingColor);
-        _closing = false; // reset closing flag when showing
+        _closing = false;
     }
 
     public void Show(Vector4 initialColor, Vector4 defaultColor, Action<Vector4> onPicked) {
@@ -54,7 +55,7 @@ public class ColorPickerAddon : NativeAddon {
         Close();
     }
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon) {
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan) {
         var mainList = new VerticalListNode {
             IsVisible = true,
             Position = ContentStartPosition,
@@ -129,6 +130,7 @@ public class ColorPickerAddon : NativeAddon {
         _cancelButton.AttachNode(this);
 
         _closing = false;
+        base.OnSetup(addon, atkValueSpan);
     }
 
     private void BuildSliders(VerticalListNode parent, float availableWidth, float availableHeight) {

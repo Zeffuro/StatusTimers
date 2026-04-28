@@ -1,9 +1,8 @@
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using KamiToolKit;
-using KamiToolKit.Overlay;
+using KamiToolKit.Overlay.UiOverlay;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
 using GlobalServices = StatusTimers.Services.Services;
@@ -14,7 +13,7 @@ public class Plugin : IDalamudPlugin {
     public const string CommandName = "/statustimers";
     public readonly OverlayManager OverlayManager;
 
-    public unsafe Plugin(IDalamudPluginInterface pluginInterface) {
+    public Plugin(IDalamudPluginInterface pluginInterface) {
         pluginInterface.Create<GlobalServices>();
 
         BackupHelper.DoConfigBackup(pluginInterface);

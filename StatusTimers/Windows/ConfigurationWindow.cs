@@ -1,6 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
-using KamiToolKit.Classes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -26,7 +25,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
     private bool _isRecalculating;
 
-    protected override unsafe void OnSetup(AtkUnitBase* addon) {
+    protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan) {
         _configScrollingAreas.Clear();
         _configLists.Clear();
         _filterSectionNodes.Clear();

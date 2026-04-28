@@ -1,7 +1,6 @@
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Interfaces;
-using StatusTimers.Logic;
 using StatusTimers.Models;
 using System;
 using System.Collections.Generic;

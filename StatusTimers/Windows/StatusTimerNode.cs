@@ -1,12 +1,9 @@
-using Dalamud.Game.Addon.Events;
-using Dalamud.Game.Addon.Events.EventDataTypes;
-using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit;
-using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node.Simple;
 using KamiToolKit.Timelines;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -15,7 +12,6 @@ using StatusTimers.Models;
 using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using GlobalServices = StatusTimers.Services.Services;
 

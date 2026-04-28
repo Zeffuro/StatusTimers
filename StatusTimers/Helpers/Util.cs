@@ -1,4 +1,4 @@
-using KamiToolKit.Nodes;
+using KamiToolKit.Premade.Node.Simple;
 using Newtonsoft.Json;
 using StatusTimers.Config;
 using StatusTimers.Enums;

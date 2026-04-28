@@ -1,7 +1,5 @@
 using Dalamud.Game.Addon.Events.EventDataTypes;
-using KamiToolKit;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Nodes;
 using System.Numerics;
 
 namespace StatusTimers.Nodes.FunctionalNodes;

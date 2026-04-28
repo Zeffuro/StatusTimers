@@ -1,7 +1,3 @@
-using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Overlay;
-using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Logic;
 using StatusTimers.Models;
