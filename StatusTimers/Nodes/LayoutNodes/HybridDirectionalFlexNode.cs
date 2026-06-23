@@ -1,4 +1,4 @@
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using System;
 using System.Linq;
@@ -59,14 +59,15 @@ namespace StatusTimers.Nodes.LayoutNodes
 
         protected override void OnRecalculateLayout()
         {
-            if (NodeList.Count == 0) {
+            var visibleNodes = NodeList.Where(node => node.IsVisible).ToList();
+            if (visibleNodes.Count == 0) {
                 return;
             }
 
             int itemsPerLine = Math.Max(1, ItemsPerLine);
 
-            float nodeWidth = NodeList.First().Width;
-            float nodeHeight = NodeList.First().Height;
+            float nodeWidth = visibleNodes.First().Width;
+            float nodeHeight = visibleNodes.First().Height;
 
             bool alignRight = GrowDirection is FlexGrowDirection.DownLeft or FlexGrowDirection.UpLeft;
             bool alignBottom = GrowDirection is FlexGrowDirection.UpRight or FlexGrowDirection.UpLeft;
@@ -75,7 +76,7 @@ namespace StatusTimers.Nodes.LayoutNodes
             float startY = alignBottom ? Height : 0f;
 
             int idx = 0;
-            foreach (var node in NodeList)
+            foreach (var node in visibleNodes)
             {
                 int row, col;
                 if (FillRowsFirst)
@@ -102,6 +103,10 @@ namespace StatusTimers.Nodes.LayoutNodes
                 AdjustNode(node);
                 idx++;
             }
+        }
+
+        protected override void OnRecalculateNavigation()
+        {
         }
     }
 }

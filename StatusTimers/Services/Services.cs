@@ -1,7 +1,7 @@
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using KamiToolKit.Overlay.UiOverlay;
+using KamiToolKit.UiOverlay;
 
 namespace StatusTimers.Services;
 

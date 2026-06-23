@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -15,12 +15,13 @@ namespace StatusTimers.Windows;
 public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float CheckBoxHeight = 16;
 
-    private readonly Dictionary<NodeKind, VerticalListNode> _configLists = new();
+    private readonly Dictionary<NodeKind, ConfigVerticalListNode> _configLists = new();
 
-    private readonly Dictionary<NodeKind, ScrollingAreaNode<VerticalListNode>?>
+    private readonly Dictionary<NodeKind, ScrollingNode<ConfigVerticalListNode>?>
         _configScrollingAreas = new();
 
     private readonly Dictionary<NodeKind, FilterSectionNode> _filterSectionNodes = new();
+    private readonly HashSet<NodeKind> _pendingLayoutKinds = [];
     private TabBarNode? _tabBar;
 
     private bool _isRecalculating;
@@ -29,13 +30,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         _configScrollingAreas.Clear();
         _configLists.Clear();
         _filterSectionNodes.Clear();
+        _pendingLayoutKinds.Clear();
         _tabBar = null;
 
         SetupOptions();
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, ScrollingAreaNode<VerticalListNode>? node) in
+        foreach ((NodeKind k, ScrollingNode<ConfigVerticalListNode>? node) in
                  _configScrollingAreas) {
             if (node != null) {
                 node.IsVisible = k == kind;
@@ -44,13 +46,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     protected override unsafe void OnUpdate(AtkUnitBase* addon) {
-        if (_filterSectionNodes.Count == 0) {
-            return;
-        }
-
         foreach (var filterNode in _filterSectionNodes.Values) {
             filterNode.OnUpdate();
         }
+
+        FlushPendingLayoutRecalculations();
     }
 
     protected override unsafe void OnHide(AtkUnitBase* addon) {
@@ -89,11 +89,14 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             overlay.IsVisible = overlay.OverlayConfig.Enabled;
 
-            var configScrollingArea = new ScrollingAreaNode<VerticalListNode> {
+            var configScrollingArea = new ScrollingNode<ConfigVerticalListNode> {
                 Position =
                     ContentStartPosition + new System.Numerics.Vector2(0, _tabBar.Height),
+                ContentNode = {
+                    FitContents = true,
+                    ItemSpacing = 3
+                },
                 Size = ContentSize with { Y = ContentSize.Y - _tabBar.Height },
-                ContentHeight = 1500.0f,
                 ScrollSpeed = 50,
                 IsVisible = false
             };
@@ -102,22 +105,22 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             var list = configScrollingArea.ContentNode;
             list.IsVisible = true;
-            list.FitContents = true;
-            list.ItemSpacing = 3;
             list.Width = configScrollingArea.Width;
             list.Height = 0;
             _configLists[kind] = list;
+            var listNodes = new List<NodeBase>();
 
             // main group respects Enabled at startup
-            var mainSettingsGroup = new VerticalListNode {
+            var mainSettingsGroup = new ConfigVerticalListNode {
                 IsVisible = overlay.OverlayConfig.Enabled,
-                Height = overlay.OverlayConfig.Enabled ? -1 : 0,
+                Height = 0,
                 Width = list.Width,
                 FitContents = true,
                 ItemSpacing = 3
             };
+            var mainSettingsNodes = new List<NodeBase>();
 
-            list.AddNode(
+            listNodes.Add(
                 new ImportExportResetNode(
                     () => overlay,
                     () => overlay.OverlayConfig,
@@ -135,11 +138,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     ToggleEnabled(overlay, mainSettingsGroup, kind, isChecked);
                 }
             };
-            list.AddNode(enabledCheckbox);
+            listNodes.Add(enabledCheckbox);
 
-            mainSettingsGroup.AddDummy(CheckBoxHeight);
+            mainSettingsNodes.Add(new ResNode { Width = CheckBoxHeight, Height = CheckBoxHeight });
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new VisualSectionNode(
                     overlay,
                     () => overlay.OverlayConfig
@@ -154,7 +157,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             var defaultConfig = new StatusTimerOverlayConfig(kind);
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new NodeLayoutSectionNode(
                     "background",
                     overlay.OverlayConfig.Background,
@@ -163,11 +166,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Background),
                             updateNodes: true),
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                    onToggled: () => QueueRecalculateAllLayouts(kind)
                 )
             );
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new NodeLayoutSectionNode(
                     "icon",
                     overlay.OverlayConfig.Icon,
@@ -176,11 +179,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Icon),
                             updateNodes: true),
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                    onToggled: () => QueueRecalculateAllLayouts(kind)
                 )
             );
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new NodeLayoutSectionNode(
                     "status name",
                     overlay.OverlayConfig.Name,
@@ -189,7 +192,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Name),
                             updateNodes: true),
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                    onToggled: () => QueueRecalculateAllLayouts(kind)
                 )
             );
 
@@ -200,7 +203,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         updateNodes: true)
             );
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new NodeLayoutSectionNode(
                     "time remaining",
                     overlay.OverlayConfig.Timer,
@@ -211,13 +214,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                             updateNodes: true),
                     onToggled: () => {
                         timerFormatNode.IsVisible = overlay.OverlayConfig.Timer.IsVisible;
-                        RecalculateAllLayouts(mainSettingsGroup, kind);
+                        QueueRecalculateAllLayouts(kind);
                     })
             );
 
-            mainSettingsGroup.AddNode(timerFormatNode);
+            mainSettingsNodes.Add(timerFormatNode);
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new NodeLayoutSectionNode(
                     "progressbar",
                     overlay.OverlayConfig.Progress,
@@ -226,12 +229,12 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Progress),
                             updateNodes: true),
-                    onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                    onToggled: () => QueueRecalculateAllLayouts(kind)
                 )
             );
 
             if (kind == NodeKind.MultiDoT) {
-                mainSettingsGroup.AddNode(
+                mainSettingsNodes.Add(
                     new NodeLayoutSectionNode(
                         "enemy name",
                         overlay.OverlayConfig.Actor,
@@ -240,20 +243,20 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         onChanged: () =>
                             overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Actor),
                                 updateNodes: true),
-                        onToggled: () => RecalculateAllLayouts(mainSettingsGroup, kind)
+                        onToggled: () => QueueRecalculateAllLayouts(kind)
                     )
                 );
 
-                mainSettingsGroup.AddNode(new CheckboxOptionNode {
+                mainSettingsNodes.Add(new CheckboxOptionNode {
                     String = "Show enemy letter",
                     IsChecked = overlay.OverlayConfig.ShowActorLetter,
                     OnClick = isChecked => overlay.OverlayConfig.ShowActorLetter = isChecked
                 });
             }
 
-            mainSettingsGroup.AddDummy(CheckBoxHeight);
+            mainSettingsNodes.Add(new ResNode { Width = CheckBoxHeight, Height = CheckBoxHeight });
 
-            mainSettingsGroup.AddNode(
+            mainSettingsNodes.Add(
                 new FunctionalSectionNode(() => overlay.OverlayConfig, kind) {
                     IsVisible = true,
                     Width = 600,
@@ -262,7 +265,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     FitContents = true,
                 });
 
-            mainSettingsGroup.AddNode(new SortingSectionNode(() => overlay.OverlayConfig, kind) {
+            mainSettingsNodes.Add(new SortingSectionNode(() => overlay.OverlayConfig, kind) {
                 IsVisible = true,
                 Width = 600,
                 Height = 100,
@@ -274,7 +277,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 () => overlay.OverlayConfig,
                 onChanged: () => {
                     overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.FilterList));
-                    RecalculateAllLayouts(mainSettingsGroup, kind, true);
+                    QueueRecalculateAllLayouts(kind);
                 }
             ) {
                 IsVisible = true,
@@ -283,14 +286,13 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 ItemSpacing = 4,
                 FitContents = true,
             };
-            mainSettingsGroup.AddNode(_filterSectionNodes[kind]);
+            mainSettingsNodes.Add(_filterSectionNodes[kind]);
 
-            list.AddNode(mainSettingsGroup);
+            mainSettingsGroup.AddNode(mainSettingsNodes);
+            listNodes.Add(mainSettingsGroup);
+            list.AddNode(listNodes);
 
-            list.RecalculateLayout();
-            configScrollingArea.ContentHeight = list.Height;
-
-            RecalculateAllLayouts(mainSettingsGroup, kind);
+            RecalculateAllLayouts(kind);
         }
 
         var firstArea = _configScrollingAreas.Values.FirstOrDefault(node => node != null);
@@ -303,40 +305,48 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         return kind switch {
             NodeKind.Combined => overlayManager.PlayerCombinedOverlayInstance,
             NodeKind.MultiDoT => overlayManager.EnemyMultiDoTOverlayInstance,
+            NodeKind.Buffs => overlayManager.PlayerBuffsOverlayInstance,
+            NodeKind.Debuffs => overlayManager.PlayerDebuffsOverlayInstance,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind,
                 "Unsupported NodeKind")
         };
     }
 
-    private void RecalculateAllLayouts(VerticalListNode group, NodeKind kind,
-        bool scrollToBottom = false) {
+    private void RecalculateAllLayouts(NodeKind kind) {
         if (_isRecalculating) {
+            _pendingLayoutKinds.Add(kind);
             return;
         }
 
-        _isRecalculating = true;
-
-        foreach (var node in group.Nodes) {
-            if (node is LayoutListNode layoutNode) {
-                layoutNode.RecalculateLayout();
+        try {
+            _isRecalculating = true;
+            if (!_configScrollingAreas.TryGetValue(kind, out var configScrollingArea) ||
+                configScrollingArea == null) {
+                return;
             }
-        }
 
-        group.RecalculateLayout();
-        _configLists[kind].RecalculateLayout();
-
-        var configScrollingArea = _configScrollingAreas[kind];
-        if (configScrollingArea == null) {
+            ConfigLayoutRecalculation.RecalculateBottomUp(configScrollingArea.ContentNode);
+            ConfigLayoutRecalculation.UpdateScrollParams(configScrollingArea);
+        } finally {
             _isRecalculating = false;
+        }
+    }
+
+    private void QueueRecalculateAllLayouts(NodeKind kind) {
+        _pendingLayoutKinds.Add(kind);
+    }
+
+    private void FlushPendingLayoutRecalculations() {
+        if (_isRecalculating || _pendingLayoutKinds.Count == 0) {
             return;
         }
 
-        configScrollingArea.ContentHeight = _configLists[kind].Height;
-        if (scrollToBottom) {
-            configScrollingArea.ScrollPosition = (int)configScrollingArea.ContentHeight;
-        }
+        var pendingKinds = _pendingLayoutKinds.ToArray();
+        _pendingLayoutKinds.Clear();
 
-        _isRecalculating = false;
+        foreach (var kind in pendingKinds) {
+            RecalculateAllLayouts(kind);
+        }
     }
 
     private void ToggleEnabled(StatusTimerOverlayNode<StatusKey>? overlay, VerticalListNode group,
@@ -347,15 +357,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
         overlay.IsVisible = isChecked;
         group.IsVisible = isChecked;
-        group.Height = isChecked ? -1 : 0;
-        group.RecalculateLayout();
-        _configLists[kind].RecalculateLayout();
-
-        var configScrollingArea = _configScrollingAreas[kind];
-        if (configScrollingArea == null) {
-            return;
-        }
-
-        configScrollingArea.ContentHeight = _configLists[kind].Height;
+        group.Height = 0;
+        QueueRecalculateAllLayouts(kind);
     }
 }

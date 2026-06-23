@@ -1,9 +1,9 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Enums;
 using KamiToolKit.Extensions;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using KamiToolKit.Timelines;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -17,11 +17,11 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
 
-public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
+public sealed class StatusTimerNode<TKey> : ResNode {
     public delegate void StatusNodeActionHandler(uint statusId, ulong gameObjectToTargetId, NodeKind nodeKind,
         bool allowDismiss, bool allowTarget);
 
-    private SimpleOverlayNode _containerResNode;
+    private ResNode _containerResNode;
 
     private readonly Func<StatusTimerOverlayConfig> _getOverlayConfig;
 
@@ -38,13 +38,14 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
     private StatusInfo? _lastStatusInfo;
 
     private bool _isDisposed;
+    private bool _iconClickRegistered;
 
     public unsafe StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
         _getOverlayConfig = getOverlayConfig;
 
         var config = _getOverlayConfig();
 
-        _containerResNode = new SimpleOverlayNode() {
+        _containerResNode = new ResNode() {
             IsVisible = true,
             Width = config.RowWidth,
             Height = config.RowHeight,
@@ -95,10 +96,7 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
 
         RegisterNodeMap();
 
-        if (config.ShowActorLetter || config.AllowTargetActor) {
-            _iconNode.DrawFlags = DrawFlags.ClickableCursor;
-            _iconNode.AddEvent(AtkEventType.MouseClick, OnIconClicked);
-        }
+        ApplyIconInteractionSettings(config);
 
         _containerResNode.AttachNode(this);
 
@@ -125,6 +123,16 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
         }
     }
 
+    public void ActivateStatus(StatusInfo status) {
+        IsVisible = true;
+        StatusInfo = status;
+    }
+
+    public void ClearStatus() {
+        IsVisible = false;
+        ResetStatusDisplay();
+    }
+
     protected override void OnSizeChanged() {
         ClearAnchorCache();
         UpdateLayoutOffsets();
@@ -147,6 +155,7 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
 
             ApplyNodeSettings(_statusBackgroundNode, config.Background);
             ApplyNodeSettings(_iconNode, config.Icon);
+            ApplyIconInteractionSettings(config);
             ApplyNodeSettings(_statusName, config.Name);
             ApplyTextStyle(_statusName, config.Name.Style);
 
@@ -207,18 +216,31 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
         node.Y = partConfig.Anchor.OffsetY;
     }
 
-    private unsafe void RegisterNodeMap() {
+    private void RegisterNodeMap() {
         _nodeMap["Background"] = _statusBackgroundNode;
         _nodeMap["Icon"] = _iconNode;
         _nodeMap["Name"] = _statusName;
         _nodeMap["ActorName"] = _actorName;
         _nodeMap["Progress"] = _progressNode;
         _nodeMap["Timer"] = _statusRemaining;
+    }
 
-        var config = _getOverlayConfig();
-        if (config.ShowActorLetter || config.AllowTargetActor) {
+    private unsafe void ApplyIconInteractionSettings(StatusTimerOverlayConfig config) {
+        var shouldRegisterClick = config.ShowActorLetter || config.AllowTargetActor;
+        _iconNode.ShowClickableCursor = shouldRegisterClick;
+
+        if (shouldRegisterClick == _iconClickRegistered) {
+            return;
+        }
+
+        if (shouldRegisterClick) {
             _iconNode.AddEvent(AtkEventType.MouseClick, OnIconClicked);
         }
+        else {
+            _iconNode.RemoveEvent(AtkEventType.MouseClick, OnIconClicked);
+        }
+
+        _iconClickRegistered = shouldRegisterClick;
     }
 
     private void UpdateLayoutOffsets() {
@@ -431,8 +453,9 @@ public sealed class StatusTimerNode<TKey> : SimpleOverlayNode {
             return;
         }
 
+        bool isPlayerStatusOverlay = Kind is NodeKind.Combined or NodeKind.Buffs or NodeKind.Debuffs;
         bool shouldInvoke =
-            (atkEventData->IsRightClick && Kind == NodeKind.Combined) ||
+            (atkEventData->IsRightClick && isPlayerStatusOverlay) ||
             (atkEventData->IsLeftClick && Kind == NodeKind.MultiDoT);
 
         if (!shouldInvoke) {

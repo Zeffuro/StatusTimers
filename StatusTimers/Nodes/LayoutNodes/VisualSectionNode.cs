@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -8,19 +9,22 @@ using StatusTimers.Nodes.FunctionalNodes;
 using StatusTimers.Windows;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class VisualSectionNode : VerticalListNode
+public sealed class VisualSectionNode : ConfigVerticalListNode
 {
     public VisualSectionNode(
         StatusTimerOverlayNode<StatusKey> overlay,
         Func<StatusTimerOverlayConfig> getConfig)
     {
-        AddNode(new SectionHeaderNode("Visual Settings"));
+        var nodes = new List<NodeBase> {
+            new SectionHeaderNode("Visual Settings")
+        };
 
         // Locked and Preview Mode
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new CheckboxOptionNode {
                 String = "Locked",
                 IsChecked = overlay.IsLocked,
@@ -36,10 +40,10 @@ public sealed class VisualSectionNode : VerticalListNode
             20
         ));
 
-        AddDummy(16);
+        nodes.Add(CreateSpacer(16));
 
         // Node Height and Width
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new LabeledNumericOptionNode("Container Width",
                 () => getConfig().RowWidth,
                 value => { getConfig().RowWidth = value; },
@@ -54,7 +58,7 @@ public sealed class VisualSectionNode : VerticalListNode
         ));
 
         // Padding
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new LabeledNumericOptionNode("Horizontal Padding",
                 () => getConfig().StatusHorizontalPadding,
                 value => { getConfig().StatusHorizontalPadding = value; },
@@ -68,10 +72,10 @@ public sealed class VisualSectionNode : VerticalListNode
             20
         ));
 
-        AddDummy(16);
+        nodes.Add(CreateSpacer(16));
 
         // Scale Label
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new TextNode
             {
                 IsVisible = true,
@@ -94,7 +98,7 @@ public sealed class VisualSectionNode : VerticalListNode
         ));
 
         // Scale slider
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new SliderNode {
                 Range = new Range(5, 200),
                 Step = 5,
@@ -128,7 +132,7 @@ public sealed class VisualSectionNode : VerticalListNode
             String = $"Statuses per {(getConfig().FillRowsFirst ? "row" : "column")}"
         };
 
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             statusPerLineNode,
             new TextNode
             {
@@ -147,7 +151,7 @@ public sealed class VisualSectionNode : VerticalListNode
         ));
 
         // Sliders for ItemsPerLine and MaxStatuses
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new SliderNode {
                 Range = new Range(1, 30),
                 Step = 1,
@@ -172,7 +176,7 @@ public sealed class VisualSectionNode : VerticalListNode
         ));
 
         // Fill columns first + Grow direction dropdown
-        AddNode(new TwoOptionsRowNode(
+        nodes.Add(new TwoOptionsRowNode(
             new CheckboxOptionNode {
                 String = "Fill columns first",
                 IsChecked = !getConfig().FillRowsFirst,
@@ -197,7 +201,7 @@ public sealed class VisualSectionNode : VerticalListNode
         ));
 
         // Animations
-        AddNode(new CheckboxOptionNode {
+        nodes.Add(new CheckboxOptionNode {
             String = "Animations enabled",
             IsChecked = getConfig().AnimationsEnabled,
             OnClick = value => {
@@ -205,6 +209,11 @@ public sealed class VisualSectionNode : VerticalListNode
             }
         });
 
+        AddNode(nodes);
         RecalculateLayout();
     }
+
+    private static ResNode CreateSpacer(float size) => new() {
+        Size = new Vector2(size, size),
+    };
 }

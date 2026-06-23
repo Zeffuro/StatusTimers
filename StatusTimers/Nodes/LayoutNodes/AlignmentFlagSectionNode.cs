@@ -6,7 +6,7 @@ using StatusTimers.Helpers;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class AlignmentFlagSectionNode : VerticalListNode
+public sealed class AlignmentFlagSectionNode : ConfigVerticalListNode
 {
     private readonly Func<AnchorAlignment> _getAlignment;
     private readonly Action<AnchorAlignment> _setAlignment;

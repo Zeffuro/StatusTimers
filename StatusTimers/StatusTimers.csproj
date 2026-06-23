@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\KamiToolKit\KamiToolKit.csproj"/>
+        <ProjectReference Include="..\KamiToolKit.Components\KamiToolKit.Components.csproj"/>
     </ItemGroup>
 
     <!-- Release Configuration -->

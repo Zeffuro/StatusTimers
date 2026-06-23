@@ -1,6 +1,6 @@
 using KamiToolKit.Enums;
-using KamiToolKit.Overlay.UiOverlay;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes;
+using KamiToolKit.UiOverlay;
 using Newtonsoft.Json;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -23,8 +23,11 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     public override OverlayLayer OverlayLayer => OverlayLayer.BehindUserInterface;
 
     private readonly NodeKind _nodeKind;
-    private readonly SimpleOverlayNode _rootContainer;
-    private readonly HybridDirectionalFlexNode _statusContainer;
+    private readonly ResNode _rootContainer;
+    private readonly HybridDirectionalFlexNode<StatusTimerNode<TKey>> _statusContainer;
+    private readonly Dictionary<StatusKey, StatusTimerNode<TKey>> _activeStatusNodes = new();
+    private readonly List<StatusTimerNode<TKey>> _allStatusNodes = [];
+    private readonly Queue<StatusTimerNode<TKey>> _inactiveStatusNodes = new();
 
     private bool _isInitialized;
     private bool _suppressConfigEvents;
@@ -78,14 +81,13 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         OverlayConfigRegistry.Register(nodeKind, OverlayConfig);
         OverlayConfig.OnPropertyChanged += HandleConfigPropertyChanged;
 
-        _rootContainer = new SimpleOverlayNode() {
+        _rootContainer = new ResNode() {
             IsVisible = true
         };
         _rootContainer.AttachNode(this);
 
-        _statusContainer = new HybridDirectionalFlexNode {
-            IsVisible = true,
-            DisableCollisionNode = true
+        _statusContainer = new HybridDirectionalFlexNode<StatusTimerNode<TKey>> {
+            IsVisible = true
         };
         _statusContainer.AttachNode(_rootContainer);
 
@@ -119,9 +121,12 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     }
 
     public void SetNodeActionHandler(StatusTimerNode<TKey>.StatusNodeActionHandler? handler) {
+        var previousHandler = _nodeActionHandler;
         _nodeActionHandler = handler;
-        foreach (var node in _statusContainer.GetNodes<StatusTimerNode<TKey>>()) {
-            node.OnStatusNodeActionTriggered -= handler;
+        foreach (var node in _allStatusNodes) {
+            if (previousHandler != null) {
+                node.OnStatusNodeActionTriggered -= previousHandler;
+            }
             if (handler != null) {
                 node.OnStatusNodeActionTriggered += handler;
             }
@@ -135,29 +140,69 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     public void UpdateStatuses(IReadOnlyList<StatusInfo> statuses) {
         Initialize();
 
-        _statusContainer.SyncWithListData(
-            statuses,
-            node => node.StatusInfo,
-            CreateStatusNode);
+        var nodesChanged = ReconcileStatusNodes(statuses);
+        var orderChanged = SortStatusNodes();
 
-        foreach (var node in _statusContainer.GetNodes<StatusTimerNode<TKey>>()) {
-            var updated = statuses.FirstOrDefault(status =>
-                status.Id == node.StatusInfo.Id &&
-                status.GameObjectId == node.StatusInfo.GameObjectId &&
-                status.IconId == node.StatusInfo.IconId);
-            if (updated != null) {
-                node.StatusInfo = updated;
-            }
+        if (nodesChanged && !orderChanged) {
+            _statusContainer.RecalculateLayout();
         }
-
-        SortStatusNodes();
-        _statusContainer.RecalculateLayout();
     }
 
     public void UpdateAllNodesDisplay(string changedProperty) {
-        foreach (var node in _statusContainer.GetNodes<StatusTimerNode<TKey>>()) {
+        foreach (var node in _allStatusNodes) {
             node.ApplyOverlayConfig(changedProperty);
         }
+    }
+
+    private bool ReconcileStatusNodes(IReadOnlyList<StatusInfo> statuses) {
+        var anythingChanged = false;
+        var currentKeys = statuses
+            .Select(status => status.Key)
+            .ToHashSet();
+
+        foreach (var (key, node) in _activeStatusNodes.ToList()) {
+            if (currentKeys.Contains(key)) {
+                continue;
+            }
+
+            _activeStatusNodes.Remove(key);
+            node.ClearStatus();
+            _inactiveStatusNodes.Enqueue(node);
+            anythingChanged = true;
+        }
+
+        var nodesToAttach = new List<StatusTimerNode<TKey>>();
+        foreach (var status in statuses) {
+            var key = status.Key;
+            if (_activeStatusNodes.TryGetValue(key, out var node)) {
+                node.ActivateStatus(status);
+                continue;
+            }
+
+            node = AcquireStatusNode(status, nodesToAttach);
+            _activeStatusNodes[key] = node;
+            anythingChanged = true;
+        }
+
+        if (nodesToAttach.Count != 0) {
+            _statusContainer.AddNode(nodesToAttach);
+        }
+
+        return anythingChanged;
+    }
+
+    private StatusTimerNode<TKey> AcquireStatusNode(
+        StatusInfo status,
+        List<StatusTimerNode<TKey>> nodesToAttach) {
+        if (_inactiveStatusNodes.TryDequeue(out var pooledNode)) {
+            pooledNode.ActivateStatus(status);
+            return pooledNode;
+        }
+
+        var node = CreateStatusNode(status);
+        _allStatusNodes.Add(node);
+        nodesToAttach.Add(node);
+        return node;
     }
 
     private StatusTimerNode<TKey> CreateStatusNode(StatusInfo info) {
@@ -176,7 +221,7 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         return node;
     }
 
-    private void SortStatusNodes() {
+    private bool SortStatusNodes() {
         var comparison = StatusSorter.GetNodeComparison<TKey>(
             OverlayConfig.PrimarySort,
             OverlayConfig.PrimarySortOrder,
@@ -186,14 +231,34 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
             OverlayConfig.TertiarySortOrder);
 
         var nodes = _statusContainer.GetNodes<StatusTimerNode<TKey>>().ToList();
+        if (nodes.Count < 2) {
+            return false;
+        }
+
+        int CompareForLayout(StatusTimerNode<TKey> a, StatusTimerNode<TKey> b) {
+            if (a.IsVisible != b.IsVisible) {
+                return a.IsVisible ? -1 : 1;
+            }
+
+            if (!a.IsVisible) {
+                return 0;
+            }
+
+            return comparison(a, b);
+        }
+
         var sorted = nodes
-            .OrderBy(node => node, Comparer<StatusTimerNode<TKey>>.Create(comparison))
+            .OrderBy(node => node, Comparer<StatusTimerNode<TKey>>.Create(CompareForLayout))
             .ToList();
 
-        if (!nodes.SequenceEqual(sorted)) {
-            _statusContainer.ReorderNodes((a, b) =>
-                comparison((StatusTimerNode<TKey>)a, (StatusTimerNode<TKey>)b));
+        if (nodes.SequenceEqual(sorted)) {
+            return false;
         }
+
+        _statusContainer.ReorderNodes((a, b) =>
+            CompareForLayout((StatusTimerNode<TKey>)a, (StatusTimerNode<TKey>)b));
+
+        return true;
     }
 
     private void HandleConfigPropertyChanged(string propertyName, bool updateNodes) {
@@ -244,7 +309,7 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         _statusContainer.FillRowsFirst = OverlayConfig.FillRowsFirst;
         _statusContainer.GrowDirection = (FlexGrowDirection)OverlayConfig.GrowDirection;
 
-        foreach (var node in _statusContainer.GetNodes<StatusTimerNode<TKey>>()) {
+        foreach (var node in _allStatusNodes) {
             node.Width = OverlayConfig.RowWidth;
             node.Height = OverlayConfig.RowHeight;
         }

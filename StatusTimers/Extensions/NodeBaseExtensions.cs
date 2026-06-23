@@ -1,4 +1,4 @@
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using GlobalServices = StatusTimers.Services.Services;
 

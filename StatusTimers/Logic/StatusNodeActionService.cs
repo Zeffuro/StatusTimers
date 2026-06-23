@@ -13,7 +13,7 @@ public sealed class StatusNodeActionService {
         bool allowDismiss,
         bool allowTarget) {
 
-        if (nodeKind == NodeKind.Combined && allowDismiss) {
+        if (nodeKind is NodeKind.Combined or NodeKind.Buffs or NodeKind.Debuffs && allowDismiss) {
             StatusManager.ExecuteStatusOff(statusId);
         }
 

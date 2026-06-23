@@ -1,9 +1,7 @@
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
-using KamiToolKit.Premade.Node;
-using KamiToolKit.Premade.Node.Color;
 using StatusTimers.Enums;
 using System;
 using System.Linq;
@@ -20,13 +18,13 @@ public class ColorPickerAddon : NativeAddon {
     private bool _closing;
     private bool _suppressCallbacks;
 
-    private ColorPickerWidget? _colorPickerWidget;
+    private ColorPickerNode? _colorPickerWidget;
     private TextDropDownNode? _colorDropdown;
     private SliderNode? _sliderR, _sliderG, _sliderB, _sliderA;
     private bool _updatingFromSliders;
 
     private TextButtonNode? _confirmButton;
-    private ColorOptionTextButtonNode? _defaultButton;
+    private ColorSquareTextButtonNode? _defaultButton;
     private TextButtonNode? _cancelButton;
 
     public void Show(Vector4 initialColor, Action<Vector4> onPicked)
@@ -70,11 +68,11 @@ public class ColorPickerAddon : NativeAddon {
             IsVisible = true,
             Width = Size.X - 24f,
             Height = Size.Y - 24f,
-            FitPadding = 8,
+            ItemSpacing = 8,
         };
         mainList.AddNode(contentRow);
 
-        _colorPickerWidget = new ColorPickerWidget {
+        _colorPickerWidget = new ColorPickerNode {
             IsVisible = true,
             Width = 400,
             Height = 340,
@@ -109,7 +107,7 @@ public class ColorPickerAddon : NativeAddon {
         };
         _confirmButton.AttachNode(this);
 
-        _defaultButton = new ColorOptionTextButtonNode {
+        _defaultButton = new ColorSquareTextButtonNode {
             IsVisible = true,
             Size = new Vector2(100f, 24f),
             Position = ContentStartPosition + new Vector2(ContentSize.X / 2f - 50f, ContentSize.Y - 24f),

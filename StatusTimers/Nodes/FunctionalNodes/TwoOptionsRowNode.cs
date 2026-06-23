@@ -1,4 +1,4 @@
-using KamiToolKit;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
 
@@ -13,9 +13,8 @@ public sealed class TwoOptionsRowNode : HorizontalFlexNode
         Width = 600;
         Height = height;
         AlignmentFlags = FlexFlags.CenterVertically;
-        FitPadding = 4;
+        ItemSpacing = 4;
 
-        AddNode(first);
-        AddNode(second);
+        AddNode([first, second]);
     }
 }

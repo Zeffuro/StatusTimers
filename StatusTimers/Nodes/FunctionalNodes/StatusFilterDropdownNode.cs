@@ -11,6 +11,9 @@ namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class StatusFilterDropdownNode : HorizontalListNode
 {
+    private const int MinimumSearchLength = 2;
+    private const int MaxSearchResults = 50;
+
     private readonly Func<List<LuminaStatus>> _optionsProvider;
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private StatusFilterListNode? _statusListNode;
@@ -20,9 +23,10 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
 
     private IconImageNode? _iconNode;
     private LuminaStatus? _currentSelection;
+    private List<LuminaStatus> _filteredOptions = [];
     private TextInputNode _textInputNode;
-    private TextDropDownNode? _dropdownNode;
-    private TextButtonNode? _addButtonNode;
+    private readonly TextDropDownNode _dropdownNode;
+    private readonly TextButtonNode _addButtonNode;
 
     public StatusFilterDropdownNode(
         Func<List<LuminaStatus>> optionsProvider,
@@ -46,9 +50,6 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
                 UpdateDropdownOptions(filter);
             }
         };
-        AddNode(_textInputNode);
-
-        AddDummy(10);
 
         _iconNode = new IconImageNode
         {
@@ -57,35 +58,6 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             IconId = 0,
             FitTexture = true
         };
-        AddNode(_iconNode);
-
-        UpdateDropdownOptions(string.Empty);
-    }
-
-    private void UpdateDropdownOptions(string filter)
-    {
-        if (_isUpdating) {
-            return;
-        }
-
-        _isUpdating = true;
-
-        var toRemove = Nodes.Where(n => n is TextDropDownNode || n is TextButtonNode).ToList();
-        foreach (var node in toRemove) {
-            RemoveNode(node);
-        }
-
-        var allOptions = _optionsProvider();
-        var filtered = allOptions
-            .Where(opt =>
-                string.IsNullOrEmpty(filter) ||
-                $"{opt.RowId} {opt.Name.ToString()}".Contains(filter, StringComparison.OrdinalIgnoreCase)
-            )
-            .ToList();
-
-        var displayOptions = (filtered.Count == 0 && _allowNoResult)
-            ? new List<string> { "No results found" }
-            : filtered.Select(opt => $"{opt.RowId} {opt.Name.ToString()}").ToList();
 
         _dropdownNode = new TextDropDownNode
         {
@@ -94,11 +66,10 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             Width = 250,
             Height = 28,
             MaxListOptions = 5,
-            Options = displayOptions,
-            OnOptionSelected = s => SetIcon(s, filtered),
-            SelectedOption = displayOptions.FirstOrDefault() ?? "No results found"
+            Options = [GetEmptySearchMessage()],
+            OnOptionSelected = SetIcon,
+            SelectedOption = GetEmptySearchMessage()
         };
-        AddNode(_dropdownNode);
 
         _addButtonNode = new TextButtonNode
         {
@@ -109,14 +80,57 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             String = "+",
             OnClick = OnAddButtonClick
         };
-        AddNode(_addButtonNode);
 
-        if (displayOptions.Count > 0 && displayOptions[0] != "No results found") {
-            SetIcon(displayOptions[0], filtered);
-        } else {
-            SetIcon("", filtered);
+        AddNode([
+            _textInputNode,
+            new ResNode { Size = new System.Numerics.Vector2(10) },
+            _iconNode,
+            _dropdownNode,
+            _addButtonNode
+        ]);
+    }
+
+    private void UpdateDropdownOptions(string filter)
+    {
+        if (_isUpdating) {
+            return;
         }
-        _isUpdating = false;
+
+        _isUpdating = true;
+
+        try {
+            var normalizedFilter = filter.Trim();
+            if (normalizedFilter.Length < MinimumSearchLength) {
+                _filteredOptions = [];
+                _dropdownNode.Options = [GetEmptySearchMessage()];
+                _dropdownNode.SelectedOption = GetEmptySearchMessage();
+                SetIcon(string.Empty);
+                return;
+            }
+
+            var allOptions = _optionsProvider();
+            _filteredOptions = allOptions
+                .Where(opt =>
+                    opt.RowId.ToString().Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase) ||
+                    opt.Name.ToString().Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase)
+                )
+                .Take(MaxSearchResults)
+                .ToList();
+
+            var displayOptions = (_filteredOptions.Count == 0 && _allowNoResult)
+                ? new List<string> { "No results found" }
+                : _filteredOptions.Select(GetDisplayName).ToList();
+
+            _dropdownNode.Options = displayOptions;
+            _dropdownNode.SelectedOption = displayOptions.FirstOrDefault() ?? "No results found";
+            if (displayOptions.Count > 0 && displayOptions[0] != "No results found") {
+                SetIcon(displayOptions[0]);
+            } else {
+                SetIcon(string.Empty);
+            }
+        } finally {
+            _isUpdating = false;
+        }
     }
 
     private void OnAddButtonClick()
@@ -126,16 +140,19 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             var statusId = _currentSelection.Value.RowId;
             if (_getConfig().FilterList.Add(statusId))
             {
-                _statusListNode?.Refresh();
-                _onChanged?.Invoke();
+                if (_onChanged is not null) {
+                    _onChanged.Invoke();
+                } else {
+                    _statusListNode?.Refresh();
+                }
             }
         }
     }
 
-    private void SetIcon(string selectedOption, List<LuminaStatus> filtered)
+    private void SetIcon(string selectedOption)
     {
-        var idx = filtered.FindIndex(opt => $"{opt.RowId} {opt.Name.ToString()}" == selectedOption);
-        _currentSelection = idx >= 0 ? filtered[idx] : null;
+        var selectedStatus = _filteredOptions.FirstOrDefault(opt => GetDisplayName(opt) == selectedOption);
+        _currentSelection = selectedStatus.RowId != 0 ? selectedStatus : null;
         if (_iconNode != null && _currentSelection.HasValue) {
             _iconNode.IconId = _currentSelection.Value.Icon;
         } else if (_iconNode != null) {
@@ -146,4 +163,10 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
     public void SetStatusListNode(StatusFilterListNode listNode) {
         _statusListNode = listNode;
     }
+
+    private static string GetDisplayName(LuminaStatus status)
+        => $"{status.RowId} {status.Name.ToString()}";
+
+    private static string GetEmptySearchMessage()
+        => $"Type {MinimumSearchLength}+ characters";
 }

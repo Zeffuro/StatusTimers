@@ -29,7 +29,14 @@ public static class StatusSorter {
             }
 
             result = CompareByCriterion(a.StatusInfo, b.StatusInfo, tertiarySort, tertiaryOrder);
-            return result;
+            if (result != 0) {
+                return result;
+            }
+
+            result = a.StatusInfo.GameObjectId.CompareTo(b.StatusInfo.GameObjectId);
+            return result != 0
+                ? result
+                : a.StatusInfo.Id.CompareTo(b.StatusInfo.Id);
         };
     }
 

@@ -38,7 +38,7 @@ public sealed class ColorPreviewOptionNode : HorizontalFlexNode
         Width = 272;
         Height = 24;
         AlignmentFlags = FlexFlags.FitHeight;
-        FitPadding = 4;
+        ItemSpacing = 4;
 
         AddNode(new TextNode
         {

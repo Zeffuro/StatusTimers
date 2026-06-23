@@ -24,7 +24,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             IconId = status.Icon,
             FitTexture = true
         };
-        AddNode(_statusIconNode);
 
         _statusIdTextNode = new TextNode
         {
@@ -34,7 +33,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             Width = 50,
             AlignmentType = AlignmentType.Right
         };
-        AddNode(_statusIdTextNode);
 
         _statusNameTextNode = new TextNode
         {
@@ -44,7 +42,6 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             Width = 220,
             AlignmentType = AlignmentType.Left
         };
-        AddNode(_statusNameTextNode);
 
         _statusRemoveButtonNode = new TextButtonNode {
             String = "-",
@@ -52,7 +49,13 @@ public sealed class StatusFilterRowNode : HorizontalListNode {
             Height = 28,
             IsVisible = true
         };
-        AddNode(_statusRemoveButtonNode);
+
+        AddNode([
+            _statusIconNode,
+            _statusIdTextNode,
+            _statusNameTextNode,
+            _statusRemoveButtonNode
+        ]);
     }
 
     public Status Status { get; }

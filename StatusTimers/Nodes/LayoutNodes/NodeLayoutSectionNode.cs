@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -10,7 +11,7 @@ using System.Linq;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class NodeLayoutSectionNode : VerticalListNode
+public sealed class NodeLayoutSectionNode : ConfigVerticalListNode
 {
     public NodeLayoutSectionNode(
         string label,
@@ -27,7 +28,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
         IsVisible = true;
         FitContents = true;
 
-        var settingsGroup = new VerticalListNode
+        var settingsGroup = new ConfigVerticalListNode
         {
             X = 18,
             Height = 220,
@@ -48,12 +49,11 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             {
                 nodePart.IsVisible = isChecked;
                 settingsGroup.IsVisible = isChecked;
-                RecalculateLayout();
                 onChanged?.Invoke();
                 onToggled?.Invoke();
             }
         };
-        AddNode(enabledCheckbox);
+        var settingsNodes = new List<NodeBase>();
 
         // Background row
         var backgroundRow = new HorizontalFlexNode
@@ -61,9 +61,9 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             IsVisible = nodePart.BackgroundEnabled != null,
             Width = 562,
             Height = 32,
-            FitPadding = 4
+            ItemSpacing = 4
         };
-        settingsGroup.AddNode(backgroundRow);
+        settingsNodes.Add(backgroundRow);
 
         var backgroundCheckbox = new CheckboxNode
         {
@@ -79,7 +79,7 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 onToggled?.Invoke();
             }
         };
-        backgroundRow.AddNode(backgroundCheckbox);
+        backgroundRow.AddNode([backgroundCheckbox]);
 
         if (nodePart.StyleKind == NodePartStyleKind.Bar && nodePart.StyleBar != null && overlayManager != null)
         {
@@ -92,50 +92,52 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 IsVisible = true,
                 Width = 562,
                 Height = 32,
-                FitPadding = 4
+                ItemSpacing = 4
             };
-            settingsGroup.AddNode(barStyleRow);
+            settingsNodes.Add(barStyleRow);
 
-            barStyleRow.AddNode(new CheckboxOptionNode {
+            var borderCheckbox = new CheckboxOptionNode {
                 String = "Show Border",
                 IsChecked = nodePart.StyleBar.BorderVisible ?? BarStyleDefaults.BorderVisible,
                 OnClick = isChecked => {
                     nodePart.StyleBar.BorderVisible = isChecked;
                     onChanged?.Invoke();
                 }
-            });
+            };
 
-            barStyleRow.AddNode(new ColorPreviewOptionNode(
+            var borderColorNode = new ColorPreviewOptionNode(
                 $"Border Color",
                 () => nodePart.StyleBar.BorderColor ?? BarStyleDefaults.BorderColor, borderDefaultColor ?? BarStyleDefaults.BorderColor,
                 c => { nodePart.StyleBar.BorderColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
-            ));
+            );
+            barStyleRow.AddNode([borderCheckbox, borderColorNode]);
 
             var barStyleRow2 = new HorizontalFlexNode
             {
                 IsVisible = true,
                 Width = 562,
                 Height = 32,
-                FitPadding = 4
+                ItemSpacing = 4
             };
-            settingsGroup.AddNode(barStyleRow2);
+            settingsNodes.Add(barStyleRow2);
 
-            barStyleRow2.AddNode(new ColorPreviewOptionNode(
+            var progressColorNode = new ColorPreviewOptionNode(
                 "Progress Color",
                 () => nodePart.StyleBar.ProgressColor ?? BarStyleDefaults.ProgressColor, progressDefaultColor ?? BarStyleDefaults.ProgressColor,
                 c => { nodePart.StyleBar.ProgressColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
-            ));
-            barStyleRow2.AddNode(new ColorPreviewOptionNode(
+            );
+            var backgroundColorNode = new ColorPreviewOptionNode(
                 "Background Color",
                 () => nodePart.StyleBar.BackgroundColor ?? BarStyleDefaults.BackgroundColor, backgroundDefaultColor ?? BarStyleDefaults.BackgroundColor,
                 c => { nodePart.StyleBar.BackgroundColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
-            ));
+            );
+            barStyleRow2.AddNode([progressColorNode, backgroundColorNode]);
         }
 
         // Style rows
@@ -149,46 +151,48 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
                 IsVisible = true,
                 Width = 562,
                 Height = 32,
-                FitPadding = 4
+                ItemSpacing = 4
             };
-            settingsGroup.AddNode(styleRow);
+            settingsNodes.Add(styleRow);
 
-            styleRow.AddNode(new LabeledDropdownOptionNode<FontType>(
+            var fontDropdownNode = new LabeledDropdownOptionNode<FontType>(
                 "Font",
                 () => nodePart.Style.FontType,
                 v => { nodePart.Style.FontType = v; onChanged?.Invoke(); },
                 FontMap
-            ));
+            );
 
-            styleRow.AddNode(new LabeledNumericOptionNode(
+            var fontSizeNode = new LabeledNumericOptionNode(
                 "Font Size",
                 () => nodePart.Style.FontSize,
                 v => { nodePart.Style.FontSize = v; onChanged?.Invoke(); }
-            ));
+            );
+            styleRow.AddNode([fontDropdownNode, fontSizeNode]);
 
             var styleRow2 = new HorizontalFlexNode
             {
                 IsVisible = true,
                 Width = 562,
                 Height = 32,
-                FitPadding = 4
+                ItemSpacing = 4
             };
-            settingsGroup.AddNode(styleRow2);
+            settingsNodes.Add(styleRow2);
 
-            styleRow2.AddNode(new ColorPreviewOptionNode(
+            var textColorNode = new ColorPreviewOptionNode(
                 "Text Color",
                 () => nodePart.Style.TextColor, textDefaultColor,
                 c => { nodePart.Style.TextColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
-            ));
-            styleRow2.AddNode(new ColorPreviewOptionNode(
+            );
+            var textOutlineColorNode = new ColorPreviewOptionNode(
                 "Text Outline Color",
                 () => nodePart.Style.TextOutlineColor, outlineDefaultColor,
                 c => { nodePart.Style.TextOutlineColor = c; onChanged?.Invoke(); },
                 overlayManager,
                 onChanged
-            ));
+            );
+            styleRow2.AddNode([textColorNode, textOutlineColorNode]);
         }
 
         // Offset row
@@ -197,17 +201,18 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             IsVisible = true,
             Width = 562,
             Height = 32,
-            FitPadding = 4
+            ItemSpacing = 4
         };
-        settingsGroup.AddNode(offsetRow);
+        settingsNodes.Add(offsetRow);
 
-        offsetRow.AddNode(new LabeledNumericOptionNode("Offset X",
+        var offsetXNode = new LabeledNumericOptionNode("Offset X",
             () => (int)nodePart.Anchor.OffsetX,
-            v => { nodePart.Anchor.OffsetX = v; onChanged?.Invoke(); }));
+            v => { nodePart.Anchor.OffsetX = v; onChanged?.Invoke(); });
 
-        offsetRow.AddNode(new LabeledNumericOptionNode("Offset Y",
+        var offsetYNode = new LabeledNumericOptionNode("Offset Y",
             () => (int)nodePart.Anchor.OffsetY,
-            v => { nodePart.Anchor.OffsetY = v; onChanged?.Invoke(); }));
+            v => { nodePart.Anchor.OffsetY = v; onChanged?.Invoke(); });
+        offsetRow.AddNode([offsetXNode, offsetYNode]);
 
         // Size row
         var sizeRow = new HorizontalFlexNode
@@ -215,17 +220,18 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             IsVisible = true,
             Width = 562,
             Height = 32,
-            FitPadding = 4
+            ItemSpacing = 4
         };
-        settingsGroup.AddNode(sizeRow);
+        settingsNodes.Add(sizeRow);
 
-        sizeRow.AddNode(new LabeledNumericOptionNode("Width",
+        var widthNode = new LabeledNumericOptionNode("Width",
             () => (int)nodePart.Anchor.Width,
-            v => { nodePart.Anchor.Width = v; onChanged?.Invoke(); }, false));
+            v => { nodePart.Anchor.Width = v; onChanged?.Invoke(); }, false);
 
-        sizeRow.AddNode(new LabeledNumericOptionNode("Height",
+        var heightNode = new LabeledNumericOptionNode("Height",
             () => (int)nodePart.Anchor.Height,
-            v => { nodePart.Anchor.Height = v; onChanged?.Invoke(); }, false));
+            v => { nodePart.Anchor.Height = v; onChanged?.Invoke(); }, false);
+        sizeRow.AddNode([widthNode, heightNode]);
 
         // Anchor target row
         var anchorTargetDict = ((AnchorTarget[])Enum.GetValues(typeof(AnchorTarget)))
@@ -235,23 +241,24 @@ public sealed class NodeLayoutSectionNode : VerticalListNode
             IsVisible = true,
             Width = 562,
             Height = 32,
-            FitPadding = 8
+            ItemSpacing = 8
         };
-        settingsGroup.AddNode(anchorToRow);
+        settingsNodes.Add(anchorToRow);
 
-        anchorToRow.AddNode(new LabeledDropdownOptionNode<AnchorTarget>("Anchor",
+        anchorToRow.AddNode([new LabeledDropdownOptionNode<AnchorTarget>("Anchor",
             () => nodePart.Anchor.AnchorTo,
             v => { nodePart.Anchor.AnchorTo = v; onChanged?.Invoke(); },
-            anchorTargetDict));
+            anchorTargetDict)]);
 
         // Alignment flags
-        settingsGroup.AddNode(new AlignmentFlagSectionNode(
+        settingsNodes.Add(new AlignmentFlagSectionNode(
             () => nodePart.Anchor.Alignment,
             v => { nodePart.Anchor.Alignment = v; onChanged?.Invoke(); },
             onChanged
         ));
 
-        AddNode(settingsGroup);
+        settingsGroup.AddNode(settingsNodes);
+        AddNode([enabledCheckbox, settingsGroup]);
 
         RecalculateLayout();
     }

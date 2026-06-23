@@ -13,7 +13,7 @@ public sealed class LabeledNumericOptionNode : HorizontalFlexNode
         Width = 280;
         Height = 24;
         AlignmentFlags = FlexFlags.FitHeight;
-        FitPadding = 4;
+        ItemSpacing = 4;
 
         AddNode(new OptionLabelNode(labelText));
 

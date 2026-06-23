@@ -17,9 +17,7 @@ public sealed class SortRowNode : HorizontalFlexNode
         Action<SortOrder> orderSetter,
         Dictionary<SortCriterion, string> criteriaMap)
     {
-        AddNode(new OptionLabelNode(labelText, false));
-
-        AddNode(new TextDropDownNode
+        var criterionDropdown = new TextDropDownNode
         {
             IsVisible = true,
             Width = 200,
@@ -35,7 +33,7 @@ public sealed class SortRowNode : HorizontalFlexNode
                     criterionSetter(selected.Value);
                 }
             }
-        });
+        };
 
         var orderMap = new Dictionary<SortOrder, string>
         {
@@ -43,7 +41,7 @@ public sealed class SortRowNode : HorizontalFlexNode
             { SortOrder.Descending, "Descending" }
         };
 
-        AddNode(new TextDropDownNode
+        var orderDropdown = new TextDropDownNode
         {
             IsVisible = true,
             Width = 180,
@@ -59,6 +57,8 @@ public sealed class SortRowNode : HorizontalFlexNode
                     orderSetter(selected.Value);
                 }
             }
-        });
+        };
+
+        AddNode([new OptionLabelNode(labelText, false), criterionDropdown, orderDropdown]);
     }
 }

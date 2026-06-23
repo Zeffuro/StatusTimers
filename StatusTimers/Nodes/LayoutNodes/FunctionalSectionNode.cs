@@ -1,12 +1,15 @@
+using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
 using StatusTimers.Nodes.FunctionalNodes;
 using System;
+using System.Collections.Generic;
+using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class FunctionalSectionNode : VerticalListNode {
+public sealed class FunctionalSectionNode : ConfigVerticalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly SectionHeaderNode _sectionHeaderNode;
 
@@ -14,7 +17,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         _getConfig = getConfig;
 
         _sectionHeaderNode = new SectionHeaderNode("Functional Settings");
-        AddNode(_sectionHeaderNode);
+        var nodes = new List<NodeBase> { _sectionHeaderNode };
 
         // Hide statuses above a certain max duration
         var secondsNode = new LabeledNumericOptionNode("",
@@ -26,7 +29,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         };
 
         // Hide statuses above a certain max enabled
-        AddNode(new TwoOptionsRowNode(new CheckboxOptionNode {
+        nodes.Add(new TwoOptionsRowNode(new CheckboxOptionNode {
             String = "Hide statuses above a certain max duration",
             IsChecked = getConfig().HideStatusAboveSecondsEnabled,
             OnClick = isChecked => {
@@ -45,7 +48,7 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         };
 
         // Hide statuses above a certain max enabled
-        AddNode(new TwoOptionsRowNode(new CheckboxOptionNode {
+        nodes.Add(new TwoOptionsRowNode(new CheckboxOptionNode {
             String = "Hide statuses under a certain max duration",
             IsChecked = getConfig().HideStatusUnderSecondsEnabled,
             OnClick = isChecked => {
@@ -54,31 +57,31 @@ public sealed class FunctionalSectionNode : VerticalListNode {
             }
         }, underSecondsNode, 20));
 
-        if (kind == NodeKind.Combined)
+        if (kind is NodeKind.Combined or NodeKind.Buffs or NodeKind.Debuffs)
         {
             // Hide statuses that are not applied by the player
-            AddNode(new CheckboxOptionNode {
+            nodes.Add(new CheckboxOptionNode {
                 String = "Show self applied statuses only",
                 IsChecked = getConfig().SelfAppliedStatusesOnly,
                 OnClick = isChecked => getConfig().SelfAppliedStatusesOnly = isChecked
             });
 
             // Hide permanent statuses
-            AddNode(new CheckboxOptionNode {
+            nodes.Add(new CheckboxOptionNode {
                 String = "Hide permanent statuses",
                 IsChecked = !getConfig().ShowPermaIcons,
                 OnClick = isChecked => getConfig().ShowPermaIcons = !isChecked
             });
 
             // Show food/potion name
-            AddNode(new CheckboxOptionNode {
+            nodes.Add(new CheckboxOptionNode {
                 String = "Show food or potion name instead of Well Fed/Medicated",
                 IsChecked = getConfig().StatusAsItemName,
                 OnClick = isChecked => getConfig().StatusAsItemName = isChecked
             });
 
             // Allow dismissing status by right-clicking the status icon
-            AddNode(new CheckboxOptionNode {
+            nodes.Add(new CheckboxOptionNode {
                 String = "Allow dismissing status by right-clicking the status icon.",
                 IsChecked = getConfig().AllowDismissStatus,
                 OnClick = isChecked => getConfig().AllowDismissStatus = isChecked
@@ -89,19 +92,20 @@ public sealed class FunctionalSectionNode : VerticalListNode {
         if (kind == NodeKind.MultiDoT)
         {
             // Allow targeting the enemy by clicking the status icon
-            AddNode(new CheckboxOptionNode {
+            nodes.Add(new CheckboxOptionNode {
                 String = "Allow targeting the enemy by clicking the status icon.",
                 IsChecked = getConfig().AllowTargetActor,
                 OnClick = isChecked => getConfig().AllowTargetActor = isChecked
             });
         }
 
-        AddNode(new CheckboxOptionNode {
+        nodes.Add(new CheckboxOptionNode {
             String = "Only show when in combat",
             IsChecked = getConfig().InCombatOnly,
             OnClick = isChecked => getConfig().InCombatOnly = isChecked
         });
 
+        AddNode(nodes);
         RecalculateLayout();
     }
 }

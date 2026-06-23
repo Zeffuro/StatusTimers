@@ -28,6 +28,13 @@ public class StatusTimerOverlayConfig
                 SecondarySort = SortCriterion.TimeRemaining;
                 TertiarySort = SortCriterion.None;
                 break;
+            case NodeKind.Debuffs:
+                PrimarySort = SortCriterion.TimeRemaining;
+                SecondarySort = SortCriterion.None;
+                TertiarySort = SortCriterion.None;
+                SelfAppliedStatusesOnly = false;
+                break;
+            case NodeKind.Buffs:
             case NodeKind.Combined:
             default:
                 PrimarySort = SortCriterion.StatusType;

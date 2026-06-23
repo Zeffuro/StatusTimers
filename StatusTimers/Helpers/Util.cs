@@ -1,4 +1,4 @@
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes;
 using Newtonsoft.Json;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -100,12 +100,12 @@ public class Util
         }
     }
 
-    public static void ApplyConfigProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay) {
+    public static void ApplyConfigProps(StatusTimerOverlayConfig config, ResNode overlay) {
         overlay.IsVisible = config.Enabled;
         overlay.Position = config.Position;
     }
 
-    public static void SaveOverlayProps(StatusTimerOverlayConfig config, SimpleComponentNode overlay) {
+    public static void SaveOverlayProps(StatusTimerOverlayConfig config, ResNode overlay) {
         config.Enabled = overlay.IsVisible;
         config.Position = overlay.Position;
     }

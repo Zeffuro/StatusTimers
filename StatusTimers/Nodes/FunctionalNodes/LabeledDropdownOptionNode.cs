@@ -23,7 +23,7 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
         Width = 280;
         Height = 24;
         AlignmentFlags = FlexFlags.FitHeight;
-        FitPadding = 4;
+        ItemSpacing = 4;
 
         _labelNode = new OptionLabelNode(labelText, false);
         AddNode(_labelNode);
@@ -38,7 +38,7 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
             MaxListOptions = 5,
             Options = displayMap.Values.ToList(),
             OnOptionSelected = selected => {
-                T? selectedKey = displayMap.FirstOrDefault(x => x.Value == selected).Key;
+                T selectedKey = displayMap.FirstOrDefault(x => x.Value == selected).Key;
                 setter(selectedKey);
             },
             SelectedOption = displayMap[getter()]
@@ -65,7 +65,7 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
         set => _dropDownNode.SelectedOption = value;
     }
 
-    public List<string>? Options
+    public List<string> Options
     {
         get => _dropDownNode.Options;
         set => _dropDownNode.Options = value;

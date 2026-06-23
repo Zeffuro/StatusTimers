@@ -1,29 +1,39 @@
 using Dalamud.Game.Command;
+using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using KamiToolKit;
-using KamiToolKit.Overlay.UiOverlay;
+using KamiToolKit.UiOverlay;
+using StatusTimers.Extensions;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
+using System.Threading;
+using System.Threading.Tasks;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers;
 
-public class Plugin : IDalamudPlugin {
+public class Plugin : IAsyncDalamudPlugin {
     public const string CommandName = "/statustimers";
-    public readonly OverlayManager OverlayManager;
 
-    public Plugin(IDalamudPluginInterface pluginInterface) {
-        pluginInterface.Create<GlobalServices>();
+    [PluginService]
+    private static IDalamudPluginInterface PluginInterface { get; set; } = null!;
 
-        BackupHelper.DoConfigBackup(pluginInterface);
+    private OverlayManager OverlayManager { get; set; } = null!;
 
-        KamiToolKitLibrary.Initialize(pluginInterface);
-        GlobalServices.OverlayController = new OverlayController();
+    public async Task LoadAsync(CancellationToken cancellationToken) {
+        PluginInterface.Create<GlobalServices>();
+
+        BackupHelper.DoConfigBackup(PluginInterface);
+
+        KamiToolKitLibrary.Initialize(PluginInterface);
+        await GlobalServices.Framework.Run(() => {
+            GlobalServices.OverlayController = new OverlayController();
+        }, cancellationToken);
 
         OverlayManager = new OverlayManager();
 
-        OverlayManager.Setup();
+        await OverlayManager.SetupAsync(cancellationToken);
 
         GlobalServices.PluginInterface.UiBuilder.OpenMainUi += OverlayManager.ToggleConfig;
         GlobalServices.PluginInterface.UiBuilder.OpenConfigUi += OverlayManager.ToggleConfig;
@@ -33,23 +43,25 @@ public class Plugin : IDalamudPlugin {
         });
 
         if (GlobalServices.ClientState.IsLoggedIn) {
-            GlobalServices.Framework.RunOnFrameworkThread(OnLogin);
+            await GlobalServices.Framework.Run(OnLogin, cancellationToken);
         }
 
         GlobalServices.Framework.Update += OnFrameworkUpdate;
         GlobalServices.ClientState.Login += OnLogin;
     }
 
-    public void Dispose() {
+    public async ValueTask DisposeAsync() {
         GlobalServices.Framework.Update -= OnFrameworkUpdate;
+        GlobalServices.ClientState.Login -= OnLogin;
         GlobalServices.CommandManager.RemoveHandler(CommandName);
 
         GlobalServices.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
         GlobalServices.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
 
-        OverlayManager.Dispose();
-        KamiToolKitLibrary.Dispose();
-        GlobalServices.OverlayController.Dispose();
+        await OverlayManager.DisposeAsync();
+
+        await GlobalServices.Framework.RunSafely(() => GlobalServices.OverlayController.Dispose());
+        await GlobalServices.Framework.RunSafely(KamiToolKitLibrary.Dispose);
     }
 
     private void OnFrameworkUpdate(IFramework framework) {
@@ -58,8 +70,12 @@ public class Plugin : IDalamudPlugin {
 
     private void OnCommand(string command, string args) {
         if (args is "toggleall") {
-            OverlayManager.PlayerCombinedOverlayInstance?.IsVisible = !OverlayManager.PlayerCombinedOverlayInstance.IsVisible;
-            OverlayManager.EnemyMultiDoTOverlayInstance?.IsVisible = !OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible;
+            GlobalServices.Framework.RunOnFrameworkThread(() => {
+                OverlayManager.PlayerCombinedOverlayInstance?.IsVisible = !OverlayManager.PlayerCombinedOverlayInstance.IsVisible;
+                OverlayManager.EnemyMultiDoTOverlayInstance?.IsVisible = !OverlayManager.EnemyMultiDoTOverlayInstance.IsVisible;
+                OverlayManager.PlayerBuffsOverlayInstance?.IsVisible = !OverlayManager.PlayerBuffsOverlayInstance.IsVisible;
+                OverlayManager.PlayerDebuffsOverlayInstance?.IsVisible = !OverlayManager.PlayerDebuffsOverlayInstance.IsVisible;
+            });
         }
         else {
             OverlayManager.ToggleConfig();

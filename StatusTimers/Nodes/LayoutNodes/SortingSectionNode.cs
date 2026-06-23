@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class SortingSectionNode : VerticalListNode {
+public sealed class SortingSectionNode : ConfigVerticalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly SectionHeaderNode _sectionHeaderNode;
 
@@ -16,7 +16,6 @@ public sealed class SortingSectionNode : VerticalListNode {
         _getConfig = getConfig;
 
         _sectionHeaderNode = new SectionHeaderNode("Sorting Settings");
-        AddNode(_sectionHeaderNode);
 
         Dictionary<SortCriterion, string> sortCriteriaMap = new() {
             { SortCriterion.None, "None" },
@@ -32,7 +31,7 @@ public sealed class SortingSectionNode : VerticalListNode {
         }
 
         // Primary Sort
-        AddNode(new SortRowNode(
+        var primarySortNode = new SortRowNode(
             "Primary:",
             () => getConfig().PrimarySort,
             v => getConfig().PrimarySort = v,
@@ -45,11 +44,11 @@ public sealed class SortingSectionNode : VerticalListNode {
             Width = 600,
             Height = 24,
             AlignmentFlags = FlexFlags.FitHeight,
-            FitPadding = 4
-        });
+            ItemSpacing = 4
+        };
 
         // Secondary Sort
-        AddNode(new SortRowNode(
+        var secondarySortNode = new SortRowNode(
             "Secondary:",
             () => getConfig().SecondarySort,
             v => getConfig().SecondarySort = v,
@@ -62,11 +61,11 @@ public sealed class SortingSectionNode : VerticalListNode {
             Width = 600,
             Height = 24,
             AlignmentFlags = FlexFlags.FitHeight,
-            FitPadding = 4
-        });
+            ItemSpacing = 4
+        };
 
         // Tertiary Sort
-        AddNode(new SortRowNode(
+        var tertiarySortNode = new SortRowNode(
             "Tertiary:",
             () => getConfig().TertiarySort,
             v => getConfig().TertiarySort = v,
@@ -79,9 +78,10 @@ public sealed class SortingSectionNode : VerticalListNode {
             Width = 600,
             Height = 24,
             AlignmentFlags = FlexFlags.FitHeight,
-            FitPadding = 4
-        });
+            ItemSpacing = 4
+        };
 
+        AddNode([_sectionHeaderNode, primarySortNode, secondarySortNode, tertiarySortNode]);
         RecalculateLayout();
     }
 }

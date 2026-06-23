@@ -17,6 +17,7 @@ public class StatusDataSourceManager<TKey>(
     Func<int> getMaxStatuses,
     Func<int> getItemsPerLine) {
     private readonly Random _rand = new();
+    private readonly StatusCategory? _statusCategoryFilter = realStatusSource.StatusCategoryFilter;
 
     private uint _dummyStatusUniqueId = 1;
 
@@ -25,7 +26,7 @@ public class StatusDataSourceManager<TKey>(
         new(786, 212578, "Battle Litany", 15f, StatusCategory.Buff),
         new(1822, 213709, "Technical Finish", 20f, StatusCategory.Buff),
         new(2174, 212532, "Brotherhood", 15f, StatusCategory.Buff),
-        new(2912, 217101, "Vulnerability Up", 30f, StatusCategory.Buff)
+        new(2912, 217101, "Vulnerability Up", 30f, StatusCategory.Debuff)
     ];
 
     private readonly List<DummyStatusTemplate> _multiDotDummyTemplates = [
@@ -62,7 +63,11 @@ public class StatusDataSourceManager<TKey>(
         }
 
         IEnumerable<StatusInfo> filteredStatuses = current;
-        if (nodeKind == NodeKind.Combined && !getShowPermaIcons()) {
+        if (_statusCategoryFilter is { } statusCategory) {
+            filteredStatuses = filteredStatuses.Where(s => s.StatusType == statusCategory);
+        }
+
+        if (nodeKind is NodeKind.Combined or NodeKind.Buffs or NodeKind.Debuffs && !getShowPermaIcons()) {
             filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
         }
 

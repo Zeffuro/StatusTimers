@@ -1,5 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using KamiToolKit.Premade.Node.Simple;
+using KamiToolKit.Nodes.Simplified;
 using System.Numerics;
 
 namespace StatusTimers.Nodes.FunctionalNodes;

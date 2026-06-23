@@ -1,5 +1,6 @@
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
+using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +8,8 @@ using LuminaStatus = Lumina.Excel.Sheets.Status;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
 
-public sealed class StatusFilterListNode : VerticalListNode {
-    private readonly List<LuminaStatus> _statusList;
+public sealed class StatusFilterListNode : ConfigVerticalListNode {
+    private readonly Dictionary<uint, LuminaStatus> _statusesById;
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly Action? _onChanged;
 
@@ -16,24 +17,22 @@ public sealed class StatusFilterListNode : VerticalListNode {
     private bool _shouldRefresh;
 
     public StatusFilterListNode(List<LuminaStatus> statusList, Func<StatusTimerOverlayConfig> getConfig, Action? onChanged = null) {
-        _statusList = statusList;
+        _statusesById = statusList.ToDictionary(status => status.RowId);
         _getConfig = getConfig;
         _onChanged = onChanged;
 
         Refresh();
     }
 
-    private void AddStatusRow(LuminaStatus status) {
-        if (_getConfig().FilterList.Contains(status.RowId)) {
-            AddNode(new StatusFilterRowNode(status) {
-                X = 18,
-                Height = 32,
-                Width = 320,
-                IsVisible = true,
-                OnRemove = () => RemoveStatus(status.RowId),
-                ItemSpacing = 20
-            });
-        }
+    private StatusFilterRowNode CreateStatusRow(LuminaStatus status) {
+        return new StatusFilterRowNode(status) {
+            X = 18,
+            Height = 32,
+            Width = 320,
+            IsVisible = true,
+            OnRemove = () => RemoveStatus(status.RowId),
+            ItemSpacing = 20
+        };
     }
 
     public void RemoveStatus(uint statusId) {
@@ -47,9 +46,13 @@ public sealed class StatusFilterListNode : VerticalListNode {
 
     public void OnUpdate() {
         if (_shouldRefresh && !_isRefreshing) {
-            Refresh();
-            _onChanged?.Invoke();
             _shouldRefresh = false;
+
+            if (_onChanged is not null) {
+                _onChanged.Invoke();
+            } else {
+                Refresh();
+            }
         }
     }
 
@@ -59,13 +62,27 @@ public sealed class StatusFilterListNode : VerticalListNode {
         }
 
         _isRefreshing = true;
-        foreach (var node in GetNodes<StatusFilterRowNode>().ToList()) {
-            RemoveNode(node);
+
+        var existingRows = GetNodes<StatusFilterRowNode>().ToList();
+        if (existingRows.Count > 0) {
+            RemoveNode(existingRows);
         }
-        foreach (var status in _statusList) {
-            AddStatusRow(status);
+
+        var rows = new List<StatusFilterRowNode>();
+        foreach (var statusId in _getConfig().FilterList.OrderBy(statusId => statusId)) {
+            if (_statusesById.TryGetValue(statusId, out var status)) {
+                rows.Add(CreateStatusRow(status));
+            }
         }
-        RecalculateLayout();
+
+        if (rows.Count > 0) {
+            FitContents = true;
+            AddNode(rows);
+        } else {
+            FitContents = false;
+            Height = 0.0f;
+        }
+
         _isRefreshing = false;
     }
 }
