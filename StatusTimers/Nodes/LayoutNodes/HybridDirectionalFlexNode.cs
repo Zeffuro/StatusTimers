@@ -13,8 +13,6 @@ namespace StatusTimers.Nodes.LayoutNodes
         UpLeft
     }
 
-    public class HybridDirectionalFlexNode : HybridDirectionalFlexNode<NodeBase> { }
-
     public class HybridDirectionalFlexNode<T> : LayoutListNode where T : NodeBase
     {
 

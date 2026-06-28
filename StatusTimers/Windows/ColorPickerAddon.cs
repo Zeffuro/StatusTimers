@@ -182,7 +182,6 @@ public class ColorPickerAddon : NativeAddon {
             Height = 22f,
             Range = 0..255,
             Step = 1,
-            DecimalPlaces = 0,
         };
         slider.Value = (int)Math.Round(getter(_workingColor) * 255);
         slider.OnValueChanged = v => {

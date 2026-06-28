@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class NodeLayoutSectionNode : ConfigVerticalListNode
+public sealed class NodeLayoutSectionNode : TabbedVerticalListNode
 {
     public NodeLayoutSectionNode(
         string label,
@@ -23,15 +23,20 @@ public sealed class NodeLayoutSectionNode : ConfigVerticalListNode
     {
         X = 18;
         Width = 600;
-        Height = 16;
         ItemSpacing = 0;
         IsVisible = true;
         FitContents = true;
 
-        var settingsGroup = new ConfigVerticalListNode
+        var headerRow = new HorizontalListNode
+        {
+            Width = 600,
+            Height = 24,
+            IsVisible = true
+        };
+
+        var settingsGroup = new VerticalListNode
         {
             X = 18,
-            Height = 220,
             Width = 600,
             ItemSpacing = 2,
             IsVisible = nodePart.IsVisible,
@@ -53,6 +58,9 @@ public sealed class NodeLayoutSectionNode : ConfigVerticalListNode
                 onToggled?.Invoke();
             }
         };
+
+        headerRow.AddNode(enabledCheckbox);
+
         var settingsNodes = new List<NodeBase>();
 
         // Background row
@@ -258,7 +266,13 @@ public sealed class NodeLayoutSectionNode : ConfigVerticalListNode
         ));
 
         settingsGroup.AddNode(settingsNodes);
-        AddNode([enabledCheckbox, settingsGroup]);
+
+        // Add header row first, then the settings group
+        AddNode(headerRow);
+
+        AddTab(1);
+
+        AddNode(settingsGroup);
 
         RecalculateLayout();
     }

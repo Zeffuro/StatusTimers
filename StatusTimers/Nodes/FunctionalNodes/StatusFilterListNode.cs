@@ -8,7 +8,7 @@ using LuminaStatus = Lumina.Excel.Sheets.Status;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
 
-public sealed class StatusFilterListNode : ConfigVerticalListNode {
+public sealed class StatusFilterListNode : VerticalListNode {
     private readonly Dictionary<uint, LuminaStatus> _statusesById;
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly Action? _onChanged;

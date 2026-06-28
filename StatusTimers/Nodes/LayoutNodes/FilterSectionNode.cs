@@ -13,7 +13,7 @@ using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class FilterSectionNode : ConfigVerticalListNode {
+public sealed class FilterSectionNode : TabbedVerticalListNode {
     private readonly Func<StatusTimerOverlayConfig> _getConfig;
     private readonly List<Status> _statusList;
     private readonly Action? _onChanged;
@@ -25,13 +25,17 @@ public sealed class FilterSectionNode : ConfigVerticalListNode {
     private readonly StatusFilterButtonGroupNode _filterButtonGroupNode;
 
     public FilterSectionNode(Func<StatusTimerOverlayConfig> getConfig, Action onChanged) {
+        FitContents = true;
         _statusList = GlobalServices.DataManager.GetExcelSheet<LuminaStatus>()
             .Where(status => status.RowId != 0).ToList();
         _getConfig = getConfig;
         _onChanged = onChanged;
 
         _sectionHeaderNode = new SectionHeaderNode("Filter Settings");
-        _sectionSpacerNode = new ResNode { Size = new Vector2(16) };
+        AddNode(_sectionHeaderNode);
+        AddTab(1);
+
+        _sectionSpacerNode = new ResNode { Height = 16 };
 
         _sectionEnabledOptionNode = new CheckboxOptionNode {
             String = "Enabled",
@@ -54,7 +58,7 @@ public sealed class FilterSectionNode : ConfigVerticalListNode {
             Height = 100,
             Width = 300,
             IsVisible = getConfig().FilterEnabled,
-            ItemSpacing = 4,
+            ItemSpacing = 2,
         };
         _dropdownNode = new StatusFilterDropdownNode(
             () => _statusList,
@@ -70,13 +74,13 @@ public sealed class FilterSectionNode : ConfigVerticalListNode {
         _dropdownNode.SetStatusListNode(_listNode);
 
         AddNode([
-            _sectionHeaderNode,
             _sectionEnabledOptionNode,
             _sectionSpacerNode,
             _filterButtonGroupNode,
-            _dropdownNode,
-            _listNode
+            _dropdownNode
         ]);
+        AddTab(1);
+        AddNode(_listNode);
 
         ToggleVisibility(getConfig().FilterEnabled);
     }
@@ -87,6 +91,8 @@ public sealed class FilterSectionNode : ConfigVerticalListNode {
         _filterButtonGroupNode.IsVisible = isVisible;
         _sectionSpacerNode.IsVisible = isVisible;
         FitContents = true;
+        _listNode.RecalculateLayout();
+        RecalculateLayout();
     }
 
     private void OnFilterChanged() {
@@ -96,5 +102,10 @@ public sealed class FilterSectionNode : ConfigVerticalListNode {
 
     public void OnUpdate() {
         _listNode.OnUpdate();
+    }
+
+    public void RecalculateStatusList() {
+        _listNode.RecalculateLayout();
+        RecalculateLayout();
     }
 }

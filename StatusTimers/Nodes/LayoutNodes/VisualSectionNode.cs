@@ -13,15 +13,21 @@ using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class VisualSectionNode : ConfigVerticalListNode
+public sealed class VisualSectionNode : TabbedVerticalListNode
 {
-    public VisualSectionNode(
-        StatusTimerOverlayNode<StatusKey> overlay,
-        Func<StatusTimerOverlayConfig> getConfig)
+    public VisualSectionNode(StatusTimerOverlayNode<StatusKey> overlay, Func<StatusTimerOverlayConfig> getConfig)
     {
-        var nodes = new List<NodeBase> {
-            new SectionHeaderNode("Visual Settings")
-        };
+        FitContents = true;
+        ItemSpacing = 2;
+        TabSize = 16;
+
+        var nodes = new List<NodeBase>();
+
+        AddNode(new SectionHeaderNode("Visual Settings"));
+
+        AddTab(1);
+
+        nodes.Add(CreateSpacer(8));
 
         // Locked and Preview Mode
         nodes.Add(new TwoOptionsRowNode(
@@ -37,10 +43,10 @@ public sealed class VisualSectionNode : ConfigVerticalListNode
                 OnClick = isChecked => { overlay.IsPreviewEnabled = isChecked; },
                 TextTooltip = "When enabled, will show random statuses to test with."
             },
-            20
+            16
         ));
 
-        nodes.Add(CreateSpacer(16));
+        nodes.Add(CreateSpacer(8));
 
         // Node Height and Width
         nodes.Add(new TwoOptionsRowNode(
@@ -72,7 +78,7 @@ public sealed class VisualSectionNode : ConfigVerticalListNode
             20
         ));
 
-        nodes.Add(CreateSpacer(16));
+        nodes.Add(CreateSpacer(8));
 
         // Scale Label
         nodes.Add(new TwoOptionsRowNode(
@@ -197,7 +203,7 @@ public sealed class VisualSectionNode : ConfigVerticalListNode
                     { GrowDirection.UpLeft,    "Up and Left" }
                 }
             ),
-            20
+            16
         ));
 
         // Animations

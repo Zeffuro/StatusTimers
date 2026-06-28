@@ -9,15 +9,17 @@ using System.Numerics;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class FunctionalSectionNode : ConfigVerticalListNode {
-    private readonly Func<StatusTimerOverlayConfig> _getConfig;
-    private readonly SectionHeaderNode _sectionHeaderNode;
-
+public sealed class FunctionalSectionNode : TabbedVerticalListNode {
     public FunctionalSectionNode(Func<StatusTimerOverlayConfig> getConfig, NodeKind kind) {
-        _getConfig = getConfig;
+        FitContents = true;
+        ItemSpacing = 2;
 
-        _sectionHeaderNode = new SectionHeaderNode("Functional Settings");
-        var nodes = new List<NodeBase> { _sectionHeaderNode };
+        SectionHeaderNode sectionHeaderNode = new("Functional Settings");
+
+        AddNode(sectionHeaderNode);
+
+        AddTab(1);
+        var nodes = new List<NodeBase> { new ResNode{Height = 2} };
 
         // Hide statuses above a certain max duration
         var secondsNode = new LabeledNumericOptionNode("",

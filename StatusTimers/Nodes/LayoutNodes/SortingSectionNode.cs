@@ -8,14 +8,17 @@ using System.Collections.Generic;
 
 namespace StatusTimers.Nodes.LayoutNodes;
 
-public sealed class SortingSectionNode : ConfigVerticalListNode {
-    private readonly Func<StatusTimerOverlayConfig> _getConfig;
+public sealed class SortingSectionNode : TabbedVerticalListNode {
     private readonly SectionHeaderNode _sectionHeaderNode;
 
     public SortingSectionNode(Func<StatusTimerOverlayConfig> getConfig, NodeKind kind) {
-        _getConfig = getConfig;
+        FitContents = true;
+        ItemSpacing = 2;
 
         _sectionHeaderNode = new SectionHeaderNode("Sorting Settings");
+
+        AddNode(_sectionHeaderNode);
+        AddTab(1);
 
         Dictionary<SortCriterion, string> sortCriteriaMap = new() {
             { SortCriterion.None, "None" },
@@ -81,7 +84,7 @@ public sealed class SortingSectionNode : ConfigVerticalListNode {
             ItemSpacing = 4
         };
 
-        AddNode([_sectionHeaderNode, primarySortNode, secondarySortNode, tertiarySortNode]);
+        AddNode([primarySortNode, secondarySortNode, tertiarySortNode]);
         RecalculateLayout();
     }
 }

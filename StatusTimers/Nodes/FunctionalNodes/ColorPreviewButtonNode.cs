@@ -16,7 +16,6 @@ public class ColorPreviewButtonNode : ButtonBase {
         };
 
         _colorPreview.AttachNode(this);
-        //AttachNode(_colorPreview);
 
         LoadTimelines();
 
@@ -39,10 +38,6 @@ public class ColorPreviewButtonNode : ButtonBase {
             base.Size = value;
             _colorPreview.Size = value;
         }
-    }
-
-    private void ClickHandler(AddonEventData data) {
-        OnClick?.Invoke();
     }
 
     private void LoadTimelines()

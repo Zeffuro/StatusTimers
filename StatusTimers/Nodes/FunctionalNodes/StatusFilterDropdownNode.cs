@@ -5,6 +5,7 @@ using StatusTimers.Config;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using LuminaStatus = Lumina.Excel.Sheets.Status;
 
 namespace StatusTimers.Nodes.FunctionalNodes;
@@ -53,9 +54,9 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
 
         _iconNode = new IconImageNode
         {
-            Size = new System.Numerics.Vector2(24, 32),
+            Size = new Vector2(24, 32),
             IsVisible = true,
-            IconId = 0,
+            IconId = 210205,
             FitTexture = true
         };
 
@@ -155,8 +156,10 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
         _currentSelection = selectedStatus.RowId != 0 ? selectedStatus : null;
         if (_iconNode != null && _currentSelection.HasValue) {
             _iconNode.IconId = _currentSelection.Value.Icon;
+            _iconNode.IsVisible = true;
         } else if (_iconNode != null) {
-            _iconNode.IconId = 230402;
+            _iconNode.IconId = 210205;
+            _iconNode.IsVisible = false;
         }
     }
 

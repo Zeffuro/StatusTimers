@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using KamiToolKit.BaseTypes;
+using KamiToolKit.Interfaces;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
 using StatusTimers.Enums;
@@ -9,39 +10,30 @@ using StatusTimers.Nodes.LayoutNodes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace StatusTimers.Windows;
 
 public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     private const float CheckBoxHeight = 16;
 
-    private readonly Dictionary<NodeKind, ConfigVerticalListNode> _configLists = new();
-
-    private readonly Dictionary<NodeKind, ScrollingNode<ConfigVerticalListNode>?>
-        _configScrollingAreas = new();
+    private readonly Dictionary<NodeKind, ScrollingNode<VerticalListNode>?> _configScrollingAreas = new();
 
     private readonly Dictionary<NodeKind, FilterSectionNode> _filterSectionNodes = new();
-    private readonly HashSet<NodeKind> _pendingLayoutKinds = [];
     private TabBarNode? _tabBar;
-
-    private bool _isRecalculating;
 
     protected override unsafe void OnSetup(AtkUnitBase* addon, Span<AtkValue> atkValueSpan) {
         _configScrollingAreas.Clear();
-        _configLists.Clear();
         _filterSectionNodes.Clear();
-        _pendingLayoutKinds.Clear();
         _tabBar = null;
 
         SetupOptions();
     }
 
     private void OnTabButtonClick(NodeKind kind) {
-        foreach ((NodeKind k, ScrollingNode<ConfigVerticalListNode>? node) in
+        foreach ((NodeKind k, ScrollingNode<VerticalListNode>? node) in
                  _configScrollingAreas) {
-            if (node != null) {
-                node.IsVisible = k == kind;
-            }
+            node?.IsVisible = k == kind;
         }
     }
 
@@ -49,8 +41,6 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         foreach (var filterNode in _filterSectionNodes.Values) {
             filterNode.OnUpdate();
         }
-
-        FlushPendingLayoutRecalculations();
     }
 
     protected override unsafe void OnHide(AtkUnitBase* addon) {
@@ -89,9 +79,8 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
             overlay.IsVisible = overlay.OverlayConfig.Enabled;
 
-            var configScrollingArea = new ScrollingNode<ConfigVerticalListNode> {
-                Position =
-                    ContentStartPosition + new System.Numerics.Vector2(0, _tabBar.Height),
+            var configScrollingArea = new ScrollingNode<VerticalListNode> {
+                Position = ContentStartPosition + new Vector2(0, _tabBar.Height),
                 ContentNode = {
                     FitContents = true,
                     ItemSpacing = 3
@@ -107,11 +96,11 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
             list.IsVisible = true;
             list.Width = configScrollingArea.Width;
             list.Height = 0;
-            _configLists[kind] = list;
+
             var listNodes = new List<NodeBase>();
 
             // main group respects Enabled at startup
-            var mainSettingsGroup = new ConfigVerticalListNode {
+            var mainSettingsGroup = new VerticalListNode {
                 IsVisible = overlay.OverlayConfig.Enabled,
                 Height = 0,
                 Width = list.Width,
@@ -148,10 +137,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     () => overlay.OverlayConfig
                 ) {
                     IsVisible = true,
-                    Height = 280,
                     Width = 600,
-                    ItemSpacing = 4,
-                    FitContents = true
                 }
             );
 
@@ -166,7 +152,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Background),
                             updateNodes: true),
-                    onToggled: () => QueueRecalculateAllLayouts(kind)
+                    onToggled: () => RecalculateAllLayouts(kind)
                 )
             );
 
@@ -179,7 +165,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Icon),
                             updateNodes: true),
-                    onToggled: () => QueueRecalculateAllLayouts(kind)
+                    onToggled: () => RecalculateAllLayouts(kind)
                 )
             );
 
@@ -192,7 +178,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Name),
                             updateNodes: true),
-                    onToggled: () => QueueRecalculateAllLayouts(kind)
+                    onToggled: () => RecalculateAllLayouts(kind)
                 )
             );
 
@@ -214,7 +200,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                             updateNodes: true),
                     onToggled: () => {
                         timerFormatNode.IsVisible = overlay.OverlayConfig.Timer.IsVisible;
-                        QueueRecalculateAllLayouts(kind);
+                        RecalculateAllLayouts(kind);
                     })
             );
 
@@ -229,7 +215,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     onChanged: () =>
                         overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Progress),
                             updateNodes: true),
-                    onToggled: () => QueueRecalculateAllLayouts(kind)
+                    onToggled: () => RecalculateAllLayouts(kind)
                 )
             );
 
@@ -243,7 +229,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                         onChanged: () =>
                             overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.Actor),
                                 updateNodes: true),
-                        onToggled: () => QueueRecalculateAllLayouts(kind)
+                        onToggled: () => RecalculateAllLayouts(kind)
                     )
                 );
 
@@ -260,31 +246,24 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                 new FunctionalSectionNode(() => overlay.OverlayConfig, kind) {
                     IsVisible = true,
                     Width = 600,
-                    Height = 120,
-                    ItemSpacing = 4,
-                    FitContents = true,
                 });
 
             mainSettingsNodes.Add(new SortingSectionNode(() => overlay.OverlayConfig, kind) {
                 IsVisible = true,
                 Width = 600,
-                Height = 100,
-                ItemSpacing = 2,
-                FitContents = true
             });
 
             _filterSectionNodes[kind] = new FilterSectionNode(
                 () => overlay.OverlayConfig,
                 onChanged: () => {
                     overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.FilterList));
-                    QueueRecalculateAllLayouts(kind);
+                    RecalculateAllLayouts(kind);
+
+                    _configScrollingAreas[kind]?.ScrollToBottom();
                 }
             ) {
                 IsVisible = true,
                 Width = 600,
-                Height = 100,
-                ItemSpacing = 4,
-                FitContents = true,
             };
             mainSettingsNodes.Add(_filterSectionNodes[kind]);
 
@@ -296,9 +275,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
         }
 
         var firstArea = _configScrollingAreas.Values.FirstOrDefault(node => node != null);
-        if (firstArea != null) {
-            firstArea.IsVisible = true;
-        }
+        firstArea?.IsVisible = true;
     }
 
     private StatusTimerOverlayNode<StatusKey>? GetOverlayByKind(NodeKind kind) {
@@ -313,40 +290,20 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
     }
 
     private void RecalculateAllLayouts(NodeKind kind) {
-        if (_isRecalculating) {
-            _pendingLayoutKinds.Add(kind);
+        var scrollingArea = _configScrollingAreas[kind];
+        if (scrollingArea == null) {
             return;
         }
 
-        try {
-            _isRecalculating = true;
-            if (!_configScrollingAreas.TryGetValue(kind, out var configScrollingArea) ||
-                configScrollingArea == null) {
-                return;
+        foreach (var node in scrollingArea.ContentNode.Nodes) {
+            if (node is FilterSectionNode filterNode) {
+                filterNode.RecalculateStatusList();
+                continue;
             }
-
-            ConfigLayoutRecalculation.RecalculateBottomUp(configScrollingArea.ContentNode);
-            ConfigLayoutRecalculation.UpdateScrollParams(configScrollingArea);
-        } finally {
-            _isRecalculating = false;
-        }
-    }
-
-    private void QueueRecalculateAllLayouts(NodeKind kind) {
-        _pendingLayoutKinds.Add(kind);
-    }
-
-    private void FlushPendingLayoutRecalculations() {
-        if (_isRecalculating || _pendingLayoutKinds.Count == 0) {
-            return;
+            ((ILayoutListNode)node).RecalculateLayout();
         }
 
-        var pendingKinds = _pendingLayoutKinds.ToArray();
-        _pendingLayoutKinds.Clear();
-
-        foreach (var kind in pendingKinds) {
-            RecalculateAllLayouts(kind);
-        }
+        scrollingArea.RecalculateSizes();
     }
 
     private void ToggleEnabled(StatusTimerOverlayNode<StatusKey>? overlay, VerticalListNode group,
@@ -357,7 +314,6 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
 
         overlay.IsVisible = isChecked;
         group.IsVisible = isChecked;
-        group.Height = 0;
-        QueueRecalculateAllLayouts(kind);
+        RecalculateAllLayouts(kind);
     }
 }
