@@ -25,7 +25,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
     private LuminaStatus? _currentSelection;
     private List<LuminaStatus> _filteredOptions = [];
     private TextInputNode _textInputNode;
-    private readonly TextDropDownNode _dropdownNode;
+    private readonly StringDropDownNode _dropdownNode;
     private readonly TextButtonNode _addButtonNode;
 
     public StatusFilterDropdownNode(
@@ -59,7 +59,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
             FitTexture = true
         };
 
-        _dropdownNode = new TextDropDownNode
+        _dropdownNode = new StringDropDownNode
         {
             IsVisible = true,
             Y = 2,

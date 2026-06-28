@@ -9,7 +9,7 @@ namespace StatusTimers.Nodes.FunctionalNodes;
 
 public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
 {
-    private TextDropDownNode _dropDownNode;
+    private StringDropDownNode _dropDownNode;
     private OptionLabelNode _labelNode;
 
     public LabeledDropdownOptionNode(
@@ -28,7 +28,7 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
         _labelNode = new OptionLabelNode(labelText, false);
         AddNode(_labelNode);
 
-        _dropDownNode = new TextDropDownNode
+        _dropDownNode = new StringDropDownNode
         {
             X = 0,
             Y = 0,

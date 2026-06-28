@@ -19,7 +19,7 @@ public class ColorPickerAddon : NativeAddon {
     private bool _suppressCallbacks;
 
     private ColorPickerNode? _colorPickerWidget;
-    private TextDropDownNode? _colorDropdown;
+    private StringDropDownNode? _colorDropdown;
     private SliderNode? _sliderR, _sliderG, _sliderB, _sliderA;
     private bool _updatingFromSliders;
 
@@ -82,7 +82,7 @@ public class ColorPickerAddon : NativeAddon {
 
         BuildSliders(mainList, 380, contentRow.Height - 28f - 8f);
 
-        _colorDropdown = new TextDropDownNode {
+        _colorDropdown = new StringDropDownNode {
             IsVisible = true,
             Width = 376,
             Height = 26,

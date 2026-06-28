@@ -27,7 +27,7 @@ public sealed class StatusTimerFormatRowNode : HorizontalListNode
             IsVisible = true
         };
 
-        var formatDropdown = new TextDropDownNode
+        var formatDropdown = new StringDropDownNode
         {
             Options = TimerFormats.Formats.Keys.ToList(),
             SelectedOption = TimerFormats.Formats.FirstOrDefault(kvp => kvp.Value == getConfig().TimerFormat).Key

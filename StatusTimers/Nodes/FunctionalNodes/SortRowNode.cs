@@ -17,7 +17,7 @@ public sealed class SortRowNode : HorizontalFlexNode
         Action<SortOrder> orderSetter,
         Dictionary<SortCriterion, string> criteriaMap)
     {
-        var criterionDropdown = new TextDropDownNode
+        var criterionDropdown = new StringDropDownNode
         {
             IsVisible = true,
             Width = 200,
@@ -41,7 +41,7 @@ public sealed class SortRowNode : HorizontalFlexNode
             { SortOrder.Descending, "Descending" }
         };
 
-        var orderDropdown = new TextDropDownNode
+        var orderDropdown = new StringDropDownNode
         {
             IsVisible = true,
             Width = 180,
