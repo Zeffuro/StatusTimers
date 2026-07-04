@@ -1,5 +1,6 @@
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
+using StatusTimers.Nodes.FunctionalNodes;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Extensions;
@@ -12,6 +13,7 @@ public static class NodeBaseExtensions
         {
             case TextNode tn: tn.String = value; break;
             case TextNineGridNode ngn: ngn.String = value; break;
+            case BackgroundTextNode btn: btn.String = value; break;
             default: GlobalServices.Logger.Warning($"[NodeBaseExtensions] SetText called on unsupported node type: {node.GetType().Name}"); break;
         }
     }

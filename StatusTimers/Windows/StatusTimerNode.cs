@@ -63,7 +63,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         ApplyNodeSettings(_iconNode, config.Icon);
 
         // Status Name
-        _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
+        _statusName = new BackgroundTextNode {
+            ShowBackground = config.Name.BackgroundEnabled == true
+        };
         ApplyNodeSettings(_statusName, config.Name);
         ApplyTextStyle(_statusName, config.Name.Style);
         if (config.Name.Style != null) {
@@ -145,12 +147,11 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             var config = _getOverlayConfig();
             ClearAnchorCache();
 
-            bool needsRebuildName = (_statusName is TextNineGridNode) != (config.Name.BackgroundEnabled == true);
             bool needsRebuildActor = (_actorName is TextNineGridNode) != (config.Actor.BackgroundEnabled == true);
             bool needsRebuildTimer = (_statusRemaining is TextNineGridNode) != (config.Timer.BackgroundEnabled == true);
 
-            if (needsRebuildName || needsRebuildActor || needsRebuildTimer) {
-                RebuildNodes(config, needsRebuildName, needsRebuildActor, needsRebuildTimer);
+            if (needsRebuildActor || needsRebuildTimer) {
+                RebuildNodes(config, needsRebuildActor, needsRebuildTimer);
             }
 
             ApplyNodeSettings(_statusBackgroundNode, config.Background);
@@ -158,6 +159,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             ApplyIconInteractionSettings(config);
             ApplyNodeSettings(_statusName, config.Name);
             ApplyTextStyle(_statusName, config.Name.Style);
+            ApplyStatusNameBackground(config);
 
             ApplyNodeSettings(_progressNode, config.Progress);
             ApplyBarStyle(_progressNode, config.Progress.StyleBar);
@@ -193,6 +195,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 ngn.TextColor = style.TextColor;
                 ngn.TextOutlineColor = style.TextOutlineColor;
                 ngn.TextFlags = style.TextFlags;
+                break;
+            case BackgroundTextNode btn:
+                btn.FontSize = style.FontSize;
+                btn.FontType = style.FontType;
+                btn.TextColor = style.TextColor;
+                btn.TextOutlineColor = style.TextOutlineColor;
+                btn.TextFlags = style.TextFlags;
                 break;
         }
     }
@@ -259,6 +268,12 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         LayoutNode(_actorName, config.Actor.Anchor, "ActorName");
         LayoutNode(_progressNode, config.Progress.Anchor, "Progress");
         LayoutNode(_statusRemaining, config.Timer.Anchor, "Timer");
+    }
+
+    private void ApplyStatusNameBackground(StatusTimerOverlayConfig config) {
+        if (_statusName is BackgroundTextNode backgroundTextNode) {
+            backgroundTextNode.ShowBackground = config.Name.BackgroundEnabled == true;
+        }
     }
 
     private void ClearAnchorCache() {
@@ -337,20 +352,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.Y = y;
     }
 
-    private void RebuildNodes(StatusTimerOverlayConfig config, bool rebuildName, bool rebuildActor, bool rebuildTimer)
+    private void RebuildNodes(StatusTimerOverlayConfig config, bool rebuildActor, bool rebuildTimer)
     {
-        if (rebuildName) {
-            _statusName.DetachNode();
-            _statusName.Dispose();
-            _statusName = config.Name.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
-            ApplyNodeSettings(_statusName, config.Name);
-            ApplyTextStyle(_statusName, config.Name.Style);
-            if (config.Name.Style != null) {
-                config.Name.Style.Changed += OnStatusNameTextStyleChanged;
-            }
-
-            _containerResNode.AttachNode(_statusName);
-        }
         if (rebuildActor) {
             _actorName.DetachNode();
             _actorName.Dispose();
@@ -396,6 +399,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _iconNode.IconId = StatusInfo.IconId;
             _statusName.SetText(StatusInfo.Name);
             _statusName.IsVisible = config.Name.IsVisible;
+            ApplyStatusNameBackground(config);
             _statusBackgroundNode.IsVisible = config.Background.IsVisible;
 
             if (StatusInfo.ActorName != null && config.Actor.IsVisible) {
@@ -519,6 +523,14 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 TextColor = nine.TextColor,
                 TextOutlineColor = nine.TextOutlineColor,
                 TextFlags = nine.TextFlags
+            },
+            BackgroundTextNode backgroundText => new StatusTimerOverlayConfig.TextStyle
+            {
+                FontSize = backgroundText.FontSize,
+                FontType = backgroundText.FontType,
+                TextColor = backgroundText.TextColor,
+                TextOutlineColor = backgroundText.TextOutlineColor,
+                TextFlags = backgroundText.TextFlags
             },
             _ => null
         };
