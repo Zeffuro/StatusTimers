@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.Text;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
@@ -161,7 +162,7 @@ public static class StatusManager {
                 case 49: // Medicated
                     FoodParams? resolved = ResolveFoodParam(status.Param);
                     if (resolved != null) {
-                        name = $"{resolved.Name}{(config.ShowHqIndicator && resolved.IsHq ? "" : "")}";
+                        name = $"{resolved.Name}{(config.ShowHqIndicator && resolved.IsHq ? SeIconChar.HighQuality.ToIconString() : "")}";
                         //iconId = resolved.IconId;
                     }
 
