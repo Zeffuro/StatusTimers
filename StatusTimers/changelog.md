@@ -1,3 +1,11 @@
+# 1.0.3.7
+- Added the ability to show an HQ indicator for high quality food and medicine.
+- Added separate Buffs and Debuffs overlays.
+- Updated KTK to latest version, crashes *should* be completely solved.
+
+# 1.0.3.6
+- Updated KTK.
+
 # 1.0.3.5
 - Updated for API 15.
 

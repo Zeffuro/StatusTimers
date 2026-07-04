@@ -21,6 +21,7 @@ public static class StatusManager {
     private static readonly ExcelSheet<LuminaStatus> StatusSheet = Services.DataManager.GetExcelSheet<LuminaStatus>();
     private static FrozenDictionary<uint, uint>? _itemFoodToItemLut;
     private static readonly Dictionary<uint, float> StatusDurations = new();
+    private static readonly Dictionary<ushort, FoodParams?> FoodParamCache = new();
 
     private static readonly FrozenSet<uint> HarmfulStatusIds = Services.DataManager
         .GetExcelSheet<LuminaStatus>()
@@ -203,6 +204,11 @@ public static class StatusManager {
     }
 
     private static FoodParams? ResolveFoodParam(ushort param) {
+        if (FoodParamCache.TryGetValue(param, out FoodParams? cached)) {
+            return cached;
+        }
+
+        ushort originalParam = param;
         uint itemId = 0;
 
         var isHq = param > 10000;
@@ -211,9 +217,12 @@ public static class StatusManager {
         }
 
         if (_itemFoodToItemLut != null && !_itemFoodToItemLut.TryGetValue(param, out itemId)) {
+            FoodParamCache[originalParam] = null;
             return null;
         }
 
-        return !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ToString(), item.Icon, isHq);
+        FoodParams? resolved = !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ToString(), item.Icon, isHq);
+        FoodParamCache[originalParam] = resolved;
+        return resolved;
     }
 }

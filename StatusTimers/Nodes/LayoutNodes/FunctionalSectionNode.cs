@@ -1,3 +1,4 @@
+using Dalamud.Game.Text;
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using StatusTimers.Config;
@@ -84,7 +85,7 @@ public sealed class FunctionalSectionNode : TabbedVerticalListNode {
 
             // Allows the HQ indicator to be appended
             nodes.Add(new CheckboxOptionNode {
-                String = "Show the HQ () indicator",
+                String = $"Show the HQ ({SeIconChar.HighQuality.ToIconChar()}) indicator",
                 IsChecked = getConfig().ShowHqIndicator,
                 OnClick = isChecked => getConfig().ShowHqIndicator = isChecked
             });
