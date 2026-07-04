@@ -161,7 +161,7 @@ public static class StatusManager {
                 case 49: // Medicated
                     FoodParams? resolved = ResolveFoodParam(status.Param);
                     if (resolved != null) {
-                        name = resolved.Name;
+                        name = $"{resolved.Name}{(config.ShowHqIndicator && resolved.IsHq ? "" : "")}";
                         //iconId = resolved.IconId;
                     }
 
@@ -203,10 +203,16 @@ public static class StatusManager {
 
     private static FoodParams? ResolveFoodParam(ushort param) {
         uint itemId = 0;
-        if (_itemFoodToItemLut != null && !_itemFoodToItemLut.TryGetValue((uint)(param - 10000), out itemId)) {
+
+        var isHq = param > 10000;
+        if (isHq) {
+            param -= 10000;
+        }
+
+        if (_itemFoodToItemLut != null && !_itemFoodToItemLut.TryGetValue(param, out itemId)) {
             return null;
         }
 
-        return !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ToString(), item.Icon);
+        return !ItemSheet.TryGetRow(itemId, out Item item) ? null : new FoodParams(item.Name.ToString(), item.Icon, isHq);
     }
 }

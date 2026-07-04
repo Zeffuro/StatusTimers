@@ -82,6 +82,13 @@ public sealed class FunctionalSectionNode : TabbedVerticalListNode {
                 OnClick = isChecked => getConfig().StatusAsItemName = isChecked
             });
 
+            // Allows the HQ indicator to be appended
+            nodes.Add(new CheckboxOptionNode {
+                String = "Show the HQ () indicator",
+                IsChecked = getConfig().ShowHqIndicator,
+                OnClick = isChecked => getConfig().ShowHqIndicator = isChecked
+            });
+
             // Allow dismissing status by right-clicking the status icon
             nodes.Add(new CheckboxOptionNode {
                 String = "Allow dismissing status by right-clicking the status icon.",

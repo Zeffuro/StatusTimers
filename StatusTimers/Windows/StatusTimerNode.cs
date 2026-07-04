@@ -40,7 +40,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private bool _isDisposed;
     private bool _iconClickRegistered;
 
-    public unsafe StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
+    public StatusTimerNode(Func<StatusTimerOverlayConfig> getOverlayConfig) {
         _getOverlayConfig = getOverlayConfig;
 
         var config = _getOverlayConfig();
@@ -549,5 +549,5 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         base.Dispose(disposing, isNativeDestructor);
     }
 
-    public bool IsDisposed => _isDisposed;
+    public bool NodeIsDisposed => _isDisposed;
 }

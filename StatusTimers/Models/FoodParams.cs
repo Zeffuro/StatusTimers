@@ -1,3 +1,3 @@
 namespace StatusTimers.Models;
 
-public record FoodParams(string Name, uint IconId);
+public record FoodParams(string Name, uint IconId, bool IsHq);

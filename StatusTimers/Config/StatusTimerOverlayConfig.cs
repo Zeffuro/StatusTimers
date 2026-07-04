@@ -561,6 +561,20 @@ public class StatusTimerOverlayConfig
     } = true;
 
     [JsonProperty]
+    public bool ShowHqIndicator
+    {
+        get => field;
+        set
+        {
+            if (ShowHqIndicator != value)
+            {
+                field = value;
+                Notify(nameof(ShowHqIndicator));
+            }
+        }
+    } = true;
+
+    [JsonProperty]
     public bool HideStatusAboveSecondsEnabled
     {
         get => field;
