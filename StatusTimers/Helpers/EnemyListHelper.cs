@@ -48,4 +48,7 @@ public static unsafe class EnemyListHelper {
         char letterSymbol = name[0];
         return letterSymbol;
     }
+
+    public static void Clear()
+        => EntityIdToLocalIndex.Clear();
 }

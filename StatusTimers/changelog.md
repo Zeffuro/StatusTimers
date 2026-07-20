@@ -1,3 +1,7 @@
+# 1.0.3.8
+- Fix some memory leaks.
+- Updated KTK.
+
 # 1.0.3.7
 - Added the ability to show an HQ indicator for high quality food and medicine.
 - Added separate Buffs and Debuffs overlays.

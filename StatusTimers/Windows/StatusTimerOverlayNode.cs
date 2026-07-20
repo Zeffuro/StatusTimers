@@ -30,6 +30,7 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     private readonly Queue<StatusTimerNode<TKey>> _inactiveStatusNodes = new();
 
     private bool _isInitialized;
+    private bool _isDisposed;
     private bool _suppressConfigEvents;
     private bool _isLocked = true;
 
@@ -362,5 +363,23 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         catch (Exception ex) {
             GlobalServices.Logger.Error($"Failed to save overlay '{_nodeKind}': {ex.Message}");
         }
+    }
+
+    protected override void Dispose(bool isNativeDestructor) {
+        if (_isDisposed) {
+            return;
+        }
+
+        _isDisposed = true;
+
+        OverlayConfig.OnPropertyChanged -= HandleConfigPropertyChanged;
+        SetNodeActionHandler(null);
+        _statusProvider = null;
+
+        base.Dispose(isNativeDestructor);
+
+        _activeStatusNodes.Clear();
+        _allStatusNodes.Clear();
+        _inactiveStatusNodes.Clear();
     }
 }

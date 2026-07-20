@@ -225,4 +225,11 @@ public static class StatusManager {
         FoodParamCache[originalParam] = resolved;
         return resolved;
     }
+
+    public static void ClearTransientState() {
+        _itemFoodToItemLut = null;
+        StatusDurations.Clear();
+        FoodParamCache.Clear();
+        HostileStatusBuffer.Clear();
+    }
 }

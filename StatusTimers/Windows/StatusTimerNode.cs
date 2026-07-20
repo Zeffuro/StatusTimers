@@ -536,29 +536,28 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         };
     }
 
-    protected override void Dispose(bool disposing, bool isNativeDestructor) {
+    protected override void Dispose(bool isNativeDestructor) {
         if (_isDisposed) {
             return;
         }
 
         _isDisposed = true;
 
-        if (disposing) {
-            if (_getOverlayConfig().Name.Style is { } style) {
-                style.Changed -= OnStatusNameTextStyleChanged;
-            }
-            if (_getOverlayConfig().Actor.Style is { } actorStyle) {
-                actorStyle.Changed -= OnActorNameTextStyleChanged;
-            }
-            if (_getOverlayConfig().Progress.StyleBar is { } barStyle) {
-                barStyle.Changed -= OnProgressBarStyleChanged;
-            }
-            if (_getOverlayConfig().Timer.Style is { } timerStyle) {
-                timerStyle.Changed -= OnStatusRemainingTextStyleChanged;
-            }
-            _containerResNode.Dispose();
+        if (_getOverlayConfig().Name.Style is { } style) {
+            style.Changed -= OnStatusNameTextStyleChanged;
         }
-        base.Dispose(disposing, isNativeDestructor);
+        if (_getOverlayConfig().Actor.Style is { } actorStyle) {
+            actorStyle.Changed -= OnActorNameTextStyleChanged;
+        }
+        if (_getOverlayConfig().Progress.StyleBar is { } barStyle) {
+            barStyle.Changed -= OnProgressBarStyleChanged;
+        }
+        if (_getOverlayConfig().Timer.Style is { } timerStyle) {
+            timerStyle.Changed -= OnStatusRemainingTextStyleChanged;
+        }
+        _containerResNode.Dispose();
+
+        base.Dispose(isNativeDestructor);
     }
 
     public bool NodeIsDisposed => _isDisposed;

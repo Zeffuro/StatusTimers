@@ -14,6 +14,8 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers.Windows;
 
 public class OverlayManager : IAsyncDisposable {
+    private static readonly TimeSpan FrameworkSetupTimeout = TimeSpan.FromSeconds(15);
+
     private bool _isDisposed;
     private ConfigurationWindow? _configurationWindow;
     private StatusTimerOverlayNode<StatusKey>? _playerCombinedOverlay;
@@ -45,7 +47,7 @@ public class OverlayManager : IAsyncDisposable {
     public async Task SetupAsync(CancellationToken cancellationToken) {
         await DetachAndDisposeAllAsync();
 
-        await GlobalServices.Framework.Run(CreateAndAttachOverlays, cancellationToken);
+        await GlobalServices.Framework.RunSafelyWithTimeout(CreateAndAttachOverlays, cancellationToken, FrameworkSetupTimeout);
 
         _colorPickerAddon = new ColorPickerAddon {
             InternalName = "StatusTimerColorPicker",

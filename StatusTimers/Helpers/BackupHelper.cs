@@ -58,22 +58,8 @@ public static class BackupHelper {
             ZipFile.CreateFromDirectory(configDirectory.FullName, tempFile);
             if (latestFile.Exists) {
                 var t = latestFile.LastWriteTime;
-                string archiveName = $"{Name}.{t.Year}{t.Month:00}{t.Day:00}{t.Hour:00}{t.Minute:00}{t.Second:00}.zip";
-                string archivePath = Path.Join(backupDir, archiveName);
-
-                bool moved = false;
-                for (int i = 0; i < 5 && !moved; i++) {
-                    try {
-                        File.Move(latestFile.FullName, archivePath);
-                        moved = true;
-                    } catch (IOException ioEx) when (i < 4) {
-                        GlobalServices.Logger.Debug($"Move failed, retrying in 100ms: {ioEx.Message}");
-                        System.Threading.Thread.Sleep(100);
-                    }
-                }
-                if (!moved) {
-                    throw new IOException($"Could not move {latestFile.FullName} after several retries.");
-                }
+                var archivePath = GetUniqueBackupPath(backupDir, t);
+                File.Move(latestFile.FullName, archivePath);
             }
 
             if (File.Exists(latestFile.FullName)) {
@@ -90,6 +76,19 @@ public static class BackupHelper {
         } catch (Exception exception) {
             GlobalServices.Logger.Warning(exception, "Backup Skipped");
         }
+    }
+
+    private static string GetUniqueBackupPath(string backupDir, DateTime timestamp) {
+        var stamp = $"{timestamp.Year}{timestamp.Month:00}{timestamp.Day:00}{timestamp.Hour:00}{timestamp.Minute:00}{timestamp.Second:00}";
+        var archivePath = Path.Join(backupDir, $"{Name}.{stamp}.zip");
+        var suffix = 1;
+
+        while (File.Exists(archivePath)) {
+            archivePath = Path.Join(backupDir, $"{Name}.{stamp}.{suffix:00}.zip");
+            suffix++;
+        }
+
+        return archivePath;
     }
 
     private static string ComputeCombinedJsonHash(IEnumerable<(string name, byte[] contents)> files) {

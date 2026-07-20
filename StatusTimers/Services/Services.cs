@@ -19,4 +19,19 @@ public class Services {
     [PluginService] public static ITargetManager TargetManager { get; private set; } = null!;
 
     public static OverlayController OverlayController { get; set; } = null!;
+
+    public static void Clear() {
+        ClientState = null!;
+        CommandManager = null!;
+        Condition = null!;
+        PluginInterface = null!;
+        DataManager = null!;
+        Framework = null!;
+        KeyState = null!;
+        NotificationManager = null!;
+        ObjectTable = null!;
+        Logger = null!;
+        TargetManager = null!;
+        OverlayController = null!;
+    }
 }

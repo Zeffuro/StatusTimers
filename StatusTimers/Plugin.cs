@@ -4,9 +4,12 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using KamiToolKit;
 using KamiToolKit.UiOverlay;
+using StatusTimers.Config;
 using StatusTimers.Extensions;
 using StatusTimers.Helpers;
+using StatusTimers.Services;
 using StatusTimers.Windows;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using GlobalServices = StatusTimers.Services.Services;
@@ -14,7 +17,8 @@ using GlobalServices = StatusTimers.Services.Services;
 namespace StatusTimers;
 
 public class Plugin : IAsyncDalamudPlugin {
-    public const string CommandName = "/statustimers";
+    private const string CommandName = "/statustimers";
+    private static readonly TimeSpan FrameworkStartupTimeout = TimeSpan.FromSeconds(15);
 
     [PluginService]
     private static IDalamudPluginInterface PluginInterface { get; set; } = null!;
@@ -27,9 +31,10 @@ public class Plugin : IAsyncDalamudPlugin {
         BackupHelper.DoConfigBackup(PluginInterface);
 
         KamiToolKitLibrary.Initialize(PluginInterface);
-        await GlobalServices.Framework.Run(() => {
+
+        await GlobalServices.Framework.RunSafelyWithTimeout(() => {
             GlobalServices.OverlayController = new OverlayController();
-        }, cancellationToken);
+        }, cancellationToken, FrameworkStartupTimeout);
 
         OverlayManager = new OverlayManager();
 
@@ -43,7 +48,7 @@ public class Plugin : IAsyncDalamudPlugin {
         });
 
         if (GlobalServices.ClientState.IsLoggedIn) {
-            await GlobalServices.Framework.Run(OnLogin, cancellationToken);
+            await GlobalServices.Framework.RunSafelyWithTimeout(OnLogin, cancellationToken, FrameworkStartupTimeout);
         }
 
         GlobalServices.Framework.Update += OnFrameworkUpdate;
@@ -51,17 +56,29 @@ public class Plugin : IAsyncDalamudPlugin {
     }
 
     public async ValueTask DisposeAsync() {
-        GlobalServices.Framework.Update -= OnFrameworkUpdate;
-        GlobalServices.ClientState.Login -= OnLogin;
-        GlobalServices.CommandManager.RemoveHandler(CommandName);
+        try {
+            GlobalServices.Framework.Update -= OnFrameworkUpdate;
+            GlobalServices.ClientState.Login -= OnLogin;
+            GlobalServices.CommandManager.RemoveHandler(CommandName);
 
-        GlobalServices.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
-        GlobalServices.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
+            if (OverlayManager is not null) {
+                GlobalServices.PluginInterface.UiBuilder.OpenMainUi -= OverlayManager.ToggleConfig;
+                GlobalServices.PluginInterface.UiBuilder.OpenConfigUi -= OverlayManager.ToggleConfig;
 
-        await OverlayManager.DisposeAsync();
+                await OverlayManager.DisposeAsync();
+                OverlayManager = null!;
+            }
 
-        await GlobalServices.Framework.RunSafely(() => GlobalServices.OverlayController.Dispose());
-        await GlobalServices.Framework.RunSafely(KamiToolKitLibrary.Dispose);
+            await GlobalServices.Framework.RunSafely(() => GlobalServices.OverlayController?.Dispose());
+            await GlobalServices.Framework.RunSafely(KamiToolKitLibrary.Dispose);
+        }
+        finally {
+            OverlayConfigRegistry.Clear();
+            EnemyListHelper.Clear();
+            StatusManager.ClearTransientState();
+            GlobalServices.Clear();
+            PluginInterface = null!;
+        }
     }
 
     private void OnFrameworkUpdate(IFramework framework) {

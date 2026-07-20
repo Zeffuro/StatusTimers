@@ -12,4 +12,7 @@ public static class OverlayConfigRegistry
 
     public static StatusTimerOverlayConfig? Get(NodeKind kind)
         => Configs.GetValueOrDefault(kind);
+
+    public static void Clear()
+        => Configs.Clear();
 }

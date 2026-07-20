@@ -92,22 +92,19 @@ public class ColorPreviewNode : ResNode
         return Path.Combine(baseDir, "Media", "Textures", "alpha_background.png");
     }
 
-    protected override void Dispose(bool disposing, bool isNativeDestructor)
+    protected override void Dispose(bool isNativeDestructor)
     {
         if (_isDisposed)
         {
-            base.Dispose(disposing, isNativeDestructor);
+            base.Dispose(isNativeDestructor);
             return;
         }
 
         _isDisposed = true;
-        if (disposing)
-        {
-            _colorBackground.Dispose();
-            _alphaLayer.Dispose();
-            _colorForeground.Dispose();
-        }
+        _colorBackground.Dispose();
+        _alphaLayer.Dispose();
+        _colorForeground.Dispose();
 
-        base.Dispose(disposing, isNativeDestructor);
+        base.Dispose(isNativeDestructor);
     }
 }

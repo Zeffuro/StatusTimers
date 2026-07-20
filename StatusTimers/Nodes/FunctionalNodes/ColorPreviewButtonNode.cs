@@ -43,18 +43,15 @@ public class ColorPreviewButtonNode : ButtonBase {
     private void LoadTimelines()
         => LoadTwoPartTimelines(this, _colorPreview);
 
-    protected override void Dispose(bool disposing, bool isNativeDestructor)
+    protected override void Dispose(bool isNativeDestructor)
     {
         if (_isNodeDisposed)
         {
-            base.Dispose(disposing, isNativeDestructor);
+            base.Dispose(isNativeDestructor);
             return;
         }
         _isNodeDisposed = true;
-        if (disposing)
-        {
-            _colorPreview.Dispose();
-        }
-        base.Dispose(disposing, isNativeDestructor);
+        _colorPreview.Dispose();
+        base.Dispose(isNativeDestructor);
     }
 }
