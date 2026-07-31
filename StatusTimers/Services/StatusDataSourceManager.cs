@@ -110,7 +110,7 @@ public class StatusDataSourceManager<TKey>(
                 updatedList.Add(new StatusInfo(
                     status.Id, status.IconId, status.Name,
                     status.Description, newRemaining, status.MaxSeconds, status.GameObjectId,
-                    status.SelfInflicted, status.Stacks, status.PartyPriority,
+                    status.SourceObjectId, status.SelfInflicted, status.Stacks, status.PartyPriority,
                     status.IsPermanent, status.ActorName, status.EnemyLetter, status.StatusType
                 ));
             }
@@ -191,7 +191,7 @@ public class StatusDataSourceManager<TKey>(
 
         return new StatusInfo(
             dummyId, dummyIconId, dummyName, dummyDescription, remainingSeconds, maxSeconds,
-            gameObjectIdToUse, selfInflicted, dummyStacks, 0, // PartyPriority defaults to 0 for dummies
+            gameObjectIdToUse, gameObjectIdToUse, selfInflicted, dummyStacks, 0, // PartyPriority defaults to 0 for dummies
             isPermanent, actorName, enemyLetter, statusCategory
         );
     }

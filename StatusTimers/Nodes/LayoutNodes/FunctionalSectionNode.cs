@@ -101,6 +101,21 @@ public sealed class FunctionalSectionNode : TabbedVerticalListNode {
         // MultiDoT overlay settings
         if (kind == NodeKind.MultiDoT)
         {
+            nodes.Add(new LabeledDropdownOptionNode<StatusSourceScope>(
+                "Applied by",
+                () => getConfig().EnemyStatusSourceScope,
+                value => getConfig().EnemyStatusSourceScope = value,
+                new Dictionary<StatusSourceScope, string>
+                {
+                    { StatusSourceScope.Self, "Self" },
+                    { StatusSourceScope.Party, "Party/Alliance" },
+                    { StatusSourceScope.Anyone, "Anyone" }
+                },
+                width: 320,
+                labelWidth: 95,
+                dropdownWidth: 180
+            ));
+
             // Allow targeting the enemy by clicking the status icon
             nodes.Add(new CheckboxOptionNode {
                 String = "Allow targeting the enemy by clicking the status icon.",

@@ -11,6 +11,7 @@ public record StatusInfo(
     float RemainingSeconds,
     float MaxSeconds,
     ulong GameObjectId,
+    ulong SourceObjectId,
     bool SelfInflicted,
     uint Stacks,
     byte PartyPriority,
@@ -19,7 +20,7 @@ public record StatusInfo(
     char? EnemyLetter = null,
     StatusCategory StatusType = StatusCategory.Buff
 ) {
-    public StatusKey Key => new(GameObjectId, Id);
-    public virtual bool Equals(StatusInfo? other) => other != null && Id == other.Id && GameObjectId == other.GameObjectId && IconId == other.IconId && Name == other.Name;
-    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId, IconId, Name);
+    public StatusKey Key => new(GameObjectId, Id, SourceObjectId);
+    public virtual bool Equals(StatusInfo? other) => other != null && Id == other.Id && GameObjectId == other.GameObjectId && SourceObjectId == other.SourceObjectId && IconId == other.IconId && Name == other.Name;
+    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId, SourceObjectId, IconId, Name);
 }

@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using Lumina.Excel;
 using Lumina.Excel.Sheets;
 using StatusTimers.Config;
@@ -83,11 +84,19 @@ public static class StatusManager {
                     continue;
                 }
 
-                if (status.SourceObject.Id != player.GameObjectId) {
+                if (!IsHostileStatusSourceAllowed(
+                        status.SourceObject.ObjectId,
+                        player.EntityId,
+                        config?.EnemyStatusSourceScope ?? StatusSourceScope.Self)) {
                     continue;
                 }
 
-                StatusInfo? transformedStatus = TransformStatus(ref status, battleChara->GetGameObjectId(), config, battleChara);
+                StatusInfo? transformedStatus = TransformStatus(
+                    ref status,
+                    battleChara->GetGameObjectId(),
+                    config,
+                    battleChara,
+                    respectSelfAppliedFilter: false);
                 if (transformedStatus != null) {
                     HostileStatusBuffer.Add(transformedStatus);
                 }
@@ -97,7 +106,12 @@ public static class StatusManager {
         return HostileStatusBuffer;
     }
 
-    private static unsafe StatusInfo? TransformStatus(ref Status status, ulong objectId, StatusTimerOverlayConfig? config, BattleChara* battleChar = null) {
+    private static unsafe StatusInfo? TransformStatus(
+        ref Status status,
+        ulong objectId,
+        StatusTimerOverlayConfig? config,
+        BattleChara* battleChar = null,
+        bool respectSelfAppliedFilter = true) {
         if (!StatusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData) || config == null) {
             return null;
         }
@@ -107,7 +121,7 @@ public static class StatusManager {
         string name = gameData.Name.ToString();
         string description = gameData.Description.ToString();
         float remainingSeconds = status.RemainingTime;
-        ulong sourceObjectId = objectId;
+        ulong sourceObjectId = status.SourceObject.Id;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
         byte partyPrio = gameData.PartyListPriority;
@@ -146,9 +160,9 @@ public static class StatusManager {
 
         IPlayerCharacter? player = Services.ObjectTable.LocalPlayer;
 
-        bool selfInflicted = player != null && player.GameObjectId == status.SourceObject;
+        bool selfInflicted = player != null && player.EntityId == status.SourceObject.ObjectId;
 
-        if (config.SelfAppliedStatusesOnly && !selfInflicted) {
+        if (respectSelfAppliedFilter && config.SelfAppliedStatusesOnly && !selfInflicted) {
             return null;
         }
 
@@ -171,9 +185,35 @@ public static class StatusManager {
             }
         }
 
-        return new StatusInfo(id, iconId, name, description, remainingSeconds, maxSeconds, sourceObjectId, selfInflicted, stacks,
+        return new StatusInfo(id, iconId, name, description, remainingSeconds, maxSeconds, objectId, sourceObjectId, selfInflicted, stacks,
             partyPrio, isPerma,
             actorName, enemyLetter, statusType);
+    }
+
+    private static bool IsHostileStatusSourceAllowed(
+        uint sourceEntityId,
+        uint playerEntityId,
+        StatusSourceScope sourceScope) {
+        return sourceScope switch {
+            StatusSourceScope.Self => sourceEntityId == playerEntityId,
+            StatusSourceScope.Party => sourceEntityId == playerEntityId || IsPartyOrAllianceMemberSource(sourceEntityId),
+            StatusSourceScope.Anyone => true,
+            _ => sourceEntityId == playerEntityId
+        };
+    }
+
+    private static unsafe bool IsPartyOrAllianceMemberSource(uint sourceEntityId) {
+        var groupManager = GroupManager.Instance();
+        if (groupManager == null) {
+            return false;
+        }
+
+        var group = groupManager->GetGroupWithCheck();
+        if (group == null) {
+            return false;
+        }
+
+        return group->IsEntityIdInParty(sourceEntityId) || group->IsEntityIdInAlliance(sourceEntityId);
     }
 
     // Thanks Craftimizer for the info on food: https://github.com/WorkingRobot/Craftimizer/blob/main/Craftimizer/Utils/FoodStatus.cs#L23

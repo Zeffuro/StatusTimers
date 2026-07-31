@@ -645,6 +645,20 @@ public class StatusTimerOverlayConfig
     } = true;
 
     [JsonProperty]
+    public StatusSourceScope EnemyStatusSourceScope
+    {
+        get => field;
+        set
+        {
+            if (EnemyStatusSourceScope != value)
+            {
+                field = value;
+                Notify(nameof(EnemyStatusSourceScope));
+            }
+        }
+    } = StatusSourceScope.Self;
+
+    [JsonProperty]
     public bool InCombatOnly
     {
         get => field;

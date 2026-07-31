@@ -259,7 +259,7 @@ public class ConfigurationWindow(OverlayManager overlayManager) : NativeAddon {
                     overlay.OverlayConfig.Notify(nameof(overlay.OverlayConfig.FilterList));
                     RecalculateAllLayouts(kind);
 
-                    _configScrollingAreas[kind]?.ScrollToBottom();
+                    _configScrollingAreas[kind]?.ScrollToEnd();
                 }
             ) {
                 IsVisible = true,

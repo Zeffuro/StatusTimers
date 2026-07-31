@@ -36,7 +36,9 @@ public static class StatusSorter {
             result = a.StatusInfo.GameObjectId.CompareTo(b.StatusInfo.GameObjectId);
             return result != 0
                 ? result
-                : a.StatusInfo.Id.CompareTo(b.StatusInfo.Id);
+                : a.StatusInfo.Id != b.StatusInfo.Id
+                    ? a.StatusInfo.Id.CompareTo(b.StatusInfo.Id)
+                    : a.StatusInfo.SourceObjectId.CompareTo(b.StatusInfo.SourceObjectId);
         };
     }
 

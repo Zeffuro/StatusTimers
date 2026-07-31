@@ -16,16 +16,20 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
         string labelText,
         Func<T> getter,
         Action<T> setter,
-        IReadOnlyDictionary<T, string> displayMap)
+        IReadOnlyDictionary<T, string> displayMap,
+        float width = 280,
+        float labelWidth = 300,
+        float dropdownWidth = 140)
     {
         IsVisible = true;
         X = 18;
-        Width = 280;
+        Width = width;
         Height = 24;
         AlignmentFlags = FlexFlags.FitHeight;
         ItemSpacing = 4;
 
         _labelNode = new OptionLabelNode(labelText, false);
+        _labelNode.Width = labelWidth;
         AddNode(_labelNode);
 
         _dropDownNode = new StringDropDownNode
@@ -33,7 +37,7 @@ public sealed class LabeledDropdownOptionNode<T> : HorizontalFlexNode
             X = 0,
             Y = 0,
             IsVisible = true,
-            Width = 140,
+            Width = dropdownWidth,
             Height = 24,
             MaxListOptions = 5,
             Options = displayMap.Values.ToList(),

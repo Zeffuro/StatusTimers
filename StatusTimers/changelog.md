@@ -1,3 +1,7 @@
+# 1.0.3.9
+- Add option to filter Multi-DoT to Self, Party/Alliance, Anyone.
+- Updated KTK.
+
 # 1.0.3.8
 - Fix some memory leaks.
 - Updated KTK.
