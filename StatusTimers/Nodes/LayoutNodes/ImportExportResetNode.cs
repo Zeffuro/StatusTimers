@@ -1,12 +1,9 @@
 using KamiToolKit.Classes;
 using KamiToolKit.Enums;
 using KamiToolKit.Nodes;
-using StatusTimers.Config;
 using StatusTimers.Enums;
-using StatusTimers.Models;
 using StatusTimers.Helpers;
 using StatusTimers.Windows;
-using System;
 using System.IO;
 using GlobalServices = StatusTimers.Services.Services;
 
@@ -15,11 +12,8 @@ namespace StatusTimers.Nodes.LayoutNodes;
 public sealed class ImportExportResetNode : HorizontalListNode
 {
     public ImportExportResetNode(
-        Func<StatusTimerOverlayNode<StatusKey>> getOverlay,
-        Func<StatusTimerOverlayConfig> getConfig,
-        NodeKind kind,
-        Action onConfigChanged,
-        Action closeWindow)
+        OverlayManager manager,
+        NodeKind kind)
     {
         Height = 0;
         Width = 600;
@@ -36,7 +30,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             TextTooltip = " Import Configuration\n(hold shift to confirm)",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\download.png"),
             OnClick = () => ImportExportResetHelper.TryImportConfigFromClipboard(
-                getOverlay(), getConfig(), onConfigChanged, closeWindow)
+                manager, kind)
         });
 
         AddNode(new ImGuiIconButtonNode {
@@ -46,7 +40,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             IsVisible = true,
             TextTooltip = "Export Configuration",
             TexturePath = Path.Combine(GlobalServices.PluginInterface.AssemblyLocation.Directory?.FullName!, @"Media\Icons\upload.png"),
-            OnClick = () => ImportExportResetHelper.TryExportConfigToClipboard(getConfig())
+            OnClick = () => ImportExportResetHelper.TryExportConfigToClipboard(manager, kind)
         });
 
         AddNode(new HoldButtonNode {
@@ -58,7 +52,7 @@ public sealed class ImportExportResetNode : HorizontalListNode
             TextNode = { TextColor = ColorHelper.GetColor(50) },
             TextTooltip = "   Reset configuration\n(hold button to confirm)",
             OnClick = () => ImportExportResetHelper.TryResetConfig(
-                getConfig(), kind, onConfigChanged, closeWindow)
+                manager, kind)
         });
     }
 }

@@ -41,13 +41,14 @@ public class StatusDataSourceManager<TKey>(
     private DateTime _lastDummyUpdateTime;
 
     public List<StatusInfo> FetchAndProcessStatuses(StatusTimerOverlayConfig overlayConfig) {
-        if (overlayConfig.InCombatOnly && !Services.Condition[ConditionFlag.InCombat] && !getIsPreviewEnabled()) {
+        var isPreview = getIsPreviewEnabled();
+        if (overlayConfig.InCombatOnly && !Services.Condition[ConditionFlag.InCombat] && !isPreview) {
             return [];
         }
 
         IReadOnlyList<StatusInfo> current;
 
-        if (getIsPreviewEnabled()) {
+        if (isPreview) {
             if (_dummyActiveStatuses.Count == 0 || _dummyActiveStatuses.Any(s => s.Id == 0)) {
                 InitializeDummyStatuses();
             }
@@ -71,7 +72,7 @@ public class StatusDataSourceManager<TKey>(
             filteredStatuses = filteredStatuses.Where(s => !s.IsPermanent);
         }
 
-        if (overlayConfig.FilterEnabled && overlayConfig.FilterList is { Count: > 0 }) {
+        if (!isPreview && overlayConfig.FilterEnabled && overlayConfig.FilterList is { Count: > 0 }) {
             filteredStatuses = overlayConfig.FilterIsBlacklist
                 ? filteredStatuses.Where(s => !overlayConfig.FilterList.Contains(s.Id))
                 : filteredStatuses.Where(s => overlayConfig.FilterList.Contains(s.Id));

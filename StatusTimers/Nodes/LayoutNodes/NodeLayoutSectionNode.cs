@@ -91,6 +91,32 @@ public sealed class NodeLayoutSectionNode : TabbedVerticalListNode
 
         if (nodePart.StyleKind == NodePartStyleKind.Bar && nodePart.StyleBar != null && overlayManager != null)
         {
+            var barOptionsRow = new HorizontalFlexNode
+            {
+                IsVisible = true,
+                Width = 562,
+                Height = 32,
+                ItemSpacing = 4
+            };
+            settingsNodes.Add(barOptionsRow);
+
+            var barTypeNode = new LabeledDropdownOptionNode<ProgressBarType>(
+                "Bar Style",
+                () => nodePart.StyleBar.BarType,
+                value => { nodePart.StyleBar.BarType = value; onChanged?.Invoke(); },
+                BarTypeMap)
+            {
+                Options = BarTypeMap
+                    .Where(pair => pair.Key != ProgressBarType.EnemyCastLegacy)
+                    .Select(pair => pair.Value).ToList()
+            };
+            var colorTreatmentNode = new LabeledDropdownOptionNode<ProgressBarColorTreatment>(
+                "Color Treatment",
+                () => nodePart.StyleBar.ColorTreatment,
+                value => { nodePart.StyleBar.ColorTreatment = value; onChanged?.Invoke(); },
+                ColorTreatmentMap);
+            barOptionsRow.AddNode([barTypeNode, colorTreatmentNode]);
+
             var defaultBarStyle = baseDefaultsPart.StyleBar;
             var borderDefaultColor = defaultBarStyle?.BorderColor ?? nodePart.StyleBar.BorderColor;
             var progressDefaultColor = defaultBarStyle?.ProgressColor ?? nodePart.StyleBar.ProgressColor;
@@ -176,6 +202,22 @@ public sealed class NodeLayoutSectionNode : TabbedVerticalListNode
                 v => { nodePart.Style.FontSize = v; onChanged?.Invoke(); }
             );
             styleRow.AddNode([fontDropdownNode, fontSizeNode]);
+
+            var textAlignmentRow = new HorizontalFlexNode
+            {
+                IsVisible = true,
+                Width = 562,
+                Height = 32,
+                ItemSpacing = 4
+            };
+            settingsNodes.Add(textAlignmentRow);
+
+            var textAlignmentNode = new LabeledDropdownOptionNode<int>(
+                "Text Alignment",
+                () => nodePart.Style.Alignment is { } alignment ? (int)alignment : -1,
+                value => { nodePart.Style.Alignment = value == -1 ? null : (AlignmentType)value; onChanged?.Invoke(); },
+                TextAlignmentMap);
+            textAlignmentRow.AddNode(textAlignmentNode);
 
             var styleRow2 = new HorizontalFlexNode
             {
@@ -284,5 +326,36 @@ public sealed class NodeLayoutSectionNode : TabbedVerticalListNode
         { FontType.TrumpGothic, "Trump Gothic" },
         { FontType.Jupiter, "Jupiter" },
         { FontType.JupiterLarge, "Jupiter Large" }
+    };
+
+    private static readonly Dictionary<ProgressBarType, string> BarTypeMap = new() {
+        { ProgressBarType.CastLegacy, "Cast (Legacy)" },
+        { ProgressBarType.Cast, "Cast" },
+        { ProgressBarType.EnemyCast, "Enemy Cast" },
+        { ProgressBarType.ToDo, "To Do" },
+        { ProgressBarType.PartyListHp, "Party List HP" },
+        { ProgressBarType.LimitBreak, "Limit Break" },
+        { ProgressBarType.ToDoLegacy, "To Do (Legacy)" },
+        { ProgressBarType.EnemyCastLegacy, "Enemy Cast (Legacy)" },
+    };
+
+    private static readonly Dictionary<ProgressBarColorTreatment, string> ColorTreatmentMap = new() {
+        { ProgressBarColorTreatment.LegacyAdditive, "Legacy Additive" },
+        { ProgressBarColorTreatment.Auto, "Auto" },
+        { ProgressBarColorTreatment.Flat, "Flat Color" },
+        { ProgressBarColorTreatment.NativeTint, "Native Tint" },
+    };
+
+    private static readonly Dictionary<int, string> TextAlignmentMap = new() {
+        { -1, "Native Default" },
+        { (int)AlignmentType.Left, "Left" },
+        { (int)AlignmentType.Center, "Center" },
+        { (int)AlignmentType.Right, "Right" },
+        { (int)AlignmentType.TopLeft, "Top Left" },
+        { (int)AlignmentType.Top, "Top" },
+        { (int)AlignmentType.TopRight, "Top Right" },
+        { (int)AlignmentType.BottomLeft, "Bottom Left" },
+        { (int)AlignmentType.Bottom, "Bottom" },
+        { (int)AlignmentType.BottomRight, "Bottom Right" },
     };
 }

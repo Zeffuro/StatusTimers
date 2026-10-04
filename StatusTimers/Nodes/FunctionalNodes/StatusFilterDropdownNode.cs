@@ -84,7 +84,7 @@ public sealed class StatusFilterDropdownNode : HorizontalListNode
 
         AddNode([
             _textInputNode,
-            new ResNode { Size = new System.Numerics.Vector2(10) },
+            new ResNode { Size = new Vector2(10) },
             _iconNode,
             _dropdownNode,
             _addButtonNode

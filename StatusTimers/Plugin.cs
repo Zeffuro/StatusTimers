@@ -30,7 +30,7 @@ public class Plugin : IAsyncDalamudPlugin {
 
         BackupHelper.DoConfigBackup(PluginInterface);
 
-        KamiToolKitLibrary.Initialize(PluginInterface);
+        await KamiToolKitLibrary.InitializeAsync(PluginInterface);
 
         await GlobalServices.Framework.RunSafelyWithTimeout(() => {
             GlobalServices.OverlayController = new OverlayController();
@@ -83,6 +83,7 @@ public class Plugin : IAsyncDalamudPlugin {
 
     private void OnFrameworkUpdate(IFramework framework) {
         EnemyListHelper.UpdateEnemyListMapping();
+        OverlayManager.UpdateProfiles();
     }
 
     private void OnCommand(string command, string args) {

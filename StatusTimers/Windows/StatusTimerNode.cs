@@ -13,6 +13,7 @@ using StatusTimers.Nodes.FunctionalNodes;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using BackgroundTextNode = StatusTimers.Nodes.FunctionalNodes.BackgroundTextNode;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Windows;
@@ -27,7 +28,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     private SimpleNineGridNode _statusBackgroundNode;
     private IconImageNode _iconNode;
-    private ProgressBarCastNode _progressNode;
+    private StatusProgressNode _progressNode;
     private NodeBase _statusName;
     private NodeBase _statusRemaining;
     private NodeBase _actorName;
@@ -73,7 +74,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         }
 
         // Progress
-        _progressNode = new ProgressBarCastNode();
+        _progressNode = new StatusProgressNode(config.Progress.StyleBar?.BarType ?? ProgressBarType.CastLegacy);
         ApplyNodeSettings(_progressNode, config.Progress);
         ApplyBarStyle(_progressNode, config.Progress.StyleBar);
         if (config.Progress.StyleBar != null) {
@@ -144,14 +145,32 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public void ApplyOverlayConfig(string changedProperty) {
         GlobalServices.Framework.RunOnFrameworkThread(() => {
+            if (_isDisposed) {
+                return;
+            }
+
             var config = _getOverlayConfig();
             ClearAnchorCache();
+
+            var barType = config.Progress.StyleBar?.BarType ?? ProgressBarType.CastLegacy;
+            var barChanged = _progressNode.BarType != barType;
+            if (barChanged) {
+                _progressNode.Dispose();
+                _progressNode = new StatusProgressNode(barType);
+                _progressNode.AttachNode(_containerResNode);
+            }
 
             bool needsRebuildActor = (_actorName is TextNineGridNode) != (config.Actor.BackgroundEnabled == true);
             bool needsRebuildTimer = (_statusRemaining is TextNineGridNode) != (config.Timer.BackgroundEnabled == true);
 
             if (needsRebuildActor || needsRebuildTimer) {
                 RebuildNodes(config, needsRebuildActor, needsRebuildTimer);
+            }
+            if (barChanged || needsRebuildActor || needsRebuildTimer) {
+                _actorName.DetachNode();
+                _actorName.AttachNode(_containerResNode);
+                _statusRemaining.DetachNode();
+                _statusRemaining.AttachNode(_containerResNode);
             }
 
             ApplyNodeSettings(_statusBackgroundNode, config.Background);
@@ -167,6 +186,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             ApplyNodeSettings(_actorName, config.Actor);
             ApplyTextStyle(_actorName, config.Actor.Style);
 
+            ApplyNodeSettings(_statusRemaining, config.Timer);
+            ApplyTextStyle(_statusRemaining, config.Timer.Style);
+
             UpdateLayoutOffsets();
 
             _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
@@ -175,8 +197,8 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         });
     }
 
-    private void ApplyTextStyle(NodeBase node, StatusTimerOverlayConfig.TextStyle? style) {
-        if (style == null) {
+    private void ApplyTextStyle(NodeBase node, TextStyle? style) {
+        if (_isDisposed || style == null) {
             return;
         }
 
@@ -188,6 +210,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 tn.TextColor = style.TextColor;
                 tn.TextOutlineColor = style.TextOutlineColor;
                 tn.TextFlags = style.TextFlags;
+                tn.AlignmentType = style.Alignment ?? AlignmentType.Left;
                 break;
             case TextNineGridNode ngn:
                 ngn.FontSize = style.FontSize;
@@ -195,6 +218,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 ngn.TextColor = style.TextColor;
                 ngn.TextOutlineColor = style.TextOutlineColor;
                 ngn.TextFlags = style.TextFlags;
+                ngn.AlignmentType = style.Alignment ?? AlignmentType.Right;
                 break;
             case BackgroundTextNode btn:
                 btn.FontSize = style.FontSize;
@@ -202,15 +226,17 @@ public sealed class StatusTimerNode<TKey> : ResNode {
                 btn.TextColor = style.TextColor;
                 btn.TextOutlineColor = style.TextOutlineColor;
                 btn.TextFlags = style.TextFlags;
+                btn.AlignmentType = style.Alignment ?? AlignmentType.Left;
                 break;
         }
     }
 
-    private void ApplyBarStyle(ProgressBarCastNode node, StatusTimerOverlayConfig.BarStyle? style) {
-        if (style == null) {
+    private void ApplyBarStyle(StatusProgressNode node, BarStyle? style) {
+        if (_isDisposed || style == null) {
             return;
         }
 
+        node.ColorTreatment = style.ColorTreatment;
         node.BackgroundColor = style.BackgroundColor ??  BarStyleDefaults.BackgroundColor;
         node.BarColor = style.ProgressColor ?? BarStyleDefaults.ProgressColor;
         node.BorderColor = style.BorderColor ??  BarStyleDefaults.BorderColor;
@@ -355,28 +381,21 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void RebuildNodes(StatusTimerOverlayConfig config, bool rebuildActor, bool rebuildTimer)
     {
         if (rebuildActor) {
-            _actorName.DetachNode();
             _actorName.Dispose();
             _actorName = config.Actor.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
             ApplyNodeSettings(_actorName, config.Actor);
             ApplyTextStyle(_actorName, config.Actor.Style);
-            if (config.Actor.Style != null) {
-                config.Actor.Style.Changed += OnActorNameTextStyleChanged;
-            }
 
-            _containerResNode.AttachNode(_actorName);
+            _actorName.AttachNode(_containerResNode);
+            _lastStatusInfo = null;
         }
         if (rebuildTimer) {
-            _statusRemaining.DetachNode();
             _statusRemaining.Dispose();
             _statusRemaining = config.Timer.BackgroundEnabled == true ? new TextNineGridNode() : new TextNode();
             ApplyNodeSettings(_statusRemaining, config.Timer);
             ApplyTextStyle(_statusRemaining, config.Timer.Style);
-            if (config.Timer.Style != null) {
-                config.Timer.Style.Changed += OnStatusRemainingTextStyleChanged;
-            }
 
-            _containerResNode.AttachNode(_statusRemaining);
+            _statusRemaining.AttachNode(_containerResNode);
         }
         RegisterNodeMap();
     }
@@ -403,7 +422,9 @@ public sealed class StatusTimerNode<TKey> : ResNode {
             _statusBackgroundNode.IsVisible = config.Background.IsVisible;
 
             if (StatusInfo.ActorName != null && config.Actor.IsVisible) {
-                _actorName.SetText($"{(config.ShowActorLetter ? StatusInfo.EnemyLetter : "")}{StatusInfo.ActorName}");
+                _actorName.SetText(config.ShowActorLetter && StatusInfo.EnemyLetter is { } letter
+                    ? $"{letter} {StatusInfo.ActorName}"
+                    : StatusInfo.ActorName);
                 _actorName.IsVisible = true;
             } else {
                 _actorName.SetText(string.Empty);
@@ -449,7 +470,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
     private void OnStatusNameTextStyleChanged() => ApplyTextStyle(_statusName, _getOverlayConfig().Name.Style);
     private void OnActorNameTextStyleChanged() => ApplyTextStyle(_actorName, _getOverlayConfig().Actor.Style);
     private void OnStatusRemainingTextStyleChanged() => ApplyTextStyle(_statusRemaining, _getOverlayConfig().Timer.Style);
-    private void OnProgressBarStyleChanged() => ApplyBarStyle(_progressNode, _getOverlayConfig().Progress.StyleBar);
+    private void OnProgressBarStyleChanged() => ApplyOverlayConfig("Progress");
     private unsafe void OnIconClicked(AtkEventListener* thisPtr, AtkEventType eventType, int eventParam, AtkEvent* atkEvent, AtkEventData* atkEventData) {
         var config = _getOverlayConfig();
 
@@ -504,33 +525,36 @@ public sealed class StatusTimerNode<TKey> : ResNode {
         node.AddTimeline(fadeAnimation.Build());
     }
 
-    private StatusTimerOverlayConfig.TextStyle? GetCurrentTextStyle(NodeBase node)
+    private TextStyle? GetCurrentTextStyle(NodeBase node)
     {
         return node switch
         {
-            TextNode text => new StatusTimerOverlayConfig.TextStyle
+            TextNode text => new TextStyle
             {
                 FontSize = (int)text.FontSize,
                 FontType = text.FontType,
                 TextColor = text.TextColor,
                 TextOutlineColor = text.TextOutlineColor,
-                TextFlags = text.TextFlags
+                TextFlags = text.TextFlags,
+                Alignment = text.AlignmentType
             },
-            TextNineGridNode nine => new StatusTimerOverlayConfig.TextStyle
+            TextNineGridNode nine => new TextStyle
             {
                 FontSize = nine.FontSize,
                 FontType = nine.FontType,
                 TextColor = nine.TextColor,
                 TextOutlineColor = nine.TextOutlineColor,
-                TextFlags = nine.TextFlags
+                TextFlags = nine.TextFlags,
+                Alignment = nine.AlignmentType
             },
-            BackgroundTextNode backgroundText => new StatusTimerOverlayConfig.TextStyle
+            BackgroundTextNode backgroundText => new TextStyle
             {
                 FontSize = backgroundText.FontSize,
                 FontType = backgroundText.FontType,
                 TextColor = backgroundText.TextColor,
                 TextOutlineColor = backgroundText.TextOutlineColor,
-                TextFlags = backgroundText.TextFlags
+                TextFlags = backgroundText.TextFlags,
+                Alignment = backgroundText.AlignmentType
             },
             _ => null
         };

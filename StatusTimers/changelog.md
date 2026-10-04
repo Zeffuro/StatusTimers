@@ -1,3 +1,13 @@
+# 1.0.4.0
+- Added presets and profiles, with import/export.
+- Added an option to switch profiles when changing jobs or HUD layouts.
+- Added more progressbar styles and color options.
+- Added text alignment settings.
+- Reduced freezes when opening the config window or loading a profile.
+- Fixed the config window not always updating its size properly.
+- Fixed expired statuses sometimes staying visible.
+- Updated KTK.
+
 # 1.0.3.9
 - Add option to filter Multi-DoT to Self, Party/Alliance, Anyone.
 - Updated KTK.

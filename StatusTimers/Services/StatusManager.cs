@@ -124,6 +124,9 @@ public static class StatusManager {
         ulong sourceObjectId = status.SourceObject.Id;
         uint stacks = gameData.MaxStacks;
         bool isPerma = gameData.IsPermanent;
+        if (!isPerma && remainingSeconds == 0) {
+            return null;
+        }
         byte partyPrio = gameData.PartyListPriority;
         StatusCategory statusType = gameData.StatusCategory == 1 ? StatusCategory.Buff : StatusCategory.Debuff;
 

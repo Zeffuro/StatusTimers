@@ -35,7 +35,7 @@ public static class BackupHelper {
             var latestFile = new FileInfo(Path.Join(backupDir, $"{Name}.latest.zip"));
             var tempFile = Path.Join(backupDir, $"{Name}.tmp.zip");
 
-            var needsBackup = false;
+            var needsBackup = configDirectory.EnumerateFiles("*.addon.json").Any();
 
             if (latestFile.Exists) {
                 string lastBackupHash = ZipJsonHash(latestFile.FullName);

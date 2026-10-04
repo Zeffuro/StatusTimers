@@ -55,6 +55,10 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
 
             _isLocked = value;
             GlobalServices.Framework.RunOnFrameworkThread(() => {
+                if (_isDisposed) {
+                    return;
+                }
+
                 if (!_isLocked) {
                     EnableEditMode(NodeEditMode.Move);
                 }
@@ -76,9 +80,9 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         }
     }
 
-    public StatusTimerOverlayNode(NodeKind nodeKind, StatusTimerOverlayConfig? config = null) {
+    public StatusTimerOverlayNode(NodeKind nodeKind) {
         _nodeKind = nodeKind;
-        OverlayConfig = config ?? new StatusTimerOverlayConfig(nodeKind);
+        OverlayConfig = new StatusTimerOverlayConfig(nodeKind);
         OverlayConfigRegistry.Register(nodeKind, OverlayConfig);
         OverlayConfig.OnPropertyChanged += HandleConfigPropertyChanged;
 
@@ -268,6 +272,10 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         }
 
         GlobalServices.Framework.RunOnFrameworkThread(() => {
+            if (_isDisposed) {
+                return;
+            }
+
             if (propertyName == nameof(StatusTimerOverlayConfig.ScaleInt)) {
                 Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
             }
@@ -327,17 +335,16 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
 
         try {
             string json = File.ReadAllText(configPath);
-            var loaded = JsonConvert.DeserializeObject<StatusTimerOverlayConfig>(json);
-            if (loaded == null) {
+            if (!ConfigTransfer.TryImportOverlay(json, _nodeKind, out var loaded, out var error)) {
+                GlobalServices.Logger.Error($"Failed to load overlay '{_nodeKind}': {error}");
                 return;
             }
 
             OverlayConfig.OnPropertyChanged -= HandleConfigPropertyChanged;
-            OverlayConfig = loaded;
+            OverlayConfig = loaded!;
             OverlayConfig.OnPropertyChanged += HandleConfigPropertyChanged;
             OverlayConfigRegistry.Register(_nodeKind, OverlayConfig);
 
-            StatusTimerOverlayConfigHelper.MigrateLegacyConfig(OverlayConfig);
             Util.ApplyConfigProps(OverlayConfig, this);
         }
         catch (Exception ex) {
@@ -363,6 +370,24 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
         catch (Exception ex) {
             GlobalServices.Logger.Error($"Failed to save overlay '{_nodeKind}': {ex.Message}");
         }
+    }
+
+    internal void SaveConfiguration() => SaveConfig();
+
+    internal void ReplaceConfiguration(StatusTimerOverlayConfig config) {
+        _statusContainer.Clear();
+        _activeStatusNodes.Clear();
+        _allStatusNodes.Clear();
+        _inactiveStatusNodes.Clear();
+        OverlayConfig.OnPropertyChanged -= HandleConfigPropertyChanged;
+        OverlayConfig = config;
+        OverlayConfig.OnPropertyChanged += HandleConfigPropertyChanged;
+        OverlayConfigRegistry.Register(_nodeKind, OverlayConfig);
+        IsPreviewEnabled = false;
+        IsLocked = true;
+        ApplyLayoutSettings();
+        Scale = new Vector2(OverlayConfig.ScaleInt * 0.01f);
+        Util.ApplyConfigProps(OverlayConfig, this);
     }
 
     protected override void Dispose(bool isNativeDestructor) {

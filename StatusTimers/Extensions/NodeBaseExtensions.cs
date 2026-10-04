@@ -1,6 +1,7 @@
 using KamiToolKit.BaseTypes;
 using KamiToolKit.Nodes;
 using StatusTimers.Nodes.FunctionalNodes;
+using BackgroundTextNode = StatusTimers.Nodes.FunctionalNodes.BackgroundTextNode;
 using GlobalServices = StatusTimers.Services.Services;
 
 namespace StatusTimers.Extensions;
