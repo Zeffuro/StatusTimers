@@ -21,6 +21,9 @@ public record StatusInfo(
     StatusCategory StatusType = StatusCategory.Buff
 ) {
     public StatusKey Key => new(GameObjectId, Id, SourceObjectId);
-    public virtual bool Equals(StatusInfo? other) => other != null && Id == other.Id && GameObjectId == other.GameObjectId && SourceObjectId == other.SourceObjectId && IconId == other.IconId && Name == other.Name;
-    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId, SourceObjectId, IconId, Name);
+    public virtual bool Equals(StatusInfo? other) => other != null
+        && Id == other.Id && GameObjectId == other.GameObjectId && SourceObjectId == other.SourceObjectId
+        && IconId == other.IconId && Name == other.Name
+        && ActorName == other.ActorName && EnemyLetter == other.EnemyLetter;
+    public override int GetHashCode() => HashCode.Combine(Id, GameObjectId, SourceObjectId, IconId, Name, ActorName, EnemyLetter);
 }

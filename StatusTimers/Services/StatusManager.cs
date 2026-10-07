@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Objects.SubKinds;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Text;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
@@ -76,6 +77,7 @@ public static class StatusManager {
                 continue;
             }
 
+            var actor = Services.ObjectTable[battleChara->ObjectIndex];
             ref var statusManager = ref battleChara->StatusManager;
             for (int i = 0; i < statusManager.NumValidStatuses; i++)
             {
@@ -95,7 +97,7 @@ public static class StatusManager {
                     ref status,
                     battleChara->GetGameObjectId(),
                     config,
-                    battleChara,
+                    actor,
                     respectSelfAppliedFilter: false);
                 if (transformedStatus != null) {
                     HostileStatusBuffer.Add(transformedStatus);
@@ -110,7 +112,7 @@ public static class StatusManager {
         ref Status status,
         ulong objectId,
         StatusTimerOverlayConfig? config,
-        BattleChara* battleChar = null,
+        IGameObject? actor = null,
         bool respectSelfAppliedFilter = true) {
         if (!StatusSheet.TryGetRow(status.StatusId, out LuminaStatus gameData) || config == null) {
             return null;
@@ -169,8 +171,8 @@ public static class StatusManager {
             return null;
         }
 
-        if (battleChar is not null && player != null && objectId != player.GameObjectId) {
-            actorName = battleChar->NameString;
+        if (actor != null && player != null && objectId != player.GameObjectId) {
+            actorName = actor.Name.TextValue;
             enemyLetter = EnemyListHelper.GetEnemyLetter((uint)objectId);
         }
 

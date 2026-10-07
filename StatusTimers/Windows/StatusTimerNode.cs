@@ -118,13 +118,13 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
     public NodeKind Kind { get; set; }
 
-    public required StatusInfo StatusInfo {
+    public StatusInfo StatusInfo {
         get;
         set {
             field = value;
             UpdateValues();
         }
-    }
+    } = new(0, 0, string.Empty, string.Empty, 0, 0, 0, 0, false, 0, 0);
 
     public void ActivateStatus(StatusInfo status) {
         IsVisible = true;
@@ -193,6 +193,7 @@ public sealed class StatusTimerNode<TKey> : ResNode {
 
             _actorName.IsVisible = config.Actor.IsVisible && StatusInfo.ActorName != null;
 
+            _lastStatusInfo = null;
             UpdateValues();
         });
     }

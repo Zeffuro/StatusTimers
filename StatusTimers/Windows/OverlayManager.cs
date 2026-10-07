@@ -106,7 +106,7 @@ public class OverlayManager : IAsyncDisposable {
             return;
         }
 
-        await addon.DisposeAsync();
+        await Task.Run(async () => await addon.DisposeAsync());
     }
 
     private void CreateAndAttachOverlays() {

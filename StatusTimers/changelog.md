@@ -1,3 +1,7 @@
+# 1.0.4.1
+- Fixed an issue where DoTs would unintentionally stay on the screen.
+- Improve Enemy Letter handling.
+
 # 1.0.4.0
 - Added presets and profiles, with import/export.
 - Added an option to switch profiles when changing jobs or HUD layouts.

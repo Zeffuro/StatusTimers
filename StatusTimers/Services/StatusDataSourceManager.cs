@@ -78,7 +78,7 @@ public class StatusDataSourceManager<TKey>(
                 : filteredStatuses.Where(s => overlayConfig.FilterList.Contains(s.Id));
         }
 
-        return filteredStatuses.Take(getMaxStatuses()).ToList();;
+        return filteredStatuses.Take(getMaxStatuses()).ToList();
     }
 
     private void InitializeDummyStatuses() {

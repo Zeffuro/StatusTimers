@@ -170,27 +170,30 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
                 continue;
             }
 
-            _activeStatusNodes.Remove(key);
             node.ClearStatus();
+            _activeStatusNodes.Remove(key);
             _inactiveStatusNodes.Enqueue(node);
             anythingChanged = true;
         }
 
         var nodesToAttach = new List<StatusTimerNode<TKey>>();
-        foreach (var status in statuses) {
-            var key = status.Key;
-            if (_activeStatusNodes.TryGetValue(key, out var node)) {
-                node.ActivateStatus(status);
-                continue;
+        try {
+            foreach (var status in statuses) {
+                var key = status.Key;
+                if (_activeStatusNodes.TryGetValue(key, out var node)) {
+                    node.ActivateStatus(status);
+                    continue;
+                }
+
+                node = AcquireStatusNode(status, nodesToAttach);
+                _activeStatusNodes[key] = node;
+                anythingChanged = true;
             }
-
-            node = AcquireStatusNode(status, nodesToAttach);
-            _activeStatusNodes[key] = node;
-            anythingChanged = true;
         }
-
-        if (nodesToAttach.Count != 0) {
-            _statusContainer.AddNode(nodesToAttach);
+        finally {
+            if (nodesToAttach.Count != 0) {
+                _statusContainer.AddNode(nodesToAttach);
+            }
         }
 
         return anythingChanged;
@@ -199,8 +202,15 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     private StatusTimerNode<TKey> AcquireStatusNode(
         StatusInfo status,
         List<StatusTimerNode<TKey>> nodesToAttach) {
-        if (_inactiveStatusNodes.TryDequeue(out var pooledNode)) {
-            pooledNode.ActivateStatus(status);
+        if (_inactiveStatusNodes.TryPeek(out var pooledNode)) {
+            try {
+                pooledNode.ActivateStatus(status);
+            }
+            catch {
+                pooledNode.ClearStatus();
+                throw;
+            }
+            _inactiveStatusNodes.Dequeue();
             return pooledNode;
         }
 
@@ -211,19 +221,21 @@ public class StatusTimerOverlayNode<TKey> : OverlayNode where TKey : notnull {
     }
 
     private StatusTimerNode<TKey> CreateStatusNode(StatusInfo info) {
-        var node = new StatusTimerNode<TKey>(() => OverlayConfig) {
-            Width = OverlayConfig.RowWidth,
-            Height = OverlayConfig.RowHeight,
-            Kind = _nodeKind,
-            StatusInfo = info,
-            IsVisible = true
-        };
-
-        if (_nodeActionHandler != null) {
-            node.OnStatusNodeActionTriggered += _nodeActionHandler;
+        var node = new StatusTimerNode<TKey>(() => OverlayConfig);
+        try {
+            node.Width = OverlayConfig.RowWidth;
+            node.Height = OverlayConfig.RowHeight;
+            node.Kind = _nodeKind;
+            node.ActivateStatus(info);
+            if (_nodeActionHandler != null) {
+                node.OnStatusNodeActionTriggered += _nodeActionHandler;
+            }
+            return node;
         }
-
-        return node;
+        catch {
+            node.Dispose();
+            throw;
+        }
     }
 
     private bool SortStatusNodes() {

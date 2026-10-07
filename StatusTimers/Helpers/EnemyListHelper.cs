@@ -1,3 +1,5 @@
+using Dalamud.Game.Text;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Arrays;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using System.Collections.Generic;
@@ -9,6 +11,7 @@ public static unsafe class EnemyListHelper {
 
     // Call this once per frame or on enemy list change
     public static void UpdateEnemyListMapping() {
+        EntityIdToLocalIndex.Clear();
         var numberArray = AtkStage.Instance()->GetNumberArrayData(NumberArrayType.EnemyList);
         if (numberArray == null) {
             return;
@@ -34,19 +37,24 @@ public static unsafe class EnemyListHelper {
             return null;
         }
 
-        var enemyStringArrayMembers = EnemyListStringArray.Instance()->Members;
+        var enemyStringArray = EnemyListStringArray.Instance();
+        if (enemyStringArray == null) {
+            return null;
+        }
+
+        var enemyStringArrayMembers = enemyStringArray->Members;
         if (enemyStringArrayMembers.IsEmpty || enemyStringArrayMembers.Length <= index)
         {
             return null;
         }
 
-        string name = enemyStringArrayMembers[index].EnemyName.ToString();
-        if (string.IsNullOrEmpty(name)) {
-            return null;
+        var name = enemyStringArrayMembers[index].EnemyName.AsReadOnlySeStringSpan().ExtractText();
+        foreach (var character in name) {
+            if (character is >= (char)SeIconChar.BoxedLetterA and <= (char)SeIconChar.BoxedLetterZ) {
+                return character;
+            }
         }
-
-        char letterSymbol = name[0];
-        return letterSymbol;
+        return null;
     }
 
     public static void Clear()
